@@ -64,13 +64,16 @@ export function TestimonialsSection({
           <h2 className="max-w-[720px] font-bold text-primary-green text-3xl  leading-tight sm:text-5xl sm:leading-tight">
             {title}
           </h2>
-          <p className="text-md max-w-[600px] font-medium text-muted-foreground sm:text-xl">
+          <p className="text-md max-w-[600px] font-medium text-primary-green-text sm:text-xl">
             {description}
           </p>
         </div>
 
         <div className="relative w-full overflow-hidden px-4">
-          <div ref={containerRef} className="flex w-full overflow-x-hidden">
+          <div
+            ref={containerRef}
+            className="flex w-full overflow-x-hidden py-4"
+          >
             <div
               className={cn(
                 "flex gap-6",

@@ -196,7 +196,9 @@ export default function Footer() {
               className="text-gray-500 hover:text-white transition-colors"
             >
               Website by{" "}
-              <small className="font-bold underline">CreatorLZ</small>
+              <small className="font-bold underline text-primary-green">
+                CreatorLZ
+              </small>
             </Link>
           </div>
         </div>

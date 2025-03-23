@@ -3,7 +3,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Mail,
+  Menu,
+  PhoneCall,
+  X,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,6 +19,7 @@ import { Features } from "./features";
 import Events from "@/components/events";
 import Call from "@/components/call-to-action";
 import { TestimonialsSection } from "@/components/testimonials-with-marquee";
+import JoinOurFamily from "@/components/join-our-family";
 
 // Slider images
 const sliderImages = [
@@ -84,6 +93,10 @@ export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [schoolsOpen, setSchoolsOpen] = useState(false);
+  const [programOpen, setProgramOpen] = useState(false);
+  const [alumniOpen, setAlumniOpen] = useState(false);
+  const [careersOpen, setCareersOpen] = useState(false);
   const [enrollOpen, setEnrollOpen] = useState(false);
 
   // Handle scroll
@@ -116,17 +129,36 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <main className=" min-h-screen flex flex-col">
       {/* Navigation */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled ? "bg-white shadow-md" : "bg-transparent"
         }`}
         style={{
-          backdropFilter: isScrolled ? "none" : "blur(10px)",
+          backdropFilter: isScrolled ? "none" : "blur(1px)",
           backgroundColor: isScrolled ? "white" : "rgba(255, 255, 255, 0.1)",
         }}
       >
+        {/* Top Bar */}
+        <div className="hidden md:flex h-5 bg-white items-center w-full px-5 py-4 border-b border-gray-300">
+          <div className="flex items-center justify-center gap-5">
+            <div className="flex items-center justify-center gap-1 text-primary-green-text">
+              <PhoneCall className="h-4 w-4 pt-0.5" />
+              <small className="text-primary-green-text text-xs">
+                +234 123 456 7890
+              </small>
+            </div>
+            <div className="flex items-center justify-center gap-1 text-primary-green-text">
+              <Mail className="h-4 w-4 pt-0.5" />
+              <span className="text-primary-green-text text-xs">
+                info@treasurelandschool.edu.ng
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Navigation Bar*/}
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
@@ -137,13 +169,13 @@ export default function Home() {
                   alt="Treasureland Schools"
                   width={40}
                   height={40}
-                  className="mr-2"
+                  className="mr-2 rounded-full bg-white"
                 />
                 <div className="flex flex-col">
                   <span
                     className={cn(
                       "font-bold text-sm",
-                      isScrolled ? "text-gray-800" : "text-white"
+                      isScrolled ? "text-primary-green-text" : "text-white"
                     )}
                   >
                     TREASURE LAND
@@ -151,7 +183,7 @@ export default function Home() {
                   <span
                     className={cn(
                       "font-bold text-sm",
-                      isScrolled ? "text-gray-800" : "text-white"
+                      isScrolled ? "text-primary-green-text" : "text-white"
                     )}
                   >
                     MODEL SCHOOL
@@ -161,120 +193,187 @@ export default function Home() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-1">
-              <Link
-                href="/"
-                className={`px-4 py-2 rounded-md font-medium ${
-                  isScrolled
-                    ? "text-gray-800 hover:bg-gray-100"
-                    : "text-white hover:bg-white/10"
-                } transition-colors`}
-              >
-                Home
-              </Link>
-              <div className="relative group">
-                <button
-                  className={`px-4 py-2 rounded-md font-medium flex items-center ${
-                    isScrolled
-                      ? "text-gray-800 hover:bg-gray-100"
-                      : "text-white hover:bg-white/10"
-                  } transition-colors`}
-                >
-                  About <ChevronDown className="h-4 w-4 ml-1" />
-                </button>
-                <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                  <Link
-                    href="/about"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            <div className="hidden md:flex items-center">
+              <div className="flex items-center">
+                {/* Schools */}
+                <div className="relative group cursor-pointer">
+                  <button
+                    className={`px-3 py-2 flex items-center cursor-pointer ${
+                      isScrolled ? "text-primary-green-text" : "text-white"
+                    } font-medium`}
                   >
-                    Our Story
-                  </Link>
-                  <Link
-                    href="/about/team"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Our Team
-                  </Link>
-                  <Link
-                    href="/about/facilities"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Facilities
-                  </Link>
+                    Schools
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                  </button>
+                  <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
+                    <Link
+                      href="/schools/primary"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Primary School
+                    </Link>
+                    <Link
+                      href="/schools/secondary"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Secondary School
+                    </Link>
+                  </div>
                 </div>
-              </div>
-              <div className="relative group">
-                <button
-                  className={`px-4 py-2 rounded-md font-medium flex items-center ${
-                    isScrolled
-                      ? "text-gray-800 hover:bg-gray-100"
-                      : "text-white hover:bg-white/10"
-                  } transition-colors`}
-                >
-                  Enroll <ChevronDown className="h-4 w-4 ml-1" />
-                </button>
-                <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                  <Link
-                    href="/enroll/process"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+
+                {/* About */}
+                <div className="relative group cursor-pointer">
+                  <button
+                    className={`px-3 py-2 flex items-center cursor-pointer ${
+                      isScrolled ? "text-primary-green-text" : "text-white"
+                    } font-medium`}
                   >
-                    Enrollment Process
-                  </Link>
-                  <Link
-                    href="/enroll/requirements"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Requirements
-                  </Link>
+                    About
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                  </button>
+                  <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
+                    <Link
+                      href="/about"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Our Story
+                    </Link>
+                    <Link
+                      href="/about/team"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Our Team
+                    </Link>
+                    <Link
+                      href="/about/facilities"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Facilities
+                    </Link>
+                  </div>
                 </div>
+
+                {/* Enroll */}
+                <div className="relative group">
+                  <button
+                    className={`px-3 py-2 flex items-center cursor-pointer ${
+                      isScrolled ? "text-primary-green-text" : "text-white"
+                    } font-medium`}
+                  >
+                    Enroll
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                  </button>
+                  <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
+                    <Link
+                      href="/enroll/process"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Enrollment Process
+                    </Link>
+                    <Link
+                      href="/enroll/requirements"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Requirements
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Program */}
+                <div className="relative group">
+                  <button
+                    className={`px-3 py-2 flex items-center cursor-pointer ${
+                      isScrolled ? "text-primary-green-text" : "text-white"
+                    } font-medium`}
+                  >
+                    Program
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                  </button>
+                  <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
+                    <Link
+                      href="/program/curriculum"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Curriculum
+                    </Link>
+                    <Link
+                      href="/program/extracurricular"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Extracurricular
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Alumni */}
+                <div className="relative group">
+                  <button
+                    className={`px-3 py-2 flex items-center cursor-pointer ${
+                      isScrolled ? "text-primary-green-text" : "text-white"
+                    } font-medium`}
+                  >
+                    Alumni
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                  </button>
+                  <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
+                    <Link
+                      href="/alumni/network"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Alumni Network
+                    </Link>
+                    <Link
+                      href="/alumni/events"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Alumni Events
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Careers */}
+                <div className="relative group">
+                  <button
+                    className={`px-3 py-2 flex items-center cursor-pointer ${
+                      isScrolled ? "text-primary-green-text" : "text-white"
+                    } font-medium`}
+                  >
+                    Careers
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                  </button>
+                  <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
+                    <Link
+                      href="/careers/teaching"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Teaching Positions
+                    </Link>
+                    <Link
+                      href="/careers/administrative"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Administrative Roles
+                    </Link>
+                  </div>
+                </div>
+
+                {/* News */}
+                <Link
+                  href="/news"
+                  className={`px-3 py-2 ${
+                    isScrolled ? "text-primary-green-text" : "text-white"
+                  } font-medium`}
+                >
+                  News
+                </Link>
               </div>
-              <Link
-                href="/programs"
-                className={`px-4 py-2 rounded-md font-medium ${
-                  isScrolled
-                    ? "text-gray-800 hover:bg-gray-100"
-                    : "text-white hover:bg-white/10"
-                } transition-colors`}
-              >
-                Programs
-              </Link>
-              <Link
-                href="/alumni"
-                className={`px-4 py-2 rounded-md font-medium ${
-                  isScrolled
-                    ? "text-gray-800 hover:bg-gray-100"
-                    : "text-white hover:bg-white/10"
-                } transition-colors`}
-              >
-                Alumni
-              </Link>
-              <Link
-                href="/careers"
-                className={`px-4 py-2 rounded-md font-medium ${
-                  isScrolled
-                    ? "text-gray-800 hover:bg-gray-100"
-                    : "text-white hover:bg-white/10"
-                } transition-colors`}
-              >
-                Careers
-              </Link>
-              <Link
-                href="/news"
-                className={`px-4 py-2 rounded-md font-medium ${
-                  isScrolled
-                    ? "text-gray-800 hover:bg-gray-100"
-                    : "text-white hover:bg-white/10"
-                } transition-colors`}
-              >
-                News
-              </Link>
             </div>
 
             {/* Enroll Now Button - Desktop */}
             <div className="hidden md:block">
               <Link
                 href="/enroll-now"
-                className="bg-primary-green hover:bg-primary-green-hover text-white font-medium px-6 py-2 rounded-full transition-colors"
+                className="bg-primary-green hover:bg-primary-green/90 text-white font-medium px-6 py-2 rounded-full transition-colors"
               >
                 Enroll Now
               </Link>
@@ -299,14 +398,40 @@ export default function Home() {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden">
           <div className="fixed inset-y-0 right-0 max-w-xs w-full bg-white shadow-xl z-50 transform transition-transform">
             <div className="p-6 flex flex-col h-full">
-              <div className="flex items-center justify-between mb-8">
-                <div className="text-2xl font-bold">Treasure Land</div>
+              <div className="flex justify-end pb-3.5">
                 <button
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-600"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <X size={24} />
+                  <div className="flex items-center gap-1">
+                    <X size={24} />
+                    <span>close</span>
+                  </div>
                 </button>
+              </div>
+
+              {/* Logo */}
+              <div
+                className="flex items-center pb-3.5"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Link href="/" className="text-xl font-bold flex items-center">
+                  <Image
+                    src="/treasure.png"
+                    alt="Treasureland Schools"
+                    width={40}
+                    height={40}
+                    className="mr-2 rounded-full bg-gray-300"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-gray-900 hover:text-gray-700">
+                      TREASURE LAND
+                    </span>
+                    <span className="text-gray-900 hover:text-gray-700">
+                      MODEL SCHOOL
+                    </span>
+                  </div>
+                </Link>
               </div>
 
               <div className="flex flex-col space-y-4">
@@ -319,6 +444,38 @@ export default function Home() {
                 </Link>
 
                 {/* Mobile Accordion Menus */}
+                <div className="border-b border-gray-200">
+                  <button
+                    className="w-full px-4 py-2 text-left text-gray-800 hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
+                    onClick={() => setSchoolsOpen(!schoolsOpen)}
+                  >
+                    Schools
+                    <ChevronDown
+                      className={`h-4 w-4 transform transition-transform ${
+                        schoolsOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  {schoolsOpen && (
+                    <div className="pl-6 py-2 space-y-2">
+                      <Link
+                        href="/about"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Primary School
+                      </Link>
+                      <Link
+                        href="/about/team"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Secondary School
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
                 <div className="border-b border-gray-200">
                   <button
                     className="w-full px-4 py-2 text-left text-gray-800 hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
@@ -390,27 +547,102 @@ export default function Home() {
                   )}
                 </div>
 
-                <Link
-                  href="/programs"
-                  className="px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-md font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Programs
-                </Link>
-                <Link
-                  href="/alumni"
-                  className="px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-md font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Alumni
-                </Link>
-                <Link
-                  href="/careers"
-                  className="px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-md font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Careers
-                </Link>
+                <div className="border-b border-gray-200">
+                  <button
+                    className="w-full px-4 py-2 text-left text-gray-800 hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
+                    onClick={() => setProgramOpen(!programOpen)}
+                  >
+                    Program
+                    <ChevronDown
+                      className={`h-4 w-4 transform transition-transform ${
+                        programOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  {programOpen && (
+                    <div className="pl-6 py-2 space-y-2">
+                      <Link
+                        href="/program/curriculum"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Curriculum
+                      </Link>
+                      <Link
+                        href="/program/extracurricular"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Extracurricular
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-b border-gray-200">
+                  <button
+                    className="w-full px-4 py-2 text-left text-gray-800 hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
+                    onClick={() => setAlumniOpen(!alumniOpen)}
+                  >
+                    Alumini
+                    <ChevronDown
+                      className={`h-4 w-4 transform transition-transform ${
+                        alumniOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  {alumniOpen && (
+                    <div className="pl-6 py-2 space-y-2">
+                      <Link
+                        href="/about"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Alumni Network
+                      </Link>
+                      <Link
+                        href="/about/team"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Alumni Events
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-b border-gray-200">
+                  <button
+                    className="w-full px-4 py-2 text-left text-gray-800 hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
+                    onClick={() => setCareersOpen(!careersOpen)}
+                  >
+                    Careers
+                    <ChevronDown
+                      className={`h-4 w-4 transform transition-transform ${
+                        careersOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  {careersOpen && (
+                    <div className="pl-6 py-2 space-y-2">
+                      <Link
+                        href="/careers/teaching"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Teaching Positions
+                      </Link>
+                      <Link
+                        href="/careers/administrative"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Administrative Roles
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
                 <Link
                   href="/news"
                   className="px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-md font-medium"
@@ -435,7 +667,7 @@ export default function Home() {
       )}
 
       {/* Hero Section with Slider */}
-      <section className="relative h-screen">
+      <section className="relative h-[75vh] md:h-[80vh] lg:h-screen ">
         {/* Background Slider */}
         {sliderImages.map((slide, index) => (
           <div
@@ -450,18 +682,18 @@ export default function Home() {
                 backgroundImage: `url(${slide.src})`,
               }}
             />
-            <div className="absolute inset-0 bg-black opacity-50" />
+            <div className="absolute inset-0 bg-black opacity-25" />
           </div>
         ))}
 
         {/* Content */}
         <div className="relative h-full flex items-center justify-center text-white px-6 lg:px-16">
           <div className="container mx-auto">
-            <div className="text-center lg:text-left max-w-2xl lg:max-w-3xl mx-auto lg:mx-0">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            <div className="text-center lg:text-left max-w-2xl lg:max-w-3xl mx-auto lg:mx-0 pt-5 lg:pt-0 ">
+              <h1 className="text-5xl md:text-6xl font-extrabold lg:font-bold mb-6 leading-14 lg:leading-20">
                 {sliderImages[currentSlide].title}
               </h1>
-              <p className="text-xl md:text-2xl mb-8">
+              <p className="text-base md:text-xl mb-8">
                 {sliderImages[currentSlide].description}
               </p>
               <Button className="bg-primary-green hover:bg-primary-green-hover rounded-full text-primary-foreground  text-lg px-6 py-6 l cursor-pointer">
@@ -504,31 +736,31 @@ export default function Home() {
       </section>
 
       {/* Quick Links */}
-      <section className="relative lg:-mt-16 px-4 z-10">
-        <div className="max-w-5xl mx-auto bg-white lg:rounded-full lg:shadow-lg overflow-hidden py-8 ">
-          <div className="flex flex-col gap-20 md:flex-row ">
-            <div className="flex-1 p-0 flex flex-col md:flex-row gap-3 items-center justify-center text-center md:border-b-0 md:border-r md:border-gray-200">
+      <section className="px-4 z-10 mt-8 lg:relative lg:-mt-16">
+        <div className="max-w-5xl mx-auto bg-white rounded-xl lg:rounded-full shadow-md lg:shadow-lg overflow-hidden py-6 lg:py-8">
+          <div className="flex flex-col gap-10 md:gap-20 md:flex-row">
+            <div className="flex-1 p-2 flex flex-col md:flex-row gap-3 items-center justify-center text-center border-b md:border-b-0 md:border-r border-gray-200 pb-6 md:pb-0">
               <div className=" flex items-center justify-center ">
                 <Image
-                  src="/enroll.svg"
+                  src="/useradd.png"
                   alt="Enroll Icon"
                   width={100}
                   height={100}
                 />
               </div>
               <div className=" flex md:flex-col items-center justify-center gap-1">
-                <h3 className="text-black text-xl md:text-2xl font-bold ">
+                <h3 className="text-primary-green-text text-xl md:text-2xl font-bold ">
                   Enroll
                 </h3>
-                <p className="text-black text-xl md:text-lg font-bold ">
+                <p className="text-primary-green-text text-xl md:text-lg font-bold ">
                   With Us
                 </p>
               </div>
             </div>
-            <div className="flex-1 p-0 flex flex-col md:flex-row gap-3 items-center justify-center text-center md:border-b-0 md:border-r md:border-gray-200">
+            <div className="flex-1 p-2 flex flex-col md:flex-row gap-3 items-center justify-center text-center border-b md:border-b-0 md:border-r border-gray-200 pb-6 md:pb-0">
               <div className=" flex items-center justify-center ">
                 <Image
-                  src="/teach.svg"
+                  src="/employee.png"
                   alt="Teach Icon"
                   width={100}
                   height={100}
@@ -536,28 +768,28 @@ export default function Home() {
               </div>
 
               <div className=" flex md:flex-col items-center justify-center gap-1">
-                <h3 className="text-black text-xl md:text-2xl font-bold ">
+                <h3 className="text-primary-green-text text-xl md:text-2xl font-bold ">
                   Teach
                 </h3>
-                <p className="text-black text-xl md:text-lg font-bold ">
+                <p className="text-primary-green-text text-xl md:text-lg font-bold ">
                   With Us
                 </p>
               </div>
             </div>
-            <div className="flex-1 p-0 flex flex-col md:flex-row gap-3 items-center justify-center text-center md:border-b-0 md:border-r md:border-gray-200">
+            <div className="flex-1 p-2 flex flex-col md:flex-row gap-3 items-center justify-center text-center  md:border-b-0 md:border-r border-gray-200 pb-6 md:pb-0">
               <div className=" flex items-center justify-center ">
                 <Image
-                  src="/alumini.svg"
+                  src="/graduate.png"
                   alt="Alumini Icon"
                   width={100}
                   height={100}
                 />
               </div>
               <div className=" flex md:flex-col items-center justify-center gap-1">
-                <h3 className="text-black text-xl md:text-2xl font-bold ">
-                  Alumini
+                <h3 className="text-primary-green-text text-xl md:text-2xl font-bold ">
+                  Alumni
                 </h3>
-                <p className="text-black text-xl md:text-lg font-bold ">
+                <p className="text-primary-green-text text-xl md:text-lg font-bold ">
                   & Beyond
                 </p>
               </div>
@@ -569,7 +801,7 @@ export default function Home() {
       {/* Mission Statement */}
       <section className="py-16 px-4">
         <div className=" flex flex-col items-center justify-center text-center">
-          <h1 className="text-5xl font-bold text-primary-green mb-6 relative text-center">
+          <h1 className="text-5xl font-extrabold text-primary-green mb-6 relative text-center  leading-14 lg:leading-20">
             Your Future is Bright!
             <div className="absolute -bottom-2 left-0 w-full">
               <svg
@@ -583,7 +815,7 @@ export default function Home() {
               </svg>
             </div>
           </h1>
-          <p className="text-muted-foreground text-center max-w-3xl text-lg font-bold">
+          <p className="text-primary-green-text text-center max-w-3xl text-lg font-bold">
             At Treasure Land, we provide students with strong academics,
             holistic and inclusive support, and rich life opportunities beyond
             the classroom so they thrive from primary through secondary
@@ -593,6 +825,8 @@ export default function Home() {
       </section>
       {/* Featured Content */}
       <Features />
+      {/* Join Our Family */}
+      <JoinOurFamily />
       {/* News & Events */}
       <Events />
       {/* Testimonials */}

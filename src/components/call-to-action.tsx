@@ -8,15 +8,18 @@ const Call = () => {
         <h2 className="text-5xl font-bold mb-4 text-primary-green">
           Ready to Join Treasure Land?
         </h2>
-        <p className="text-lg mb-8 text-muted-foreground">
+        <p className="text-lg mb-8 text-primary-green-text">
           Take the first step towards providing your child with quality
           education and a bright future.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button className="bg-primary-green text-primary-foreground hover:bg-primary/90 text-lg px-6 py-3">
+          <Button className="bg-primary-green text-primary-foreground hover:bg-primary-green-hover text-lg px-6 py-3 cursor-pointer border-t-primary-green-text">
             Enroll Now
           </Button>
-          <Button variant="outline" className="text-lg px-6 py-3">
+          <Button
+            variant="outline"
+            className="text-lg px-6 py-3 text-primary-green-text cursor-pointer"
+          >
             Schedule a Visit
           </Button>
         </div>

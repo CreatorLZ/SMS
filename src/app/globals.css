@@ -45,8 +45,9 @@
 }
 
 @theme {
-  --color-primary-green: #50c878;
+  --color-primary-green: #77cc00;
   --color-primary-green-hover: #67ce86;
+  --color-primary-green-text: #1e3300;
 }
 
 :root {

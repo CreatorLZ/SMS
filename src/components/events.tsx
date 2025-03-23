@@ -4,18 +4,12 @@ import React from "react";
 
 const Events = () => {
   return (
-    <section className="py-12 px-4">
+    <section className="py-12 px-4 bg-gray-50">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-primary-green">
-            Latest News & Events
+        <div className="flex justify-center mb-12">
+          <h2 className="max-w-[720px] font-bold text-primary-green text-3xl text-center leading-tight sm:text-5xl sm:leading-tight">
+            Latest News & Updates
           </h2>
-          <Link
-            href="/#"
-            className=" hover:underline font-medium text-primary-green"
-          >
-            View All
-          </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="border rounded-lg overflow-hidden">
@@ -29,7 +23,7 @@ const Events = () => {
             </div>
             <div className="p-4">
               <div className="text-sm text-gray-500 mb-2">March 15, 2024</div>
-              <h3 className="font-bold mb-2">Annual Science Fair</h3>
+              <h3 className="font-bold mb-2 ">Annual Science Fair</h3>
               <p className="text-gray-600 mb-4 line-clamp-2">
                 Students showcase their innovative science projects at our
                 annual science fair.
