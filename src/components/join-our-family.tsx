@@ -115,7 +115,7 @@ export default function JoinOurFamily() {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              Welcome to Treasure Land Model School
+              Welcome To Treasure Land Model School
             </motion.h2>
 
             <motion.blockquote
@@ -142,7 +142,7 @@ export default function JoinOurFamily() {
                 asChild
               >
                 <Link href="#">
-                  Apply Today
+                  Enroll Today
                   <motion.span
                     initial={{ x: 0 }}
                     whileHover={{ x: 5 }}

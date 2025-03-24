@@ -33,7 +33,7 @@ const sliderImages = [
   {
     src: "/outside.jpg",
     alt: "School campus",
-    title: "Modern Learning Environment",
+    title: "Smart Learning",
     description:
       "Our state-of-the-art facilities provide the perfect environment for academic and personal growth.",
   },
@@ -58,15 +58,15 @@ const testimonials = [
     author: {
       name: "Sarah Johnson",
       handle: "Parent",
-      avatar: "/testimonials/parent1.jpg",
+      avatar: "/boy.jpg",
     },
     text: "Treasure Land has provided my children with an exceptional education. The teachers are dedicated and the environment nurtures both academic excellence and personal growth.",
   },
   {
     author: {
-      name: "Mr. David Chen",
+      name: "Mr. David Alaba",
       handle: "Science Teacher",
-      avatar: "/testimonials/teacher1.jpg",
+      avatar: "/boy.jpg",
     },
     text: "Teaching at Treasure Land is truly rewarding. The school's commitment to innovation and student development creates an inspiring learning environment for both students and teachers.",
   },
@@ -74,7 +74,7 @@ const testimonials = [
     author: {
       name: "Michael Adebayo",
       handle: "Grade 12 Student",
-      avatar: "/testimonials/student1.jpg",
+      avatar: "/boy.jpg",
     },
     text: "The opportunities I've had at Treasure Land have been amazing. From the science club to leadership programs, I've grown so much as a person and student.",
   },
@@ -82,7 +82,7 @@ const testimonials = [
     author: {
       name: "Mrs. Patricia Okonjo",
       handle: "Parent",
-      avatar: "/testimonials/parent2.jpg",
+      avatar: "/boy.jpg",
     },
     text: "The individual attention and care each student receives at Treasure Land is remarkable. My daughter has flourished academically and socially since joining.",
   },
@@ -380,15 +380,20 @@ export default function Home() {
             </div>
 
             {/* Mobile Menu Button */}
-            <button
-              className="md:hidden text-gray-600"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <Menu
-                className={isScrolled ? "text-gray-800" : "text-white"}
-                size={24}
-              />
-            </button>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                className="md:hidden text-gray-600"
+                onClick={() => setMobileMenuOpen(true)}
+              >
+                <Menu
+                  className={isScrolled ? "text-gray-800" : "text-white"}
+                  size={24}
+                />
+              </button>
+              <small className={isScrolled ? "text-gray-800" : "text-white"}>
+                MENU
+              </small>
+            </div>
           </div>
         </div>
       </nav>
@@ -405,7 +410,7 @@ export default function Home() {
                 >
                   <div className="flex items-center gap-1">
                     <X size={24} />
-                    <span>close</span>
+                    <small className="text-primary-green-text">CLOSE</small>
                   </div>
                 </button>
               </div>
@@ -667,7 +672,7 @@ export default function Home() {
       )}
 
       {/* Hero Section with Slider */}
-      <section className="relative h-[75vh] md:h-[80vh] lg:h-screen ">
+      <section className="relative h-[55vh] md:h-[80vh] lg:h-screen ">
         {/* Background Slider */}
         {sliderImages.map((slide, index) => (
           <div
@@ -690,7 +695,7 @@ export default function Home() {
         <div className="relative h-full flex items-center justify-center text-white px-6 lg:px-16">
           <div className="container mx-auto">
             <div className="text-center lg:text-left max-w-2xl lg:max-w-3xl mx-auto lg:mx-0 pt-5 lg:pt-0 ">
-              <h1 className="text-5xl md:text-6xl font-extrabold lg:font-bold mb-6 leading-14 lg:leading-20">
+              <h1 className="text-5xl md:text-6xl font-bold lg:font-bold mb-6 leading-16 lg:leading-20">
                 {sliderImages[currentSlide].title}
               </h1>
               <p className="text-base md:text-xl mb-8">
@@ -737,9 +742,9 @@ export default function Home() {
 
       {/* Quick Links */}
       <section className="px-4 z-10 mt-8 lg:relative lg:-mt-16">
-        <div className="max-w-5xl mx-auto bg-white rounded-xl lg:rounded-full shadow-md lg:shadow-lg overflow-hidden py-6 lg:py-8">
+        <div className="max-w-5xl mx-auto bg-white rounded-xl lg:rounded-full shadow-none lg:shadow-lg overflow-hidden py-6 lg:py-8">
           <div className="flex flex-col gap-10 md:gap-20 md:flex-row">
-            <div className="flex-1 p-2 flex flex-col md:flex-row gap-3 items-center justify-center text-center border-b md:border-b-0 md:border-r border-gray-200 pb-6 md:pb-0">
+            <div className="flex-1 p-2 flex flex-col md:flex-row gap-3 items-center justify-center text-center md:border-r border-gray-200 pb-6 md:pb-0">
               <div className=" flex items-center justify-center ">
                 <Image
                   src="/useradd.png"
@@ -757,7 +762,7 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="flex-1 p-2 flex flex-col md:flex-row gap-3 items-center justify-center text-center border-b md:border-b-0 md:border-r border-gray-200 pb-6 md:pb-0">
+            <div className="flex-1 p-2 flex flex-col md:flex-row gap-3 items-center justify-center text-center md:border-r border-gray-200 pb-6 md:pb-0">
               <div className=" flex items-center justify-center ">
                 <Image
                   src="/employee.png"
@@ -801,7 +806,7 @@ export default function Home() {
       {/* Mission Statement */}
       <section className="py-16 px-4">
         <div className=" flex flex-col items-center justify-center text-center">
-          <h1 className="text-5xl font-extrabold text-primary-green mb-6 relative text-center  leading-14 lg:leading-20">
+          <h1 className="text-5xl font-extrabold text-primary-green mb-14 lg:mb-10  relative text-center  leading-14 lg:leading-20">
             Your Future is Bright!
             <div className="absolute -bottom-2 left-0 w-full">
               <svg
