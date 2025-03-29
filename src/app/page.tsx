@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
+  ArrowRight,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -12,6 +13,7 @@ import {
   PhoneCall,
   X,
 } from "lucide-react";
+import { AnimatePresence, motion, useInView } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -110,23 +112,53 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Auto-advance slider
+  // Disable body scroll when mobile menu is open
   useEffect(() => {
+    if (mobileMenuOpen) {
+      // Add no-scroll class to body when mobile menu is open
+      document.body.classList.add("overflow-hidden");
+    } else {
+      // Remove no-scroll class when mobile menu is closed
+      document.body.classList.remove("overflow-hidden");
+    }
+
+    // Cleanup function to ensure scroll is enabled when component unmounts
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [mobileMenuOpen]);
+
+  // Auto-advance slider
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (isPaused) {
+      const timeout = setTimeout(() => {
+        setIsPaused(false);
+      }, 10000); // Resume auto-advance after 10 seconds
+      return () => clearTimeout(timeout);
+    }
+
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % sliderImages.length);
-    }, 5000);
+    }, 7000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isPaused]);
 
   const nextSlide = () => {
+    setIsPaused(true);
     setCurrentSlide((prev) => (prev + 1) % sliderImages.length);
   };
 
   const prevSlide = () => {
+    setIsPaused(true);
     setCurrentSlide(
       (prev) => (prev - 1 + sliderImages.length) % sliderImages.length
     );
   };
+
+  const missionRef = useRef(null);
+  const missionInView = useInView(missionRef, { once: true, amount: 0.5 });
 
   return (
     <main className=" min-h-screen flex flex-col">
@@ -193,7 +225,7 @@ export default function Home() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center">
+            <div className="hidden md:hidden lg:flex items-center">
               <div className="flex items-center">
                 {/* Schools */}
                 <div className="relative group cursor-pointer">
@@ -203,7 +235,7 @@ export default function Home() {
                     } font-medium`}
                   >
                     Schools
-                    <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5" />
                   </button>
                   <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
                     <Link
@@ -229,7 +261,7 @@ export default function Home() {
                     } font-medium`}
                   >
                     About
-                    <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5" />
                   </button>
                   <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
                     <Link
@@ -250,6 +282,18 @@ export default function Home() {
                     >
                       Facilities
                     </Link>
+                    <Link
+                      href="/program/curriculum"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Curriculum
+                    </Link>
+                    <Link
+                      href="/program/extracurricular"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Extracurricular
+                    </Link>
                   </div>
                 </div>
 
@@ -261,7 +305,7 @@ export default function Home() {
                     } font-medium`}
                   >
                     Enroll
-                    <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5" />
                   </button>
                   <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
                     <Link
@@ -286,21 +330,33 @@ export default function Home() {
                       isScrolled ? "text-primary-green-text" : "text-white"
                     } font-medium`}
                   >
-                    Program
-                    <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                    Portals
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5" />
                   </button>
                   <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
                     <Link
                       href="/program/curriculum"
                       className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
                     >
-                      Curriculum
+                      Admin portal
                     </Link>
                     <Link
                       href="/program/extracurricular"
                       className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
                     >
-                      Extracurricular
+                      Staff portal
+                    </Link>
+                    <Link
+                      href="/program/extracurricular"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Student portal
+                    </Link>
+                    <Link
+                      href="/program/extracurricular"
+                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
+                    >
+                      Parent portal
                     </Link>
                   </div>
                 </div>
@@ -313,7 +369,7 @@ export default function Home() {
                     } font-medium`}
                   >
                     Alumni
-                    <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5" />
                   </button>
                   <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
                     <Link
@@ -339,7 +395,7 @@ export default function Home() {
                     } font-medium`}
                   >
                     Careers
-                    <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5" />
                   </button>
                   <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
                     <Link
@@ -357,6 +413,16 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Check results */}
+                <Link
+                  href="#"
+                  className={`px-3 py-2 ${
+                    isScrolled ? "text-primary-green-text" : "text-white"
+                  } font-medium`}
+                >
+                  Check results
+                </Link>
+
                 {/* News */}
                 <Link
                   href="/news"
@@ -370,19 +436,19 @@ export default function Home() {
             </div>
 
             {/* Enroll Now Button - Desktop */}
-            <div className="hidden md:block">
+            <div className="hidden lg:block">
               <Link
                 href="/enroll-now"
-                className="bg-primary-green hover:bg-primary-green/90 text-white font-medium px-6 py-2 rounded-full transition-colors"
+                className="bg-primary-green hover:bg-primary-green-hover text-white font-medium px-6 py-2 rounded-full transition-colors"
               >
                 Enroll Now
               </Link>
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-3 lg:hidden">
               <button
-                className="md:hidden text-gray-600"
+                className="lg:hidden text-gray-600"
                 onClick={() => setMobileMenuOpen(true)}
               >
                 <Menu
@@ -400,8 +466,8 @@ export default function Home() {
 
       {/* Mobile Sidebar */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden">
-          <div className="fixed inset-y-0 right-0 max-w-xs w-full bg-white shadow-xl z-50 transform transition-transform">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden overflow-scroll">
+          <div className="fixed inset-y-0 right-0 max-w-xs w-full bg-white shadow-xl z-50 transform transition-transform overflow-scroll">
             <div className="p-6 flex flex-col h-full">
               <div className="flex justify-end pb-3.5">
                 <button
@@ -420,7 +486,10 @@ export default function Home() {
                 className="flex items-center pb-3.5"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Link href="/" className="text-xl font-bold flex items-center">
+                <Link
+                  href="/"
+                  className="text-xl font-bold flex items-center text-primary-green-text"
+                >
                   <Image
                     src="/treasure.png"
                     alt="Treasureland Schools"
@@ -429,10 +498,10 @@ export default function Home() {
                     className="mr-2 rounded-full bg-gray-300"
                   />
                   <div className="flex flex-col">
-                    <span className="text-gray-900 hover:text-gray-700">
+                    <span className="text-primary-green-text hover:text-gray-700">
                       TREASURE LAND
                     </span>
-                    <span className="text-gray-900 hover:text-gray-700">
+                    <span className="text-primary-green-text hover:text-gray-700">
                       MODEL SCHOOL
                     </span>
                   </div>
@@ -451,7 +520,7 @@ export default function Home() {
                 {/* Mobile Accordion Menus */}
                 <div className="border-b border-gray-200">
                   <button
-                    className="w-full px-4 py-2 text-left text-gray-800 hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
+                    className="w-full px-4 py-2 text-left text-primary-green-text hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
                     onClick={() => setSchoolsOpen(!schoolsOpen)}
                   >
                     Schools
@@ -483,7 +552,7 @@ export default function Home() {
 
                 <div className="border-b border-gray-200">
                   <button
-                    className="w-full px-4 py-2 text-left text-gray-800 hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
+                    className="w-full px-4 py-2 text-left text-primary-green-text hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
                     onClick={() => setAboutOpen(!aboutOpen)}
                   >
                     About
@@ -516,13 +585,27 @@ export default function Home() {
                       >
                         Facilities
                       </Link>
+                      <Link
+                        href="/program/curriculum"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Curriculum
+                      </Link>
+                      <Link
+                        href="/program/extracurricular"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Extracurricular
+                      </Link>
                     </div>
                   )}
                 </div>
 
                 <div className="border-b border-gray-200">
                   <button
-                    className="w-full px-4 py-2 text-left text-gray-800 hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
+                    className="w-full px-4 py-2 text-left text-primary-green-text hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
                     onClick={() => setEnrollOpen(!enrollOpen)}
                   >
                     Enroll
@@ -554,10 +637,10 @@ export default function Home() {
 
                 <div className="border-b border-gray-200">
                   <button
-                    className="w-full px-4 py-2 text-left text-gray-800 hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
+                    className="w-full px-4 py-2 text-left text-primary-green-text hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
                     onClick={() => setProgramOpen(!programOpen)}
                   >
-                    Program
+                    Portals
                     <ChevronDown
                       className={`h-4 w-4 transform transition-transform ${
                         programOpen ? "rotate-180" : ""
@@ -571,14 +654,28 @@ export default function Home() {
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        Curriculum
+                        Admin Portal
                       </Link>
                       <Link
                         href="/program/extracurricular"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        Extracurricular
+                        Staff Portal
+                      </Link>
+                      <Link
+                        href="/program/curriculum"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Student Portal
+                      </Link>
+                      <Link
+                        href="/program/extracurricular"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Parent Portal
                       </Link>
                     </div>
                   )}
@@ -586,7 +683,7 @@ export default function Home() {
 
                 <div className="border-b border-gray-200">
                   <button
-                    className="w-full px-4 py-2 text-left text-gray-800 hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
+                    className="w-full px-4 py-2 text-left text-primary-green-text hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
                     onClick={() => setAlumniOpen(!alumniOpen)}
                   >
                     Alumini
@@ -618,7 +715,7 @@ export default function Home() {
 
                 <div className="border-b border-gray-200">
                   <button
-                    className="w-full px-4 py-2 text-left text-gray-800 hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
+                    className="w-full px-4 py-2 text-left text-primary-green-text hover:bg-gray-100 rounded-md font-medium flex items-center justify-between"
                     onClick={() => setCareersOpen(!careersOpen)}
                   >
                     Careers
@@ -647,10 +744,17 @@ export default function Home() {
                     </div>
                   )}
                 </div>
+                <Link
+                  href="/news"
+                  className="px-4 py-2 text-primary-green-text hover:bg-gray-100 rounded-md font-medium"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Check Results
+                </Link>
 
                 <Link
                   href="/news"
-                  className="px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-md font-medium"
+                  className="px-4 py-2 text-primary-green-text hover:bg-gray-100 rounded-md font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   News
@@ -672,7 +776,7 @@ export default function Home() {
       )}
 
       {/* Hero Section with Slider */}
-      <section className="relative h-[55vh] md:h-[80vh] lg:h-screen ">
+      <section className="relative h-[55vh] md:h-[80vh] lg:h-[120vh] ">
         {/* Background Slider */}
         {sliderImages.map((slide, index) => (
           <div
@@ -694,47 +798,102 @@ export default function Home() {
         {/* Content */}
         <div className="relative h-full flex items-center justify-center text-white px-6 lg:px-16">
           <div className="container mx-auto">
-            <div className="text-center lg:text-left max-w-2xl lg:max-w-3xl mx-auto lg:mx-0 pt-5 lg:pt-0 ">
-              <h1 className="text-5xl md:text-6xl font-bold lg:font-bold mb-6 leading-16 lg:leading-20">
-                {sliderImages[currentSlide].title}
-              </h1>
-              <p className="text-base md:text-xl mb-8">
-                {sliderImages[currentSlide].description}
-              </p>
-              <Button className="bg-primary-green hover:bg-primary-green-hover rounded-full text-primary-foreground  text-lg px-6 py-6 l cursor-pointer">
-                Learn More
-              </Button>
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                className="text-center lg:text-left max-w-2xl lg:max-w-3xl mx-auto lg:mx-0 pt-5 lg:pt-0"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.5 }}
+              >
+                <motion.h1
+                  className="text-4xl md:text-6xl font-bold lg:font-bold mb-6 leading-10 lg:leading-20"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                >
+                  {sliderImages[currentSlide].title}
+                </motion.h1>
+                <motion.p
+                  className="text-base md:text-xl mb-8"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.5 }}
+                >
+                  {sliderImages[currentSlide].description}
+                </motion.p>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, duration: 0.5 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button className="bg-primary-green hover:bg-primary-green-hover rounded-full text-primary-foreground text-lg px-6 py-6 cursor-pointer group">
+                    <span>Learn More</span>
+                    <motion.span
+                      className="inline-block ml-2"
+                      initial={{ x: 0 }}
+                      whileHover={{ x: 5 }}
+                      transition={{ type: "spring", stiffness: 400 }}
+                    >
+                      <ArrowRight className="h-4 w-4 inline" />
+                    </motion.span>
+                  </Button>
+                </motion.div>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
         {/*End content*/}
 
         {/* Slider Controls */}
-        <button
+
+        <motion.button
           onClick={prevSlide}
           className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 p-2 rounded-full text-white hover:bg-white/20 transition-colors cursor-pointer"
           aria-label="Previous slide"
+          whileHover={{
+            scale: 1.1,
+            backgroundColor: "rgba(255, 255, 255, 0.3)",
+          }}
+          whileTap={{ scale: 0.9 }}
         >
           <ChevronLeft className="h-6 w-6" />
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           onClick={nextSlide}
           className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 p-2 rounded-full text-white hover:bg-white/20 transition-colors cursor-pointer"
           aria-label="Next slide"
+          whileHover={{
+            scale: 1.1,
+            backgroundColor: "rgba(255, 255, 255, 0.3)",
+          }}
+          whileTap={{ scale: 0.9 }}
         >
           <ChevronRight className="h-6 w-6" />
-        </button>
+        </motion.button>
 
         {/* Slide Indicators */}
-        <div className="absolute bottom-8 lg:bottom-28 left-1/2 -translate-x-1/2 flex space-x-2">
+
+        <div className="absolute bottom-8 lg:bottom-34 left-1/2 -translate-x-1/2 flex space-x-2 ">
           {sliderImages.map((_, index) => (
-            <button
+            <motion.button
               key={index}
               onClick={() => setCurrentSlide(index)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                currentSlide === index ? "bg-white w-8" : "bg-white/50"
+              className={`h-2 rounded-full transition-all cursor-pointer ${
+                currentSlide === index ? "bg-white w-8" : "bg-white/50 w-2"
               }`}
               aria-label={`Go to slide ${index + 1}`}
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 0.9 }}
+              animate={currentSlide === index ? { scale: [1, 1.1, 1] } : {}}
+              transition={{
+                duration: 1,
+                repeat: currentSlide === index ? Number.POSITIVE_INFINITY : 0,
+                repeatType: "reverse",
+              }}
             />
           ))}
         </div>
@@ -804,30 +963,54 @@ export default function Home() {
       </section>
 
       {/* Mission Statement */}
-      <section className="py-16 px-4">
-        <div className=" flex flex-col items-center justify-center text-center">
-          <h1 className="text-5xl font-extrabold text-primary-green mb-14 lg:mb-10  relative text-center  leading-14 lg:leading-20">
+      <motion.section
+        className="py-16 px-4"
+        ref={missionRef}
+        initial={{ opacity: 0 }}
+        animate={missionInView ? { opacity: 1 } : {}}
+        transition={{ duration: 0.8 }}
+      >
+        <div className="flex flex-col items-center justify-center text-center">
+          <motion.h1
+            className="text-5xl font-extrabold text-primary-green mb-14 lg:mb-10 relative text-center leading-14 lg:leading-20"
+            initial={{ opacity: 0, y: 20 }}
+            animate={missionInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6 }}
+          >
             Your Future is Bright!
-            <div className="absolute -bottom-2 left-0 w-full">
+            <motion.div
+              className="absolute -bottom-2 left-0 w-full"
+              initial={{ scaleX: 0 }}
+              animate={missionInView ? { scaleX: 1 } : {}}
+              transition={{ duration: 0.8, delay: 0.3 }}
+            >
               <svg
                 viewBox="0 0 400 20"
                 className="w-full h-4 fill-none stroke-[#0066B3] stroke-[3]"
               >
-                <path
+                <motion.path
                   d="M 0 15 Q 100 5, 200 15 Q 300 25, 400 15"
                   className="stroke-primary-green"
+                  initial={{ pathLength: 0 }}
+                  animate={missionInView ? { pathLength: 1 } : {}}
+                  transition={{ duration: 1, delay: 0.4 }}
                 />
               </svg>
-            </div>
-          </h1>
-          <p className="text-primary-green-text text-center max-w-3xl text-lg font-bold">
+            </motion.div>
+          </motion.h1>
+          <motion.p
+            className="text-primary-green-text text-center max-w-3xl text-sm leading-8 lg:leading-relaxed lg:text-lg font-bold"
+            initial={{ opacity: 0, y: 20 }}
+            animate={missionInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
             At Treasure Land, we provide students with strong academics,
             holistic and inclusive support, and rich life opportunities beyond
             the classroom so they thrive from primary through secondary
             education... and far beyond!
-          </p>
+          </motion.p>
         </div>
-      </section>
+      </motion.section>
       {/* Featured Content */}
       <Features />
       {/* Join Our Family */}

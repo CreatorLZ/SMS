@@ -6,13 +6,16 @@ const Events = () => {
   return (
     <section className="py-12 px-4 bg-gray-50">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-center mb-12">
-          <h2 className="max-w-[720px] font-bold text-primary-green text-3xl text-center leading-tight sm:text-5xl sm:leading-tight">
+        <div className="flex flex-col items-center gap-4 px-1 sm:gap-8 mb-10">
+          <h2 className="max-w-[720px] font-bold text-primary-green text-3xl  leading-tight sm:text-5xl sm:leading-tight">
             Latest News & Updates
           </h2>
+          <p className="text-md max-w-[600px] font-medium text-primary-green-text sm:text-xl text-center">
+            Check out what's been going on at Treasure Land
+          </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-hidden cursor-pointer hover:scale-105">
             <div className="h-48 relative">
               <Image
                 src="/graduation2.jpg"
@@ -21,7 +24,7 @@ const Events = () => {
                 className="object-cover"
               />
             </div>
-            <div className="p-4">
+            <div className="p-4 cursor-pointer">
               <div className="text-sm text-gray-500 mb-2">March 15, 2024</div>
               <h3 className="font-bold mb-2 ">Annual Science Fair</h3>
               <p className="text-gray-600 mb-4 line-clamp-2">
@@ -36,7 +39,7 @@ const Events = () => {
               </Link>
             </div>
           </div>
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-hidden cursor-pointer hover:scale-105">
             <div className="h-48 relative">
               <Image
                 src="/outdoor.jpg"
@@ -60,7 +63,7 @@ const Events = () => {
               </Link>
             </div>
           </div>
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-hidden cursor-pointer hover:scale-105">
             <div className="h-48 relative">
               <Image
                 src="/culture.jpg"

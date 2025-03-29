@@ -1,4 +1,3 @@
-// src/components/CurvedUnderline.tsx
 import React from "react";
 
 interface CurvedUnderlineProps {

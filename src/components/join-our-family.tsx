@@ -11,12 +11,12 @@ import CurvedUnderline from "./svg/curved-plane";
 const testimonial = {
   quote:
     "At Treasure Land School, we believe in nurturing not just academic excellence, but the whole child. Our dedicated team of educators works tirelessly to create an environment where every student can discover their unique potential and thrive.",
-  author: "Mrs. Ijewemen Lucy, Principal of Treasure Land School",
+  author: "Mrs. Ijewemen Lucy, Principal of Treasure Land Model School",
   image: "/principal.jpg",
 };
 
 const decorationVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 1, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
@@ -138,7 +138,7 @@ export default function JoinOurFamily() {
               viewport={{ once: true }}
             >
               <Button
-                className="bg-primary-green hover:bg-primary-green/90 text-white font-medium px-6 py-5 rounded-full transition-all flex items-center gap-2 group w-fit mx-auto lg:mx-0"
+                className="bg-primary-green hover:bg-primary-green-hover text-white font-medium px-6 py-5 rounded-full transition-all flex items-center gap-2 group w-fit mx-auto lg:mx-0"
                 asChild
               >
                 <Link href="#">

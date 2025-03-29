@@ -41,8 +41,8 @@ export function FeatureCard({
         return "bg-pink-500/60";
       case "amber":
         return "bg-amber-500/60";
-      case "red":
-        return "bg-red-500/60";
+      case "emrald":
+        return "bg-emerald-500/60";
       case "orange":
         return "bg-orange-500/60";
       case "yellow":
@@ -65,7 +65,7 @@ export function FeatureCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative overflow-hidden rounded-lg h-64 lg:h-72 transition-all duration-300 hover:shadow-xl group">
+      <div className="relative overflow-hidden rounded-lg h-64 lg:h-84 transition-all duration-300 hover:shadow-xl group">
         {/* Background image */}
         <Image
           src={imageSrc || "/placeholder.svg"}
@@ -78,12 +78,12 @@ export function FeatureCard({
         />
 
         {/* Permanent blackish overlay */}
-        <div className="absolute inset-0 bg-black/50 transition-all duration-300 z-10"></div>
+        <div className="absolute inset-0 bg-black/50 transition-all duration-300 z-10 bg-"></div>
 
         {/* Colored overlay that slides up from bottom */}
         <div
           className={cn(
-            "absolute inset-0 transition-all duration-500 ease-in-out transform z-20",
+            "absolute inset-0 transition-all duration-500 ease-in-out transform z-20 ",
             getOverlayClass(),
             isHovered ? "translate-y-0" : "translate-y-full"
           )}
