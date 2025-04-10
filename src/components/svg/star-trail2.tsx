@@ -27,7 +27,7 @@ const StarTrail2: React.FC<StarTrailProps> = ({ className = "" }) => {
           id="Group"
           transform="translate(0.000000, 17.000000)"
           fill="#77cc00"
-          fill-rule="nonzero"
+          fillRule="nonzero"
         >
           <g id="Group_4048" transform="translate(71.478271, 34.117000)">
             <path

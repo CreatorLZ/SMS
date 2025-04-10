@@ -1,5 +1,5 @@
 "use client";
-
+import { motion } from "framer-motion";
 import { FeatureCard } from "@/components/feature-card";
 
 const features = [
@@ -162,10 +162,34 @@ const features = [
 ];
 
 export function Features() {
+  // Container animation for staggered children
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
   return (
-    <section className="py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:px-8">
+    <section className="py-12 px-4 overflow-hidden">
+      <motion.div
+        className="max-w-6xl mx-auto"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+      >
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:px-8"
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-100px" }}
+        >
           {features.map((feature, index) => (
             <FeatureCard
               key={index}
@@ -177,8 +201,8 @@ export function Features() {
               overlayColor={feature.overlayColor}
             />
           ))}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </section>
   );
 }

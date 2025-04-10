@@ -30,7 +30,7 @@ const Call = () => {
     <section className="relative py-16 px-4 bg-gray-50 lg:h-[65vh]">
       {/* Decorative elements*/}
       <motion.div
-        className="absolute top-[65px] opacity-0 hidden lg:block lg:top-2 left-0 lg:left-10 w-16 h-16 text-primary-green lg:opacity-30  "
+        className="absolute top-[22px] opacity-0 hidden lg:block lg:top-2 left-8 lg:left-10 w-16 h-16 text-primary-green lg:opacity-30  "
         variants={decorationVariants}
         initial="hidden"
         whileInView="visible"

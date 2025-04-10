@@ -901,65 +901,165 @@ export default function Home() {
 
       {/* Quick Links */}
       <section className="px-4 z-10 mt-8 lg:relative lg:-mt-16">
-        <div className="max-w-5xl mx-auto bg-white rounded-xl lg:rounded-full shadow-none lg:shadow-lg overflow-hidden py-6 lg:py-8">
+        <motion.div
+          className="max-w-5xl mx-auto bg-white rounded-xl lg:rounded-full shadow-none lg:shadow-lg overflow-hidden py-6 lg:py-8"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{
+            duration: 0.7,
+            type: "spring",
+            stiffness: 100,
+            damping: 15,
+          }}
+        >
           <div className="flex flex-col gap-10 md:gap-20 md:flex-row">
-            <div className="flex-1 p-2 flex flex-col md:flex-row gap-3 items-center justify-center text-center md:border-r border-gray-200 pb-6 md:pb-0">
-              <div className=" flex items-center justify-center ">
+            <motion.div
+              className="flex-1 p-2 flex flex-col md:flex-row gap-3 items-center justify-center text-center md:border-r border-gray-200 pb-6 md:pb-0"
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              whileHover={{ scale: 1.05 }}
+            >
+              <motion.div
+                className="flex items-center justify-center"
+                whileHover={{
+                  rotate: [0, -5, 5, -3, 3, 0],
+                  transition: { duration: 0.5 },
+                }}
+              >
                 <Image
                   src="/useradd.png"
                   alt="Enroll Icon"
                   width={100}
                   height={100}
                 />
-              </div>
-              <div className=" flex md:flex-col items-center justify-center gap-1">
-                <h3 className="text-primary-green-text text-xl md:text-2xl font-bold ">
+              </motion.div>
+              <motion.div
+                className="flex md:flex-col items-center justify-center gap-1"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+              >
+                <motion.h3
+                  className="text-primary-green-text text-xl md:text-2xl font-bold"
+                  whileHover={{ scale: 1.05 }}
+                >
                   Enroll
-                </h3>
-                <p className="text-primary-green-text text-xl md:text-lg font-bold ">
+                </motion.h3>
+                <motion.p
+                  className="text-primary-green-text text-xl md:text-lg font-bold"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.4 }}
+                >
                   With Us
-                </p>
-              </div>
-            </div>
-            <div className="flex-1 p-2 flex flex-col md:flex-row gap-3 items-center justify-center text-center md:border-r border-gray-200 pb-6 md:pb-0">
-              <div className=" flex items-center justify-center ">
+                </motion.p>
+              </motion.div>
+            </motion.div>
+
+            <motion.div
+              className="flex-1 p-2 flex flex-col md:flex-row gap-3 items-center justify-center text-center md:border-r border-gray-200 pb-6 md:pb-0"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              whileHover={{ scale: 1.05 }}
+            >
+              <motion.div
+                className="flex items-center justify-center"
+                whileHover={{
+                  rotate: [0, -5, 5, -3, 3, 0],
+                  transition: {
+                    duration: 0.5,
+                    repeat: Infinity,
+                  },
+                }}
+              >
                 <Image
                   src="/employee.png"
                   alt="Teach Icon"
                   width={100}
                   height={100}
                 />
-              </div>
+              </motion.div>
 
-              <div className=" flex md:flex-col items-center justify-center gap-1">
-                <h3 className="text-primary-green-text text-xl md:text-2xl font-bold ">
+              <motion.div
+                className="flex md:flex-col items-center justify-center gap-1"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+              >
+                <motion.h3
+                  className="text-primary-green-text text-xl md:text-2xl font-bold"
+                  whileHover={{ scale: 1.05 }}
+                >
                   Teach
-                </h3>
-                <p className="text-primary-green-text text-xl md:text-lg font-bold ">
+                </motion.h3>
+                <motion.p
+                  className="text-primary-green-text text-xl md:text-lg font-bold"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.4 }}
+                >
                   With Us
-                </p>
-              </div>
-            </div>
-            <div className="flex-1 p-2 flex flex-col md:flex-row gap-3 items-center justify-center text-center  md:border-b-0 md:border-r border-gray-200 pb-6 md:pb-0">
-              <div className=" flex items-center justify-center ">
+                </motion.p>
+              </motion.div>
+            </motion.div>
+
+            <motion.div
+              className="flex-1 p-2 flex flex-col md:flex-row gap-3 items-center justify-center text-center md:border-b-0 md:border-r border-gray-200 pb-6 md:pb-0"
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              whileHover={{ scale: 1.05 }}
+            >
+              <motion.div
+                className="flex items-center justify-center"
+                whileHover={{
+                  rotate: [0, -5, 5, -3, 3, 0],
+                  transition: { duration: 0.5, repeat: Infinity },
+                }}
+              >
                 <Image
                   src="/graduate.png"
-                  alt="Alumini Icon"
+                  alt="Alumni Icon"
                   width={100}
                   height={100}
                 />
-              </div>
-              <div className=" flex md:flex-col items-center justify-center gap-1">
-                <h3 className="text-primary-green-text text-xl md:text-2xl font-bold ">
+              </motion.div>
+              <motion.div
+                className="flex md:flex-col items-center justify-center gap-1"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+              >
+                <motion.h3
+                  className="text-primary-green-text text-xl md:text-2xl font-bold"
+                  whileHover={{ scale: 1.05 }}
+                >
                   Alumni
-                </h3>
-                <p className="text-primary-green-text text-xl md:text-lg font-bold ">
+                </motion.h3>
+                <motion.p
+                  className="text-primary-green-text text-xl md:text-lg font-bold"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.4 }}
+                >
                   & Beyond
-                </p>
-              </div>
-            </div>
+                </motion.p>
+              </motion.div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Mission Statement */}
