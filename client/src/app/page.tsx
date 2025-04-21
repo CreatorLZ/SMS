@@ -439,7 +439,7 @@ export default function Home() {
             <div className="hidden lg:block">
               <Link
                 href="/enroll-now"
-                className="bg-primary-green hover:bg-primary-green-hover text-white font-medium px-6 py-2 rounded-full transition-colors"
+                className="bg-primary-green hover:bg-primary-green-hover text-white font-medium px-4 py-2 rounded-full transition-colors"
               >
                 Enroll Now
               </Link>

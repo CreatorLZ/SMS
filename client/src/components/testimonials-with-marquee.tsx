@@ -5,6 +5,7 @@ import {
   TestimonialAuthor,
 } from "@/components/ui/testimonial-card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface TestimonialsSectionProps {
   title: string;
@@ -51,6 +52,31 @@ export function TestimonialsSection({
     scrollTo(newIndex);
   }, [currentIndex, testimonials.length, scrollTo]);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        delayChildren: 0.3,
+      },
+    },
+  };
+
+  const titleVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 15,
+        delay: 0.1,
+      },
+    },
+  };
+
   return (
     <section
       className={cn(
@@ -60,14 +86,26 @@ export function TestimonialsSection({
       )}
     >
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 text-center sm:gap-16">
-        <div className="flex flex-col items-center gap-4 px-4 sm:gap-8">
-          <h2 className="max-w-[720px] font-bold text-primary-green text-3xl  leading-tight sm:text-5xl sm:leading-tight">
+        <motion.div
+          className="flex flex-col items-center gap-4 px-4 sm:gap-8"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={containerVariants}
+        >
+          <motion.h2
+            className="max-w-[720px] font-bold text-primary-green text-3xl  leading-tight sm:text-5xl sm:leading-tight"
+            variants={titleVariants}
+          >
             {title}
-          </h2>
-          <p className="text-md max-w-[600px] font-medium text-primary-green-text sm:text-xl">
+          </motion.h2>
+          <motion.p
+            className="text-md max-w-[600px] font-medium text-primary-green-text sm:text-xl"
+            variants={titleVariants}
+          >
             {description}
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
 
         <div className="relative w-full overflow-hidden px-4">
           <div
