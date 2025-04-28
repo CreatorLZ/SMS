@@ -1,4 +1,12 @@
 {
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "nodemon src/index.ts",
+    "build": "tsc",
+    "migrate": "knex migrate:latest",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write src/**/*.{ts,tsx}"
+  },
   "dependencies": {
     "@types/express": "^5.0.1",
     "@types/node": "^22.14.1",
