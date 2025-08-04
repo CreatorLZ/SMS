@@ -1,15 +1,6 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
-
-export interface IUser extends Document {
-  name: string;
-  email: string;
-  password: string;
-  role: "admin" | "teacher" | "student" | "parent";
-  linkedStudentIds?: string[];
-  assignedClassId?: string;
-  comparePassword(candidatePassword: string): Promise<boolean>;
-}
+import { IUser } from "../types/auth.types";
 
 const userSchema = new Schema(
   {
@@ -33,9 +24,19 @@ const userSchema = new Schema(
     },
     role: {
       type: String,
-      enum: ["admin", "teacher", "student", "parent"],
+      enum: ["superadmin", "admin", "teacher", "student", "parent"],
       required: [true, "Role is required"],
     },
+    verified: {
+      type: Boolean,
+      default: false,
+    },
+    refreshTokens: [
+      {
+        type: String,
+        select: false,
+      },
+    ],
     linkedStudentIds: [
       {
         type: Schema.Types.ObjectId,
@@ -55,15 +56,33 @@ const userSchema = new Schema(
 // Hash password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error: any) {
+    next(error);
+  }
 });
 
 // Compare password method
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
-) {
-  return await bcrypt.compare(candidatePassword, this.password);
+): Promise<boolean> {
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    return false;
+  }
 };
+
+// Remove sensitive fields when converting to JSON
+userSchema.set("toJSON", {
+  transform: function (doc: mongoose.Document, ret: any) {
+    if (ret.password) delete ret.password;
+    if (ret.refreshTokens) delete ret.refreshTokens;
+    return ret;
+  },
+});
 
 export const User = mongoose.model<IUser>("User", userSchema);
