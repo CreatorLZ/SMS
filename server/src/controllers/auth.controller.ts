@@ -218,8 +218,62 @@ export const refresh = async (req: Request, res: Response) => {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    res.json({ accessToken: newAccessToken });
+    res.json({
+      message: "Token refresh successful",
+      accessToken: newAccessToken,
+    });
   } catch (error: any) {
-    res.status(401).json({ message: "Invalid refresh token" });
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Development only route to get super admin tokens
+export const devSuperAdminLogin = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    // Only allow in development mode
+    if (process.env.NODE_ENV === "production") {
+      res.status(404).json({ message: "Route not found" });
+      return;
+    }
+
+    const superAdmin = await User.findOne({ role: "superadmin" });
+    if (!superAdmin) {
+      res.status(404).json({ message: "Super admin not found" });
+      return;
+    }
+
+    // Generate tokens
+    const accessToken = generateAccessToken(superAdmin);
+    const refreshToken = generateRefreshToken(superAdmin);
+
+    // Add refresh token to user's refreshTokens array
+    superAdmin.refreshTokens = superAdmin.refreshTokens || [];
+    superAdmin.refreshTokens.push(refreshToken);
+    await superAdmin.save();
+
+    // Set refresh token cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: false, // Since this is dev-only
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Return tokens
+    res.status(200).json({
+      message: "Dev super admin login successful",
+      accessToken,
+      user: {
+        id: superAdmin._id,
+        name: superAdmin.name,
+        email: superAdmin.email,
+        role: superAdmin.role,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
   }
 };
