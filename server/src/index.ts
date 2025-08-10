@@ -18,6 +18,8 @@ import "./models/Term";
 // Import routes
 import authRoutes from "./routes/auth.routes";
 import adminRoutes from "./routes/admin";
+import teacherRoutes from "./routes/teacher";
+import studentRoutes from "./routes/student";
 
 // Import seed utility
 import { seedSuperAdmin } from "./utils/seed";
@@ -41,6 +43,8 @@ app.use(cookieParser());
 // Mount routes
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/teacher", teacherRoutes);
+app.use("/api/student", studentRoutes);
 
 // Connect to MongoDB
 mongoose
