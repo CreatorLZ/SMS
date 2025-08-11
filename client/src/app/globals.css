@@ -48,6 +48,7 @@
   --color-primary-green: #77cc00;
   --color-primary-green-hover: #90f10a;
   --color-primary-green-text: #1e3300;
+  --color-my-custom-green: #93032e;
 }
 
 :root {
@@ -140,4 +141,9 @@
 
 .animate-marquee {
   animation: marquee 20s linear infinite;
+}
+.custom-cta-grid {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr 1fr;
+  gap: 2rem; /* Matches the Tailwind gap-x-8 */
 }

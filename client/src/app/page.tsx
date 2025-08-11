@@ -5,12 +5,23 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import {
   ArrowRight,
+  BookOpen,
+  Briefcase,
+  Building,
+  Calendar,
+  CheckSquare,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  FileText,
+  HeartHandshake,
   Mail,
   Menu,
+  Network,
   PhoneCall,
+  Settings,
+  UserCheck,
+  Users,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion, useInView } from "framer-motion";
@@ -169,7 +180,7 @@ export default function Home() {
         }`}
         style={{
           backdropFilter: isScrolled ? "none" : "blur(1px)",
-          backgroundColor: isScrolled ? "white" : "rgba(255, 255, 255, 0.1)",
+          backgroundColor: isScrolled ? "white" : "rgba(0, 0, 0, 0.2)",
         }}
       >
         {/* Top Bar */}
@@ -227,198 +238,418 @@ export default function Home() {
             {/* Desktop Navigation */}
             <div className="hidden md:hidden lg:flex items-center">
               <div className="flex items-center">
-                {/* Schools */}
+                {/* Schools (NEW MEGA-MENU) */}
                 <div className="relative group cursor-pointer">
                   <button
-                    className={`px-3 py-2 flex items-center cursor-pointer ${
+                    className={`px-3 py-2 flex items-center cursor-pointer transition-colors ${
                       isScrolled ? "text-primary-green-text" : "text-white"
-                    } font-medium`}
+                    } font-bold text-sm group-hover:text-primary-green`}
                   >
                     Schools
-                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5" />
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5 font-extrabold transition-transform duration-300 group-hover:rotate-180" />
                   </button>
-                  <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
-                    <Link
-                      href="/schools/primary"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Primary School
-                    </Link>
-                    <Link
-                      href="/schools/secondary"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Secondary School
-                    </Link>
+                  <div className="absolute left-1/2 -translate-x-1/2 mt-4 w-[800px] h-fit bg-white rounded-md shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 translate-y-[-10px] transition-all duration-300 z-50 overflow-hidden">
+                    <div className="  grid grid-cols-8 gap-x-8">
+                      <div className="col-span-4 space-y-3 h-full bg-primary-green-text py-20 px-2">
+                        <div className="flex flex-col gap-6 items-center text-center">
+                          <h1 className="font-extrabold text-white text-2xl">
+                            Join TreasureLand's Community Today
+                          </h1>
+                          <p className="text-white text-sm max-w-xs">
+                            In our small, joyful schools we support our students
+                            to thrive from kindergarten through higher
+                            education.
+                          </p>
+                          <div className="hidden lg:block ml-4">
+                            <Link
+                              href="/enroll-now"
+                              className="bg-white hover:bg-primary-green-hover hover:text-white text-primary-green-text font-bold text-sm px-5 py-3 rounded-full transition-colors"
+                            >
+                              Enroll Now
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Column 1: primary schls */}
+                      <div className="col-span-2 space-y-3 py-20 px-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                          <h3 className="font-bold text-xs text-text-primary-green-text tracking-wider uppercase">
+                            Primary schools
+                          </h3>
+                        </div>
+                        <div className="space-y-2 ">
+                          <Link
+                            href="#"
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            <span className="text-sm">.</span>
+                            <span className="font-bold text-sm text-primary-green-text">
+                              Lebbi Okitipupa ondo state
+                            </span>
+                          </Link>
+                          <Link
+                            href="#"
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            <span className="text-sm">.</span>
+                            <span className="font-bold text-sm text-primary-green-text">
+                              Ore road Okitipupa ondo state
+                            </span>
+                          </Link>
+                        </div>
+                      </div>
+
+                      {/* Column 2: secondary schls */}
+                      <div className="col-span-2 space-y-3 py-20 px-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                          <h3 className="font-bold text-xs text-text-primary-green-text tracking-wider uppercase">
+                            Secondary schools
+                          </h3>
+                        </div>
+                        <div className="space-y-2">
+                          <Link
+                            href="#"
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            <span className="text-sm">.</span>
+                            <span className="font-bold text-sm text-primary-green-text">
+                              Lebbi Okitipupa ondo state
+                            </span>
+                          </Link>
+                          <Link
+                            href="#"
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            <span className="text-sm">.</span>
+                            <span className="font-bold text-sm text-primary-green-text">
+                              Ore road Okitipupa ondo state
+                            </span>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* About */}
+                {/* About (MEGA-MENU) */}
                 <div className="relative group cursor-pointer">
                   <button
-                    className={`px-3 py-2 flex items-center cursor-pointer ${
+                    className={`px-3 py-2 flex items-center cursor-pointer transition-colors ${
                       isScrolled ? "text-primary-green-text" : "text-white"
-                    } font-medium`}
+                    } font-bold text-sm group-hover:text-primary-green`}
                   >
                     About
-                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5" />
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5 font-extrabold transition-transform duration-300 group-hover:rotate-180" />
                   </button>
-                  <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
-                    <Link
-                      href="/about"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Our Story
-                    </Link>
-                    <Link
-                      href="/about/team"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Our Team
-                    </Link>
-                    <Link
-                      href="/about/facilities"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Facilities
-                    </Link>
-                    <Link
-                      href="/program/curriculum"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Curriculum
-                    </Link>
-                    <Link
-                      href="/program/extracurricular"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Extracurricular
-                    </Link>
+                  <div className="absolute left-1/2 -translate-x-1/2 mt-4 w-[700px] bg-white rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 translate-y-[-10px] transition-all duration-300 z-50 overflow-hidden">
+                    <div className=" p-6 flex gap-8">
+                      {/* Left side: Image Links */}
+                      <div className="w-1/2 grid grid-cols-2 gap-4">
+                        <Link
+                          href="/about"
+                          className="block p-3 rounded-lg hover:bg-gray-50 group"
+                        >
+                          <Image
+                            src="/outside.jpg" // Placeholder image
+                            alt="About Us"
+                            width={200}
+                            height={120}
+                            className="rounded-md object-cover w-full h-24 mb-3"
+                          />
+                          <h3 className="font-bold text-primary-green-text group-hover:text-primary-green">
+                            About Us
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            Learn more about Treasure Land.
+                          </p>
+                        </Link>
+                        <Link
+                          href="/about#mission" // Assumes a mission section on the about page
+                          className="block p-3 rounded-lg hover:bg-gray-50 group"
+                        >
+                          <Image
+                            src="/boy.jpg" // Placeholder image
+                            alt="Our Mission"
+                            width={200}
+                            height={120}
+                            className="rounded-md object-cover w-full h-24 mb-3"
+                          />
+                          <h3 className="font-bold text-primary-green-text group-hover:text-primary-green">
+                            Mission & Vision
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            What guides our work.
+                          </p>
+                        </Link>
+                      </div>
+
+                      {/* Right side: Text Links */}
+                      <div className="w-1/2 flex justify-around">
+                        <div className="flex flex-col space-y-3">
+                          <Link
+                            href="/about/impact"
+                            className="block text-sm text-primary-green-text hover:text-primary-green font-medium"
+                          >
+                            Our Impact
+                          </Link>
+                          <Link
+                            href="/about/leadership"
+                            className="block text-sm text-primary-green-text hover:text-primary-green font-medium"
+                          >
+                            Our Leadership
+                          </Link>
+                          <Link
+                            href="/about/team"
+                            className="block text-sm text-primary-green-text hover:text-primary-green font-medium"
+                          >
+                            Discover Our Staff
+                          </Link>
+                          <Link
+                            href="/program/curriculum"
+                            className="block text-sm text-primary-green-text hover:text-primary-green font-medium"
+                          >
+                            Curriculum
+                          </Link>
+                          <Link
+                            href="/about/facilities"
+                            className="block text-sm text-primary-green-text hover:text-primary-green font-medium"
+                          >
+                            Facilities
+                          </Link>
+                        </div>
+                        <div className="flex flex-col space-y-3">
+                          <Link
+                            href="/program/extracurricular"
+                            className="block text-sm text-primary-green-text hover:text-primary-green font-medium"
+                          >
+                            Extracurricular
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Enroll */}
+                {/* Enroll (NEW Guided Menu) */}
                 <div className="relative group">
                   <button
-                    className={`px-3 py-2 flex items-center cursor-pointer ${
+                    className={`px-3 py-2 flex items-center cursor-pointer transition-colors ${
                       isScrolled ? "text-primary-green-text" : "text-white"
-                    } font-medium`}
+                    } font-bold text-sm group-hover:text-primary-green`}
                   >
                     Enroll
-                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5" />
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5 font-extrabold transition-transform duration-300 group-hover:rotate-180" />
                   </button>
-                  <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
-                    <Link
-                      href="/enroll/process"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Enrollment Process
-                    </Link>
-                    <Link
-                      href="/enroll/requirements"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Requirements
-                    </Link>
+                  <div className="absolute left-0 mt-4 w-72 bg-white rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 translate-y-[-10px] transition-all duration-300 z-50 overflow-hidden">
+                    <div className="p-2">
+                      <div className="p-2 font-bold text-primary-green-text">
+                        Become a Student
+                      </div>
+                      <p className="px-4 pb-2 text-xs text-gray-500">
+                        Follow these steps to join our family.
+                      </p>
+                      <Link
+                        href="/enroll/process"
+                        className="flex items-start gap-3 px-4 py-3 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <FileText className="h-8 w-8 text-primary-green flex-shrink-0 mt-1" />
+                        <div>
+                          <h3 className="font-semibold text-primary-green-text">
+                            Enrollment Process
+                          </h3>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Learn about the steps to apply.
+                          </p>
+                        </div>
+                      </Link>
+                      <Link
+                        href="/enroll/requirements"
+                        className="flex items-start gap-3 px-4 py-3 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <CheckSquare className="h-8 w-8 text-primary-green flex-shrink-0 mt-1" />
+                        <div>
+                          <h3 className="font-semibold text-primary-green-text">
+                            Requirements
+                          </h3>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Check the admission criteria.
+                          </p>
+                        </div>
+                      </Link>
+                      <div className="p-2 mt-2">
+                        <Link
+                          href="/enroll-now"
+                          className="w-full block text-center bg-primary-green hover:bg-primary-green-hover text-white font-medium px-4 py-3 rounded-lg transition-colors"
+                        >
+                          Apply Now
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Program */}
+                {/* Portals (NEW Role-Based Menu) */}
                 <div className="relative group">
                   <button
-                    className={`px-3 py-2 flex items-center cursor-pointer ${
+                    className={`px-3 py-2 flex items-center cursor-pointer transition-colors ${
                       isScrolled ? "text-primary-green-text" : "text-white"
-                    } font-medium`}
+                    } font-bold text-sm group-hover:text-primary-green`}
                   >
                     Portals
-                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5" />
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5 font-extrabold transition-transform duration-300 group-hover:rotate-180" />
                   </button>
-                  <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
-                    <Link
-                      href="/program/curriculum"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Admin portal
-                    </Link>
-                    <Link
-                      href="/program/extracurricular"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Staff portal
-                    </Link>
-                    <Link
-                      href="/program/extracurricular"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Student portal
-                    </Link>
-                    <Link
-                      href="/program/extracurricular"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Parent portal
-                    </Link>
+                  <div className="absolute left-0 mt-4 w-64 bg-white rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 translate-y-[-10px] transition-all duration-300 z-50 overflow-hidden">
+                    <div className="p-2 ">
+                      <div className="grid grid-cols-2 gap-2">
+                        <Link
+                          href="#"
+                          className="flex flex-col items-center justify-center p-3 rounded-lg hover:bg-gray-50 text-center"
+                        >
+                          <Users className="h-7 w-7 text-primary-green mb-1" />
+                          <span className="font-semibold text-sm text-primary-green-text">
+                            Parent
+                          </span>
+                        </Link>
+                        <Link
+                          href="#"
+                          className="flex flex-col items-center justify-center p-3 rounded-lg hover:bg-gray-50 text-center"
+                        >
+                          <BookOpen className="h-7 w-7 text-primary-green mb-1" />
+                          <span className="font-semibold text-sm text-primary-green-text">
+                            Student
+                          </span>
+                        </Link>
+                        <Link
+                          href="#"
+                          className="flex flex-col items-center justify-center p-3 rounded-lg hover:bg-gray-50 text-center"
+                        >
+                          <Briefcase className="h-7 w-7 text-primary-green mb-1" />
+                          <span className="font-semibold text-sm text-primary-green-text">
+                            Staff
+                          </span>
+                        </Link>
+                        <Link
+                          href="#"
+                          className="flex flex-col items-center justify-center p-3 rounded-lg hover:bg-gray-50 text-center"
+                        >
+                          <Settings className="h-7 w-7 text-primary-green mb-1" />
+                          <span className="font-semibold text-sm text-primary-green-text">
+                            Admin
+                          </span>
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Alumni */}
+                {/* Alumni (NEW Community Menu) */}
                 <div className="relative group">
                   <button
-                    className={`px-3 py-2 flex items-center cursor-pointer ${
+                    className={`px-3 py-2 flex items-center cursor-pointer transition-colors ${
                       isScrolled ? "text-primary-green-text" : "text-white"
-                    } font-medium`}
+                    } font-bold text-sm group-hover:text-primary-green`}
                   >
                     Alumni
-                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5" />
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5 font-extrabold transition-transform duration-300 group-hover:rotate-180" />
                   </button>
-                  <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
-                    <Link
-                      href="/alumni/network"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Alumni Network
-                    </Link>
-                    <Link
-                      href="/alumni/events"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Alumni Events
-                    </Link>
+                  <div className="absolute left-0 mt-4 w-72 bg-white rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 translate-y-[-10px] transition-all duration-300 z-50 overflow-hidden">
+                    <div className="p-2 border-t-2 border-primary-green">
+                      <Link
+                        href="/alumni/network"
+                        className="flex items-start gap-3 px-4 py-3 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <Network className="h-8 w-8 text-primary-green flex-shrink-0 mt-1" />
+                        <div>
+                          <h3 className="font-semibold text-primary-green-text">
+                            Alumni Network
+                          </h3>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Reconnect with classmates.
+                          </p>
+                        </div>
+                      </Link>
+                      <Link
+                        href="/alumni/events"
+                        className="flex items-start gap-3 px-4 py-3 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <Calendar className="h-8 w-8 text-primary-green flex-shrink-0 mt-1" />
+                        <div>
+                          <h3 className="font-semibold text-primary-green-text">
+                            Events
+                          </h3>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Join our upcoming gatherings.
+                          </p>
+                        </div>
+                      </Link>
+                      <div className="border-t my-1"></div>
+                      <Link
+                        href="#"
+                        className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-primary-green hover:bg-gray-50 transition-colors font-semibold"
+                      >
+                        <HeartHandshake className="h-5 w-5" />
+                        <span>Share Your Story</span>
+                      </Link>
+                    </div>
                   </div>
                 </div>
 
-                {/* Careers */}
+                {/* Careers (NEW Opportunity Menu) */}
                 <div className="relative group">
                   <button
-                    className={`px-3 py-2 flex items-center cursor-pointer ${
+                    className={`px-3 py-2 flex items-center cursor-pointer transition-colors ${
                       isScrolled ? "text-primary-green-text" : "text-white"
-                    } font-medium`}
+                    } font-bold text-sm group-hover:text-primary-green`}
                   >
                     Careers
-                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5" />
+                    <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5 font-extrabold transition-transform duration-300 group-hover:rotate-180" />
                   </button>
-                  <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border-t-2 border-primary-green">
-                    <Link
-                      href="/careers/teaching"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Teaching Positions
-                    </Link>
-                    <Link
-                      href="/careers/administrative"
-                      className="block px-4 py-2 text-sm text-primary-green-text hover:bg-gray-100"
-                    >
-                      Administrative Roles
-                    </Link>
+                  <div className="absolute left-1/2 -translate-x-1/2 mt-4 w-80 bg-white rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 translate-y-[-10px] transition-all duration-300 z-50 overflow-hidden">
+                    <div className="p-2 border-t-2 border-primary-green">
+                      <div className="p-2 font-bold text-primary-green-text text-center">
+                        Join Our Team
+                      </div>
+                      <p className="px-4 pb-2 text-xs text-gray-500 text-center">
+                        Help shape the future of our students.
+                      </p>
+                      <div className="flex gap-2 p-2">
+                        <Link
+                          href="/careers/teaching"
+                          className="w-1/2 p-3 flex flex-col items-center text-center rounded-lg hover:bg-gray-50"
+                        >
+                          <UserCheck className="h-7 w-7 text-primary-green mb-1" />
+                          <h3 className="font-semibold text-sm text-primary-green-text">
+                            Teaching
+                          </h3>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Inspire in the classroom.
+                          </p>
+                        </Link>
+                        <Link
+                          href="/careers/administrative"
+                          className="w-1/2 p-3 flex flex-col items-center text-center rounded-lg hover:bg-gray-50"
+                        >
+                          <Building className="h-7 w-7 text-primary-green mb-1" />
+                          <h3 className="font-semibold text-sm text-primary-green-text">
+                            Admin Roles
+                          </h3>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Support our school's mission.
+                          </p>
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Check results */}
                 <Link
                   href="#"
-                  className={`px-3 py-2 ${
+                  className={`px-3 py-2 flex items-center cursor-pointer transition-colors ${
                     isScrolled ? "text-primary-green-text" : "text-white"
-                  } font-medium`}
+                  } font-bold text-sm hover:text-primary-green`}
                 >
                   Check results
                 </Link>
@@ -426,23 +657,22 @@ export default function Home() {
                 {/* News */}
                 <Link
                   href="/news"
-                  className={`px-3 py-2 ${
+                  className={`px-3 py-2 flex items-center cursor-pointer transition-colors ${
                     isScrolled ? "text-primary-green-text" : "text-white"
-                  } font-medium`}
+                  } font-bold text-sm hover:text-primary-green`}
                 >
                   News
                 </Link>
+                {/* Enroll Now Button - Desktop */}
+                <div className="hidden lg:block ml-4">
+                  <Link
+                    href="/enroll-now"
+                    className="bg-primary-green hover:bg-primary-green-hover text-white font-bold text-sm px-5 py-3 rounded-full transition-colors"
+                  >
+                    Enroll Now
+                  </Link>
+                </div>
               </div>
-            </div>
-
-            {/* Enroll Now Button - Desktop */}
-            <div className="hidden lg:block">
-              <Link
-                href="/enroll-now"
-                className="bg-primary-green hover:bg-primary-green-hover text-white font-medium px-4 py-2 rounded-full transition-colors"
-              >
-                Enroll Now
-              </Link>
             </div>
 
             {/* Mobile Menu Button */}
