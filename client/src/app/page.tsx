@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import {
   ArrowRight,
+  Award,
   BookOpen,
   Briefcase,
   Building,
@@ -14,15 +15,19 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  GraduationCap,
   HeartHandshake,
   Mail,
+  MapPin,
   Menu,
   Network,
   PhoneCall,
   Settings,
+  Target,
   UserCheck,
   Users,
   X,
+  Zap,
 } from "lucide-react";
 import { AnimatePresence, motion, useInView } from "framer-motion";
 
@@ -105,8 +110,9 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [aboutOpen, setAboutOpen] = useState(false);
+  // Removed aboutOpen state as we're using hover
   const [schoolsOpen, setSchoolsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [programOpen, setProgramOpen] = useState(false);
   const [alumniOpen, setAlumniOpen] = useState(false);
   const [careersOpen, setCareersOpen] = useState(false);
@@ -239,7 +245,7 @@ export default function Home() {
             <div className="hidden md:hidden lg:flex items-center">
               <div className="flex items-center">
                 {/* Schools (NEW MEGA-MENU) */}
-                <div className="relative group cursor-pointer">
+                <div className="relative group">
                   <button
                     className={`px-3 py-2 flex items-center cursor-pointer transition-colors ${
                       isScrolled ? "text-primary-green-text" : "text-white"
@@ -248,85 +254,148 @@ export default function Home() {
                     Schools
                     <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5 font-extrabold transition-transform duration-300 group-hover:rotate-180" />
                   </button>
-                  <div className="absolute left-1/2 -translate-x-1/2 mt-4 w-[800px] h-fit bg-white rounded-md shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 translate-y-[-10px] transition-all duration-300 z-50 overflow-hidden">
-                    <div className="  grid grid-cols-8 gap-x-8">
-                      <div className="col-span-4 space-y-3 h-full bg-primary-green-text py-20 px-2">
-                        <div className="flex flex-col gap-6 items-center text-center">
-                          <h1 className="font-extrabold text-white text-2xl">
-                            Join TreasureLand's Community Today
-                          </h1>
-                          <p className="text-white text-sm max-w-xs">
+
+                  {/* Modern Dropdown Panel */}
+                  <div className="absolute left-1/2 -translate-x-1/2 mt-4 w-[900px] bg-white rounded-2xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 translate-y-2 transition-all duration-300 z-50 overflow-hidden">
+                    <div className="grid grid-cols-12 min-h-[400px]">
+                      {/* Left Promotional Section */}
+                      <div className="col-span-5 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 p-8 flex flex-col justify-center relative overflow-hidden">
+                        {/* Background Pattern */}
+                        <div className="absolute inset-0 opacity-10">
+                          <div className="absolute top-4 right-4 w-32 h-32 border border-white/20 rounded-full"></div>
+                          <div className="absolute bottom-8 left-8 w-24 h-24 border border-white/20 rounded-full"></div>
+                          <div className="absolute top-1/2 left-1/2 w-40 h-40 border border-white/10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+                        </div>
+
+                        <div className="relative z-10 text-center">
+                          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-6 backdrop-blur-sm">
+                            <GraduationCap className="h-8 w-8 text-white" />
+                          </div>
+
+                          <h3 className="text-2xl font-bold text-white mb-4 leading-tight">
+                            Join TreasureLand's
+                            <br />
+                            Community Today
+                          </h3>
+
+                          <p className="text-emerald-100 text-sm leading-relaxed mb-8 max-w-xs mx-auto">
                             In our small, joyful schools we support our students
                             to thrive from kindergarten through higher
                             education.
                           </p>
-                          <div className="hidden lg:block ml-4">
-                            <Link
-                              href="/enroll-now"
-                              className="bg-white hover:bg-primary-green-hover hover:text-white text-primary-green-text font-bold text-sm px-5 py-3 rounded-full transition-colors"
-                            >
-                              Enroll Now
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                      {/* Column 1: primary schls */}
-                      <div className="col-span-2 space-y-3 py-20 px-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                          <h3 className="font-bold text-xs text-text-primary-green-text tracking-wider uppercase">
-                            Primary schools
-                          </h3>
-                        </div>
-                        <div className="space-y-2 ">
+
                           <Link
-                            href="#"
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                            href="/enroll-now"
+                            className="inline-flex items-center gap-2 bg-white text-emerald-700 font-semibold px-6 py-3 rounded-full hover:bg-emerald-50 hover:scale-105 transition-all duration-200 shadow-lg"
                           >
-                            <span className="text-sm">.</span>
-                            <span className="font-bold text-sm text-primary-green-text">
-                              Lebbi Okitipupa ondo state
-                            </span>
-                          </Link>
-                          <Link
-                            href="#"
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            <span className="text-sm">.</span>
-                            <span className="font-bold text-sm text-primary-green-text">
-                              Ore road Okitipupa ondo state
-                            </span>
+                            <span>Enroll Now</span>
+                            <ArrowRight className="h-4 w-4" />
                           </Link>
                         </div>
                       </div>
 
-                      {/* Column 2: secondary schls */}
-                      <div className="col-span-2 space-y-3 py-20 px-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                          <h3 className="font-bold text-xs text-text-primary-green-text tracking-wider uppercase">
-                            Secondary schools
-                          </h3>
-                        </div>
-                        <div className="space-y-2">
-                          <Link
-                            href="#"
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            <span className="text-sm">.</span>
-                            <span className="font-bold text-sm text-primary-green-text">
-                              Lebbi Okitipupa ondo state
-                            </span>
-                          </Link>
-                          <Link
-                            href="#"
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            <span className="text-sm">.</span>
-                            <span className="font-bold text-sm text-primary-green-text">
-                              Ore road Okitipupa ondo state
-                            </span>
-                          </Link>
+                      {/* Right Content Section */}
+                      <div className="col-span-7 p-8">
+                        <div className="grid grid-cols-2 gap-8 h-full">
+                          {/* Primary Schools Column */}
+                          <div className="space-y-6">
+                            <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                              <div className="flex items-center justify-center w-8 h-8 bg-emerald-100 rounded-lg">
+                                <Users className="h-4 w-4 text-emerald-600" />
+                              </div>
+                              <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wider">
+                                Primary Schools
+                              </h4>
+                            </div>
+
+                            <div className="space-y-3">
+                              <Link
+                                href="#"
+                                className="group/item flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                              >
+                                <div className="flex items-center justify-center w-6 h-6 bg-emerald-100 rounded-lg mt-0.5 group-hover/item:bg-emerald-200 transition-colors">
+                                  <MapPin className="h-3 w-3 text-emerald-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-900 text-sm group-hover/item:text-emerald-700 transition-colors">
+                                    Lebbi Campus
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Okitipupa, Ondo State
+                                  </p>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-gray-400 opacity-0 group-hover/item:opacity-100 transition-all duration-200 group-hover/item:translate-x-1" />
+                              </Link>
+
+                              <Link
+                                href="#"
+                                className="group/item flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                              >
+                                <div className="flex items-center justify-center w-6 h-6 bg-emerald-100 rounded-lg mt-0.5 group-hover/item:bg-emerald-200 transition-colors">
+                                  <MapPin className="h-3 w-3 text-emerald-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-900 text-sm group-hover/item:text-emerald-700 transition-colors">
+                                    Ore Road Campus
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Okitipupa, Ondo State
+                                  </p>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-gray-400 opacity-0 group-hover/item:opacity-100 transition-all duration-200 group-hover/item:translate-x-1" />
+                              </Link>
+                            </div>
+                          </div>
+
+                          {/* Secondary Schools Column */}
+                          <div className="space-y-6">
+                            <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                              <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                                <GraduationCap className="h-4 w-4 text-blue-600" />
+                              </div>
+                              <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wider">
+                                Secondary Schools
+                              </h4>
+                            </div>
+
+                            <div className="space-y-3">
+                              <Link
+                                href="#"
+                                className="group/item flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                              >
+                                <div className="flex items-center justify-center w-6 h-6 bg-blue-100 rounded-lg mt-0.5 group-hover/item:bg-blue-200 transition-colors">
+                                  <MapPin className="h-3 w-3 text-blue-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-900 text-sm group-hover/item:text-blue-700 transition-colors">
+                                    Lebbi Campus
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Okitipupa, Ondo State
+                                  </p>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-gray-400 opacity-0 group-hover/item:opacity-100 transition-all duration-200 group-hover/item:translate-x-1" />
+                              </Link>
+
+                              <Link
+                                href="#"
+                                className="group/item flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                              >
+                                <div className="flex items-center justify-center w-6 h-6 bg-blue-100 rounded-lg mt-0.5 group-hover/item:bg-blue-200 transition-colors">
+                                  <MapPin className="h-3 w-3 text-blue-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-900 text-sm group-hover/item:text-blue-700 transition-colors">
+                                    Ore Road Campus
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Okitipupa, Ondo State
+                                  </p>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-gray-400 opacity-0 group-hover/item:opacity-100 transition-all duration-200 group-hover/item:translate-x-1" />
+                              </Link>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -343,89 +412,180 @@ export default function Home() {
                     About
                     <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5 font-extrabold transition-transform duration-300 group-hover:rotate-180" />
                   </button>
-                  <div className="absolute left-1/2 -translate-x-1/2 mt-4 w-[700px] bg-white rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 translate-y-[-10px] transition-all duration-300 z-50 overflow-hidden">
-                    <div className=" p-6 flex gap-8">
-                      {/* Left side: Image Links */}
-                      <div className="w-1/2 grid grid-cols-2 gap-4">
-                        <Link
-                          href="/about"
-                          className="block p-3 rounded-lg hover:bg-gray-50 group"
-                        >
-                          <Image
-                            src="/outside.jpg" // Placeholder image
-                            alt="About Us"
-                            width={200}
-                            height={120}
-                            className="rounded-md object-cover w-full h-24 mb-3"
-                          />
-                          <h3 className="font-bold text-primary-green-text group-hover:text-primary-green">
-                            About Us
-                          </h3>
-                          <p className="text-xs text-gray-500">
-                            Learn more about Treasure Land.
-                          </p>
-                        </Link>
-                        <Link
-                          href="/about#mission" // Assumes a mission section on the about page
-                          className="block p-3 rounded-lg hover:bg-gray-50 group"
-                        >
-                          <Image
-                            src="/boy.jpg" // Placeholder image
-                            alt="Our Mission"
-                            width={200}
-                            height={120}
-                            className="rounded-md object-cover w-full h-24 mb-3"
-                          />
-                          <h3 className="font-bold text-primary-green-text group-hover:text-primary-green">
-                            Mission & Vision
-                          </h3>
-                          <p className="text-xs text-gray-500">
-                            What guides our work.
-                          </p>
-                        </Link>
-                      </div>
 
-                      {/* Right side: Text Links */}
-                      <div className="w-1/2 flex justify-around">
-                        <div className="flex flex-col space-y-3">
-                          <Link
-                            href="/about/impact"
-                            className="block text-sm text-primary-green-text hover:text-primary-green font-medium"
-                          >
-                            Our Impact
-                          </Link>
-                          <Link
-                            href="/about/leadership"
-                            className="block text-sm text-primary-green-text hover:text-primary-green font-medium"
-                          >
-                            Our Leadership
-                          </Link>
-                          <Link
-                            href="/about/team"
-                            className="block text-sm text-primary-green-text hover:text-primary-green font-medium"
-                          >
-                            Discover Our Staff
-                          </Link>
-                          <Link
-                            href="/program/curriculum"
-                            className="block text-sm text-primary-green-text hover:text-primary-green font-medium"
-                          >
-                            Curriculum
-                          </Link>
-                          <Link
-                            href="/about/facilities"
-                            className="block text-sm text-primary-green-text hover:text-primary-green font-medium"
-                          >
-                            Facilities
-                          </Link>
+                  {/* Dropdown Panel */}
+                  <div className="absolute left-1/2 -translate-x-1/2 mt-4 w-[1000px] bg-white rounded-2xl shadow-2xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-[-10px] group-hover:translate-y-0 transition-all duration-300 z-50 overflow-hidden">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-white to-teal-50/30"></div>
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-emerald-100/20 to-transparent rounded-full -translate-y-32 translate-x-32"></div>
+
+                    <div className="relative p-8">
+                      <div className="flex gap-8">
+                        {/* Left Side: Featured Cards */}
+                        <div className="w-1/2">
+                          <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center tracking-widest">
+                            {/* <Target className="h-5 w-5 mr-2 text-emerald-600" /> */}
+                            Discover TreasureLand
+                          </h3>
+
+                          <div className="flex gap-4">
+                            <Link
+                              href="/about"
+                              className="group block p-4 rounded-xl bg-white/80 backdrop-blur-sm border border-slate-100 hover:border-emerald-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex-1"
+                            >
+                              <div className="relative overflow-hidden rounded-lg mb-3 w-52">
+                                <Image
+                                  src="/outside.jpg"
+                                  alt="About Us"
+                                  width={200}
+                                  height={100}
+                                  className="w-52 h-52 object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                              </div>
+                              <h4 className="font-bold text-slate-800 group-hover:text-emerald-600 transition-colors duration-300 mb-1 text-sm">
+                                About Us
+                              </h4>
+                              <p className="text-xs text-slate-600 leading-relaxed">
+                                Learn more about Bright Star Schools.
+                              </p>
+                            </Link>
+
+                            <Link
+                              href="/about#mission"
+                              className="group block p-4 rounded-xl bg-white/80 backdrop-blur-sm border border-slate-100 hover:border-emerald-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex-1"
+                            >
+                              <div className="relative overflow-hidden rounded-lg mb-3 w-52">
+                                <Image
+                                  src="/boy.jpg"
+                                  alt="Our Mission"
+                                  width={200}
+                                  height={100}
+                                  className="w-full h-52 object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                              </div>
+                              <h4 className="font-bold text-slate-800 group-hover:text-emerald-600 transition-colors duration-300 mb-1 text-sm">
+                                Mission, Vision, Values
+                              </h4>
+                              <p className="text-xs text-slate-600 leading-relaxed">
+                                What guides our work.
+                              </p>
+                            </Link>
+                          </div>
                         </div>
-                        <div className="flex flex-col space-y-3">
-                          <Link
-                            href="/program/extracurricular"
-                            className="block text-sm text-primary-green-text hover:text-primary-green font-medium"
-                          >
-                            Extracurricular
-                          </Link>
+
+                        {/* Right Side: Quick Links */}
+                        <div className="w-1/2">
+                          {/* <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center">
+                            <BookOpen className="h-5 w-5 mr-2 text-emerald-600" />
+                            Quick Links
+                          </h3> */}
+
+                          <div className="grid grid-cols-2 gap-3 mt-14 pl-6">
+                            <div>
+                              <Link
+                                href="#"
+                                className="group/item flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                              >
+                                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 group-hover:bg-emerald-200 transition-colors duration-300 mr-2">
+                                  <Award className="h-3.5 w-3.5 text-emerald-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <span className="font-medium text-slate-700 group-hover:text-emerald-600 transition-colors duration-300 text-sm leading-tight">
+                                    Our Impact
+                                  </span>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-gray-400 opacity-0 group-hover/item:opacity-100 transition-all duration-200 group-hover/item:translate-x-1" />
+                              </Link>
+                              <div className="h-px bg-gray-200 w-full my-1" />
+                            </div>
+                            <div>
+                              <Link
+                                href="#"
+                                className="group/item flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                              >
+                                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 group-hover:bg-emerald-200 transition-colors duration-300 mr-2">
+                                  <Users className="h-3.5 w-3.5 text-emerald-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <span className="font-medium text-slate-700 group-hover:text-emerald-600 transition-colors duration-300 text-sm leading-tight">
+                                    Our Leadership
+                                  </span>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-gray-400 opacity-0 group-hover/item:opacity-100 transition-all duration-200 group-hover/item:translate-x-1" />
+                              </Link>
+                              <div className="h-px bg-gray-200 w-full my-1" />
+                            </div>
+                            <div>
+                              <Link
+                                href="#"
+                                className="group/item flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                              >
+                                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 group-hover:bg-emerald-200 transition-colors duration-300 mr-2">
+                                  <Users className="h-3.5 w-3.5 text-emerald-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <span className="font-medium text-slate-700 group-hover:text-emerald-600 transition-colors duration-300 text-sm leading-tight">
+                                    Our Staff
+                                  </span>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-gray-400 opacity-0 group-hover/item:opacity-100 transition-all duration-200 group-hover/item:translate-x-1" />
+                              </Link>
+                              <div className="h-px bg-gray-200 w-full my-1" />
+                            </div>
+                            <div>
+                              <Link
+                                href="#"
+                                className="group/item flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                              >
+                                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 group-hover:bg-emerald-200 transition-colors duration-300 mr-2">
+                                  <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <span className="font-medium text-slate-700 group-hover:text-emerald-600 transition-colors duration-300 text-sm leading-tight">
+                                    Curriculum
+                                  </span>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-gray-400 opacity-0 group-hover/item:opacity-100 transition-all duration-200 group-hover/item:translate-x-1" />
+                              </Link>
+                              <div className="h-px bg-gray-200 w-full my-1" />
+                            </div>
+                            <div>
+                              <Link
+                                href="#"
+                                className="group/item flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                              >
+                                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 group-hover:bg-emerald-200 transition-colors duration-300 mr-2">
+                                  <Building className="h-3.5 w-3.5 text-emerald-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <span className="font-medium text-slate-700 group-hover:text-emerald-600 transition-colors duration-300 text-sm leading-tight">
+                                    Facilities
+                                  </span>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-gray-400 opacity-0 group-hover/item:opacity-100 transition-all duration-200 group-hover/item:translate-x-1" />
+                              </Link>
+                              <div className="h-px bg-gray-200 w-full my-1" />
+                            </div>
+                            <div>
+                              <Link
+                                href="#"
+                                className="group/item flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                              >
+                                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 group-hover:bg-emerald-200 transition-colors duration-300 mr-2">
+                                  <Zap className="h-3.5 w-3.5 text-emerald-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <span className="font-medium text-slate-700 group-hover:text-emerald-600 transition-colors duration-300 text-sm leading-tight">
+                                    Extracurricular
+                                  </span>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-gray-400 opacity-0 group-hover/item:opacity-100 transition-all duration-200 group-hover/item:translate-x-1" />
+                              </Link>
+                              <div className="h-px bg-gray-200 w-full my-1" />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1060,7 +1220,7 @@ export default function Home() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Button className="bg-primary-green hover:bg-primary-green-hover rounded-full text-primary-foreground text-lg px-6 py-6 cursor-pointer group">
+                  <Button className="bg-primary-green hover:bg-primary-green-hover rounded-full text-primary-foreground text-sm font-bold px-6 py-6 cursor-pointer group">
                     <span>Learn More</span>
                     <motion.span
                       className="inline-block ml-2"
