@@ -602,49 +602,115 @@ export default function Home() {
                     Enroll
                     <ChevronDown className="h-4 w-4 ml-1 opacity-70 mt-1.5 font-extrabold transition-transform duration-300 group-hover:rotate-180" />
                   </button>
-                  <div className="absolute left-0 mt-4 w-72 bg-white rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 translate-y-[-10px] transition-all duration-300 z-50 overflow-hidden">
-                    <div className="p-2">
-                      <div className="p-2 font-bold text-primary-green-text">
-                        Become a Student
-                      </div>
-                      <p className="px-4 pb-2 text-xs text-gray-500">
-                        Follow these steps to join our family.
-                      </p>
-                      <Link
-                        href="/enroll/process"
-                        className="flex items-start gap-3 px-4 py-3 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        <FileText className="h-8 w-8 text-primary-green flex-shrink-0 mt-1" />
-                        <div>
-                          <h3 className="font-semibold text-primary-green-text">
-                            Enrollment Process
+                  {/* Dropdown Panel */}
+                  <div className="absolute left-1/2 -translate-x-1/2 mt-4 w-[1000px] bg-white rounded-2xl shadow-2xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-[-10px] group-hover:translate-y-0 transition-all duration-300 z-50 overflow-hidden">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-white to-teal-50/30"></div>
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-emerald-100/20 to-transparent rounded-full -translate-y-32 translate-x-32"></div>
+
+                    <div className="relative p-8">
+                      <div className="flex gap-8">
+                        {/* Left Side: Featured Cards */}
+                        <div className="w-1/2">
+                          <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center tracking-widest">
+                            {/* <Target className="h-5 w-5 mr-2 text-emerald-600" /> */}
+                            Join Us At TreasureLand
                           </h3>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            Learn about the steps to apply.
-                          </p>
+
+                          <div className="flex gap-4">
+                            <Link
+                              href="/about"
+                              className="group block p-4 rounded-xl bg-white/80 backdrop-blur-sm border border-slate-100 hover:border-emerald-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex-1"
+                            >
+                              <div className="relative overflow-hidden rounded-lg mb-3 w-52">
+                                <Image
+                                  src="/outside.jpg"
+                                  alt="About Us"
+                                  width={200}
+                                  height={100}
+                                  className="w-52 h-52 object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                              </div>
+                              <h4 className="font-bold text-slate-800 group-hover:text-emerald-600 transition-colors duration-300 mb-1 text-sm">
+                                Enroll with us !
+                              </h4>
+                              <p className="text-xs text-slate-600 leading-relaxed">
+                                We welcome students from Pre kg - primary 6 and
+                                from jss1 to ss3.
+                              </p>
+                            </Link>
+
+                            <Link
+                              href="/about#mission"
+                              className="group block p-4 rounded-xl bg-white/80 backdrop-blur-sm border border-slate-100 hover:border-emerald-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex-1"
+                            >
+                              <div className="relative overflow-hidden rounded-lg mb-3 w-52">
+                                <Image
+                                  src="/boy.jpg"
+                                  alt="Our Mission"
+                                  width={200}
+                                  height={100}
+                                  className="w-full h-52 object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                              </div>
+                              <h4 className="font-bold text-slate-800 group-hover:text-emerald-600 transition-colors duration-300 mb-1 text-sm">
+                                2024/2025 Admissions
+                              </h4>
+                              <p className="text-xs text-slate-600 leading-relaxed">
+                                Find out how to apply for the next academic
+                                year.
+                              </p>
+                            </Link>
+                          </div>
                         </div>
-                      </Link>
-                      <Link
-                        href="/enroll/requirements"
-                        className="flex items-start gap-3 px-4 py-3 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        <CheckSquare className="h-8 w-8 text-primary-green flex-shrink-0 mt-1" />
-                        <div>
-                          <h3 className="font-semibold text-primary-green-text">
-                            Requirements
-                          </h3>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            Check the admission criteria.
-                          </p>
+
+                        {/* Right Side: Quick Links */}
+                        <div className="w-1/2">
+                          {/* <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center">
+                            <BookOpen className="h-5 w-5 mr-2 text-emerald-600" />
+                            Quick Links
+                          </h3> */}
+
+                          <div className="grid grid-cols-1 gap-3 mt-14 pl-6">
+                            <div>
+                              <Link
+                                href="#"
+                                className="group/item flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                              >
+                                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 group-hover:bg-emerald-200 transition-colors duration-300 mr-2">
+                                  <Calendar className="h-3.5 w-3.5 text-emerald-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <span className="font-medium text-slate-700 group-hover:text-emerald-600 transition-colors duration-300 text-sm leading-tight">
+                                    Academic calender
+                                  </span>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-gray-400 opacity-0 group-hover/item:opacity-100 transition-all duration-200 group-hover/item:translate-x-1" />
+                              </Link>
+                              <div className="h-px bg-gray-200 w-full my-1" />
+                            </div>
+
+                            <div>
+                              <Link
+                                href="#"
+                                className="group/item flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 hover:shadow-sm"
+                              >
+                                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 group-hover:bg-emerald-200 transition-colors duration-300 mr-2">
+                                  <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <span className="font-medium text-slate-700 group-hover:text-emerald-600 transition-colors duration-300 text-sm leading-tight">
+                                    Curriculum
+                                  </span>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-gray-400 opacity-0 group-hover/item:opacity-100 transition-all duration-200 group-hover/item:translate-x-1" />
+                              </Link>
+                              <div className="h-px bg-gray-200 w-full my-1" />
+                            </div>
+                          </div>
                         </div>
-                      </Link>
-                      <div className="p-2 mt-2">
-                        <Link
-                          href="/enroll-now"
-                          className="w-full block text-center bg-primary-green hover:bg-primary-green-hover text-white font-medium px-4 py-3 rounded-lg transition-colors"
-                        >
-                          Apply Now
-                        </Link>
                       </div>
                     </div>
                   </div>
