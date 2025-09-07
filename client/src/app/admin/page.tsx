@@ -68,8 +68,17 @@ export default function AdminDashboard() {
     ? [...new Set(logsResponse.logs.map((log) => log.actionType))]
     : [];
 
+  // Define Log interface for type safety
+  interface Log {
+    userId: string | { name: string; email: string };
+    actionType: string;
+    description?: string | null;
+    targetId?: string | null;
+    timestamp: string | number;
+  }
+
   // CSV generation and download functions
-  const generateCSV = (logs: any[]) => {
+  const generateCSV = (logs: Log[]) => {
     const headers = [
       "User",
       "Action Type",
@@ -77,16 +86,38 @@ export default function AdminDashboard() {
       "Target",
       "Timestamp",
     ];
-    const rows = logs.map((log) => [
-      typeof log.userId === "object" ? log.userId.name : log.userId,
-      log.actionType,
-      log.description,
-      log.targetId || "",
-      new Date(log.timestamp).toLocaleString(),
-    ]);
+
+    const rows = logs.map((log) => {
+      // Safely handle userId - normalize to string
+      const user =
+        typeof log.userId === "object"
+          ? log.userId.name
+          : String(log.userId || "");
+
+      // Safely handle other fields - normalize null/undefined to empty string
+      const actionType = String(log.actionType || "");
+      const description = String(log.description || "");
+      const targetId = String(log.targetId || "");
+
+      // Safely parse timestamp
+      let timestamp = "";
+      try {
+        const date = new Date(log.timestamp);
+        if (!isNaN(date.getTime())) {
+          timestamp = date.toLocaleString();
+        }
+      } catch {
+        timestamp = "";
+      }
+
+      return [user, actionType, description, targetId, timestamp];
+    });
+
+    // Escape quotes by replacing " with "" and wrap in quotes
+    const escapeCSVField = (field: string) => `"${field.replace(/"/g, '""')}"`;
 
     const csvContent = [headers, ...rows]
-      .map((row) => row.map((field) => `"${field}"`).join(","))
+      .map((row) => row.map(escapeCSVField).join(","))
       .join("\n");
 
     return csvContent;
@@ -102,6 +133,9 @@ export default function AdminDashboard() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    // Revoke the blob URL to free up memory
+    URL.revokeObjectURL(url);
   };
 
   return (

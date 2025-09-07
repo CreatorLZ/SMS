@@ -536,6 +536,14 @@ export const getAuditLogs = async (req: Request, res: Response) => {
       limit = 10,
     } = req.query;
 
+    // Validate and sanitize pagination parameters
+    const parsedPage = parseInt(page as string, 10);
+    const parsedLimit = parseInt(limit as string, 10);
+
+    const validatedPage = isNaN(parsedPage) || parsedPage <= 0 ? 1 : parsedPage;
+    const validatedLimit =
+      isNaN(parsedLimit) || parsedLimit <= 0 ? 10 : Math.min(parsedLimit, 100);
+
     let query: any = {};
 
     // Text search filter (action type and description)
@@ -556,36 +564,46 @@ export const getAuditLogs = async (req: Request, res: Response) => {
       query.actionType = actionType;
     }
 
-    // Date range filter
+    // Date range filter with validation
     if (startDate || endDate) {
       query.timestamp = {};
+
       if (startDate) {
-        query.timestamp.$gte = new Date(startDate as string);
+        const start = new Date(startDate as string);
+        if (isNaN(start.getTime())) {
+          return res.status(400).json({ message: "Invalid startDate format" });
+        }
+        query.timestamp.$gte = start;
       }
+
       if (endDate) {
-        query.timestamp.$lte = new Date(endDate as string);
+        const end = new Date(endDate as string);
+        if (isNaN(end.getTime())) {
+          return res.status(400).json({ message: "Invalid endDate format" });
+        }
+        // Set to end of day (23:59:59.999)
+        end.setHours(23, 59, 59, 999);
+        query.timestamp.$lte = end;
       }
     }
 
-    const pageNum = parseInt(page as string, 10);
-    const limitNum = parseInt(limit as string, 10);
-    const skip = (pageNum - 1) * limitNum;
+    const skip = (validatedPage - 1) * validatedLimit;
 
     const logs = await AuditLog.find(query)
       .populate("userId", "name email")
       .sort({ timestamp: -1 })
       .skip(skip)
-      .limit(limitNum);
+      .limit(validatedLimit);
 
     const total = await AuditLog.countDocuments(query);
 
     res.json({
       logs,
       pagination: {
-        page: pageNum,
-        limit: limitNum,
+        page: validatedPage,
+        limit: validatedLimit,
         total,
-        pages: Math.ceil(total / limitNum),
+        pages: Math.ceil(total / validatedLimit),
       },
     });
   } catch (error) {
