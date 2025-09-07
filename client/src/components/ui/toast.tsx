@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -19,14 +19,28 @@ export function Toast({
 }: ToastProps) {
   const [show, setShow] = useState(true);
 
+  const onCloseRef = useRef(onClose);
+  
   useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    let closedByTimer = false;
     const timer = setTimeout(() => {
+      closedByTimer = true;
       setShow(false);
-      onClose?.();
+      onCloseRef.current?.();
     }, duration);
 
-    return () => clearTimeout(timer);
-  }, [duration, onClose]);
+    return () => {
+      clearTimeout(timer);
+      // Don't trigger onClose during cleanup unless timer triggered it
+      if (!closedByTimer) {
+        setShow(false);
+      }
+    };
+  }, [duration]); // removed onClose from deps since we use ref
 
   const baseClasses =
     "fixed bottom-4 right-4 p-4 rounded-lg shadow-lg flex items-center gap-2 min-w-[300px] z-50";
@@ -48,10 +62,7 @@ export function Toast({
         >
           <span className="flex-1">{message}</span>
           <button
-            onClick={() => {
-              setShow(false);
-              onClose?.();
-            }}
+            onClick={() => setShow(false)}
             className="hover:opacity-70 transition-opacity"
             aria-label="Close notification"
           >
