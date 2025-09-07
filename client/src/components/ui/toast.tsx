@@ -18,29 +18,24 @@ export function Toast({
   onClose,
 }: ToastProps) {
   const [show, setShow] = useState(true);
-
   const onCloseRef = useRef(onClose);
-  
+  const closedByTimerRef = useRef(false);
+
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
 
   useEffect(() => {
-    let closedByTimer = false;
+    closedByTimerRef.current = false;
     const timer = setTimeout(() => {
-      closedByTimer = true;
+      closedByTimerRef.current = true;
       setShow(false);
-      onCloseRef.current?.();
     }, duration);
 
     return () => {
       clearTimeout(timer);
-      // Don't trigger onClose during cleanup unless timer triggered it
-      if (!closedByTimer) {
-        setShow(false);
-      }
     };
-  }, [duration]); // removed onClose from deps since we use ref
+  }, [duration]);
 
   const baseClasses =
     "fixed bottom-4 right-4 p-4 rounded-lg shadow-lg flex items-center gap-2 min-w-[300px] z-50";
@@ -56,13 +51,21 @@ export function Toast({
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
+          onAnimationComplete={(definition) => {
+            if (definition === "exit" && closedByTimerRef.current) {
+              onCloseRef.current?.();
+            }
+          }}
           role="status"
           aria-live="polite"
           className={`${baseClasses} ${typeClasses[type]}`}
         >
           <span className="flex-1">{message}</span>
           <button
-            onClick={() => setShow(false)}
+            onClick={() => {
+              setShow(false);
+              onClose?.();
+            }}
             className="hover:opacity-70 transition-opacity"
             aria-label="Close notification"
           >

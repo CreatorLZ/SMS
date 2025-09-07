@@ -4,6 +4,7 @@ import { useStudentsQuery, Student } from "@/hooks/useStudentsQuery";
 import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useUsersQuery } from "@/hooks/useUsersQuery";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
+import { Toast } from "./toast";
 
 export default function EditStudentModal() {
   const { isEditModalOpen, selectedStudentId, setEditModalOpen } =
@@ -25,6 +26,17 @@ export default function EditStudentModal() {
     currentClass: "",
     parentId: "",
   });
+
+  const [toastProps, setToastProps] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+  const [showToast, setShowToast] = useState(false);
+
+  const showToastMessage = (message: string, type: "success" | "error") => {
+    setToastProps({ message, type });
+    setShowToast(true);
+  };
 
   // Find parent of selected student by checking linkedStudentIds
   const findParentId = (studentId: string) => {
@@ -57,11 +69,14 @@ export default function EditStudentModal() {
         id: selectedStudentId,
         data: formData,
       });
-      console.log("Student updated successfully");
+      showToastMessage("Student updated successfully!", "success");
       setEditModalOpen(false);
     } catch (error: any) {
       console.error("Error updating student:", error);
-      alert(error?.response?.data?.message || "Failed to update student");
+      showToastMessage(
+        error?.response?.data?.message || "Failed to update student",
+        "error"
+      );
     }
   };
 
@@ -154,6 +169,14 @@ export default function EditStudentModal() {
           </div>
         </form>
       </div>
+
+      {showToast && toastProps && (
+        <Toast
+          message={toastProps.message}
+          type={toastProps.type}
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { useStudentsQuery, Student } from "@/hooks/useStudentsQuery";
 import { useToggleStudentStatusMutation } from "@/hooks/useToggleStudentStatusMutation";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
+import { Toast } from "./toast";
+import { useState } from "react";
 
 export default function StudentTable() {
   const { searchQuery, classFilter, currentPage, setEditModalOpen } =
@@ -13,6 +15,17 @@ export default function StudentTable() {
   } = useStudentsQuery(searchQuery, classFilter, currentPage);
 
   const toggleStatusMutation = useToggleStudentStatusMutation();
+
+  const [toastProps, setToastProps] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+  const [showToast, setShowToast] = useState(false);
+
+  const showToastMessage = (message: string, type: "success" | "error") => {
+    setToastProps({ message, type });
+    setShowToast(true);
+  };
 
   const handleToggleStatus = async (
     studentId: string,
@@ -27,11 +40,11 @@ export default function StudentTable() {
       // Success feedback could be added here if needed
     } catch (error: any) {
       console.error("Error toggling student status:", error);
-      // Only show alert for actual business errors
+      // Only show toast for actual business errors
       if (error?.response?.status === 404) {
-        alert("Student not found");
+        showToastMessage("Student not found", "error");
       } else if (error?.response?.status >= 500) {
-        alert("Server error occurred. Please try again.");
+        showToastMessage("Server error occurred. Please try again.", "error");
       }
     }
   };
@@ -99,6 +112,14 @@ export default function StudentTable() {
           ))}
         </tbody>
       </table>
+
+      {showToast && toastProps && (
+        <Toast
+          message={toastProps.message}
+          type={toastProps.type}
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useStudentsQuery, Student } from "@/hooks/useStudentsQuery";
 import { useAssignStudentsMutation } from "@/hooks/useAssignStudentsMutation";
 import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useClassroomManagementStore } from "@/store/classroomManagementStore";
+import { Toast } from "./toast";
 
 export default function AssignStudentsModal() {
   const { isAssignModalOpen, selectedClassroomId, setAssignModalOpen } =
@@ -13,6 +14,17 @@ export default function AssignStudentsModal() {
   const assignStudentsMutation = useAssignStudentsMutation();
 
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+
+  const [toastProps, setToastProps] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+  const [showToast, setShowToast] = useState(false);
+
+  const showToastMessage = (message: string, type: "success" | "error") => {
+    setToastProps({ message, type });
+    setShowToast(true);
+  };
 
   // Get current classroom data
   const currentClassroom = classrooms?.find(
@@ -43,11 +55,14 @@ export default function AssignStudentsModal() {
         classroomId: selectedClassroomId,
         data: { studentIds: selectedStudentIds },
       });
-      alert("Students assigned successfully!");
+      showToastMessage("Students assigned successfully!", "success");
       setAssignModalOpen(false);
     } catch (error: any) {
       console.error("Error assigning students:", error);
-      alert(error?.response?.data?.message || "Failed to assign students");
+      showToastMessage(
+        error?.response?.data?.message || "Failed to assign students",
+        "error"
+      );
     }
   };
 
@@ -99,6 +114,14 @@ export default function AssignStudentsModal() {
           </div>
         </form>
       </div>
+
+      {showToast && toastProps && (
+        <Toast
+          message={toastProps.message}
+          type={toastProps.type}
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </div>
   );
 }

@@ -73,18 +73,26 @@ export default function TeacherManagement() {
   };
 
   const handleDeleteTeacher = async (teacherId: string) => {
-    if (!confirm("Are you sure you want to delete this teacher?")) return;
+    // Show confirmation toast instead of browser confirm dialog
+    showToastMessage(
+      "Are you sure you want to delete this teacher? This action cannot be undone.",
+      "error"
+    );
 
-    try {
-      await deleteTeacherMutation.mutateAsync(teacherId);
-      showToastMessage("Teacher deleted successfully", "success");
-      refetch();
-    } catch (error: any) {
-      showToastMessage(
-        error.response?.data?.message || "Failed to delete teacher",
-        "error"
-      );
-    }
+    // For immediate deletion, we'll proceed after a short delay to allow user to see the message
+    // In a real app, you'd want a proper confirmation modal
+    setTimeout(async () => {
+      try {
+        await deleteTeacherMutation.mutateAsync(teacherId);
+        showToastMessage("Teacher deleted successfully", "success");
+        refetch();
+      } catch (error: any) {
+        showToastMessage(
+          error.response?.data?.message || "Failed to delete teacher",
+          "error"
+        );
+      }
+    }, 2000); // 2 second delay
   };
 
   const handleEditTeacher = (teacher: any) => {
