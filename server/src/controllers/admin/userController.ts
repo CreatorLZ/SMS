@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { User } from "../../models/User";
 import { Student } from "../../models/Student";
+import { Classroom } from "../../models/Classroom";
 import { AuditLog } from "../../models/AuditLog";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -288,6 +289,230 @@ export const toggleStudentStatus = async (req: Request, res: Response) => {
     }
 
     res.json(updatedStudent);
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+// @desc    Create a new teacher
+// @route   POST /api/admin/teachers
+// @access  Private/Admin
+export const createTeacher = async (req: Request, res: Response) => {
+  try {
+    const { name, email, password, subjectSpecialization, assignedClassId } =
+      req.body;
+
+    // Check if user already exists
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // If assignedClassId is provided, check if classroom exists and is not already assigned
+    if (assignedClassId) {
+      const classroom = await Classroom.findById(assignedClassId);
+      if (!classroom) {
+        return res.status(400).json({ message: "Classroom not found" });
+      }
+      if (classroom.teacherId) {
+        return res
+          .status(400)
+          .json({ message: "Classroom already has a teacher assigned" });
+      }
+    }
+
+    // Create teacher
+    const teacher = await User.create({
+      name,
+      email,
+      password,
+      role: "teacher",
+      subjectSpecialization,
+      assignedClassId,
+    });
+
+    // Update classroom's teacherId if assigned
+    if (assignedClassId) {
+      await Classroom.findByIdAndUpdate(assignedClassId, {
+        teacherId: teacher._id,
+      });
+    }
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user?._id,
+      actionType: "TEACHER_CREATE",
+      description: `Created new teacher ${name} (${email})`,
+      targetId: teacher._id,
+    });
+
+    res.status(201).json({
+      _id: teacher._id,
+      name: teacher.name,
+      email: teacher.email,
+      role: teacher.role,
+      subjectSpecialization: teacher.subjectSpecialization,
+      assignedClassId: teacher.assignedClassId,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+// @desc    Get all teachers
+// @route   GET /api/admin/teachers
+// @access  Private/Admin
+export const getTeachers = async (req: Request, res: Response) => {
+  try {
+    const teachers = await User.find({ role: "teacher" })
+      .select("-password -refreshTokens")
+      .populate("assignedClassId", "name");
+
+    res.json(teachers);
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+// @desc    Get teacher by ID
+// @route   GET /api/admin/teachers/:id
+// @access  Private/Admin
+export const getTeacherById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const teacher = await User.findOne({ _id: id, role: "teacher" })
+      .select("-password -refreshTokens")
+      .populate("assignedClassId", "name");
+
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    res.json(teacher);
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+// @desc    Update teacher details
+// @route   PUT /api/admin/teachers/:id
+// @access  Private/Admin
+export const updateTeacher = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, email, subjectSpecialization, assignedClassId } = req.body;
+
+    // Check if teacher exists
+    const teacher = await User.findOne({ _id: id, role: "teacher" });
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (email !== teacher.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already exists" });
+      }
+    }
+
+    // Handle classroom reassignment
+    if (assignedClassId !== teacher.assignedClassId?.toString()) {
+      // Remove teacher from old classroom
+      if (teacher.assignedClassId) {
+        await Classroom.findByIdAndUpdate(teacher.assignedClassId, {
+          teacherId: null,
+        });
+      }
+
+      // Check if new classroom exists and is not already assigned
+      if (assignedClassId) {
+        const classroom = await Classroom.findById(assignedClassId);
+        if (!classroom) {
+          return res.status(400).json({ message: "Classroom not found" });
+        }
+        if (classroom.teacherId && classroom.teacherId.toString() !== id) {
+          return res
+            .status(400)
+            .json({ message: "Classroom already has a teacher assigned" });
+        }
+      }
+    }
+
+    // Update teacher
+    const updatedTeacher = await User.findByIdAndUpdate(
+      id,
+      { name, email, subjectSpecialization, assignedClassId },
+      { new: true }
+    ).select("-password -refreshTokens");
+
+    // Update classroom's teacherId if assigned
+    if (assignedClassId) {
+      await Classroom.findByIdAndUpdate(assignedClassId, { teacherId: id });
+    }
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user?._id,
+      actionType: "TEACHER_UPDATE",
+      description: `Updated teacher ${name} (${email})`,
+      targetId: id,
+    });
+
+    res.json(updatedTeacher);
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+// @desc    Delete/deactivate teacher
+// @route   DELETE /api/admin/teachers/:id
+// @access  Private/Admin
+export const deleteTeacher = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if teacher exists
+    const teacher = await User.findOne({ _id: id, role: "teacher" });
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    // Remove teacher from assigned classroom
+    if (teacher.assignedClassId) {
+      await Classroom.findByIdAndUpdate(teacher.assignedClassId, {
+        teacherId: null,
+      });
+    }
+
+    // Delete teacher
+    await User.findByIdAndDelete(id);
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user?._id,
+      actionType: "TEACHER_DELETE",
+      description: `Deleted teacher ${teacher.name} (${teacher.email})`,
+      targetId: id,
+    });
+
+    res.json({ message: "Teacher deleted successfully" });
   } catch (error) {
     res.status(500).json({
       message: "Server error",

@@ -6,16 +6,20 @@ export interface Teacher {
   name: string;
   email: string;
   role: string;
+  subjectSpecialization?: string;
+  assignedClassId?: {
+    _id: string;
+    name: string;
+  };
+  createdAt: string;
 }
 
 export const useTeachersQuery = () => {
   return useQuery<Teacher[]>({
     queryKey: ["teachers"],
     queryFn: async (): Promise<Teacher[]> => {
-      const response = await api.get("/admin/users");
-      const users = response.data as Teacher[];
-      // Filter only teachers
-      return users.filter((user) => user.role === "teacher");
+      const response = await api.get("/admin/teachers");
+      return response.data as Teacher[];
     },
   });
 };

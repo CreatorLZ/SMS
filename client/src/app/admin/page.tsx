@@ -39,9 +39,15 @@ export default function AdminDashboard() {
           </Link>
           <Link
             href="/admin/classrooms"
-            className="px-4 py-2 bg-purple-500 text-white rounded"
+            className="px-4 py-2 bg-purple-500 text-white rounded mr-2"
           >
             Classroom Management
+          </Link>
+          <Link
+            href="/admin/teachers"
+            className="px-4 py-2 bg-orange-500 text-white rounded"
+          >
+            Teacher Management
           </Link>
         </div>
         <section className="mb-8">

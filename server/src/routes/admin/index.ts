@@ -7,6 +7,11 @@ import {
   createStudent,
   updateStudent,
   toggleStudentStatus,
+  createTeacher,
+  getTeachers,
+  getTeacherById,
+  updateTeacher,
+  deleteTeacher,
   getAuditLogs,
 } from "../../controllers/admin/userController";
 import {
@@ -47,5 +52,14 @@ router.patch("/terms/:id/activate", activateTerm);
 router.route("/classrooms").post(createClassroom).get(getClassrooms);
 
 router.post("/classrooms/:id/students", assignStudents);
+
+// Teacher routes
+router.route("/teachers").post(createTeacher).get(getTeachers);
+
+router
+  .route("/teachers/:id")
+  .get(getTeacherById)
+  .put(updateTeacher)
+  .delete(deleteTeacher);
 
 export default router;

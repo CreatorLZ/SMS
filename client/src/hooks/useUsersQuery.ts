@@ -7,6 +7,7 @@ export interface User {
   email: string;
   role: string;
   createdAt: string;
+  linkedStudentIds?: string[]; // Optional array of linked student IDs for parent users
 }
 
 export const useUsersQuery = () => {

@@ -26,16 +26,27 @@ export default function EditStudentModal() {
     parentId: "",
   });
 
+  // Find parent of selected student by checking linkedStudentIds
+  const findParentId = (studentId: string) => {
+    return (
+      users?.find(
+        (user) =>
+          user.role === "parent" && user.linkedStudentIds?.includes(studentId)
+      )?._id || ""
+    );
+  };
+
   useEffect(() => {
     if (selectedStudent && isEditModalOpen) {
+      const parentId = findParentId(selectedStudent._id);
       setFormData({
         fullName: selectedStudent.fullName,
         studentId: selectedStudent.studentId,
         currentClass: selectedStudent.currentClass,
-        parentId: "", // We'll need to get this from the backend if needed
+        parentId: parentId,
       });
     }
-  }, [selectedStudent, isEditModalOpen]);
+  }, [selectedStudent, isEditModalOpen, users]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
