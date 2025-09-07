@@ -142,45 +142,14 @@ export default function AdminDashboard() {
     <RoleGuard allowed={["admin", "superadmin"]}>
       <DashboardLayout>
         <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
-        <div className="mb-4">
-          <Link
-            href="/admin/users"
-            className="px-4 py-2 bg-blue-500 text-white rounded mr-2"
-          >
-            User Management
-          </Link>
-          <Link
-            href="/admin/students"
-            className="px-4 py-2 bg-green-500 text-white rounded mr-2"
-          >
-            Student Management
-          </Link>
-          <Link
-            href="/admin/terms"
-            className="px-4 py-2 bg-red-500 text-white rounded mr-2"
-          >
-            Term Management
-          </Link>
-          <Link
-            href="/admin/classrooms"
-            className="px-4 py-2 bg-purple-500 text-white rounded mr-2"
-          >
-            Classroom Management
-          </Link>
-          <Link
-            href="/admin/teachers"
-            className="px-4 py-2 bg-orange-500 text-white rounded"
-          >
-            Teacher Management
-          </Link>
-        </div>
+
         <section className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Audit Logs</h2>
             <div className="flex gap-2">
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
               >
                 Export PDF
               </button>
@@ -189,7 +158,7 @@ export default function AdminDashboard() {
                   const csv = generateCSV(logsResponse?.logs || []);
                   downloadCSV(csv, "audit-logs.csv");
                 }}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
               >
                 Export CSV
               </button>
@@ -199,28 +168,28 @@ export default function AdminDashboard() {
           {/* Summary Statistics */}
           {logsResponse && (
             <div className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="text-sm font-medium text-blue-800">
+              <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
+                <h3 className="text-sm font-medium text-emerald-800">
                   Total Logs
                 </h3>
-                <p className="text-2xl font-bold text-blue-900">
+                <p className="text-2xl font-bold text-emerald-900">
                   {logsResponse.pagination.total}
                 </p>
               </div>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h3 className="text-sm font-medium text-green-800">
+              <div className="bg-teal-50 p-4 rounded-lg border border-teal-100">
+                <h3 className="text-sm font-medium text-teal-800">
                   Current Page
                 </h3>
-                <p className="text-2xl font-bold text-green-900">
+                <p className="text-2xl font-bold text-teal-900">
                   {logsResponse.pagination.page} /{" "}
                   {logsResponse.pagination.pages}
                 </p>
               </div>
-              <div className="bg-yellow-50 p-4 rounded-lg">
-                <h3 className="text-sm font-medium text-yellow-800">
+              <div className="bg-cyan-50 p-4 rounded-lg border border-cyan-100">
+                <h3 className="text-sm font-medium text-cyan-800">
                   Unique Users
                 </h3>
-                <p className="text-2xl font-bold text-yellow-900">
+                <p className="text-2xl font-bold text-cyan-900">
                   {logsResponse.logs
                     ? new Set(
                         logsResponse.logs.map((log) =>
@@ -232,11 +201,11 @@ export default function AdminDashboard() {
                     : 0}
                 </p>
               </div>
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <h3 className="text-sm font-medium text-purple-800">
+              <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                <h3 className="text-sm font-medium text-green-800">
                   Action Types
                 </h3>
-                <p className="text-2xl font-bold text-purple-900">
+                <p className="text-2xl font-bold text-green-900">
                   {actionTypes.length}
                 </p>
               </div>
