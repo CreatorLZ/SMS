@@ -10,6 +10,7 @@ export interface IUser extends Document {
   refreshTokens: string[];
   linkedStudentIds?: string[];
   assignedClassId?: string;
+  subjectSpecialization?: string;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 

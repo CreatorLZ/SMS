@@ -110,7 +110,6 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  // Removed aboutOpen state as we're using hover
   const [schoolsOpen, setSchoolsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [programOpen, setProgramOpen] = useState(false);
@@ -730,7 +729,7 @@ export default function Home() {
                     <div className="p-2 ">
                       <div className="grid grid-cols-2 gap-2">
                         <Link
-                          href="#"
+                          href="/parent"
                           className="flex flex-col items-center justify-center p-3 rounded-lg hover:bg-gray-50 text-center"
                         >
                           <Users className="h-7 w-7 text-primary-green mb-1" />
@@ -739,7 +738,7 @@ export default function Home() {
                           </span>
                         </Link>
                         <Link
-                          href="#"
+                          href="/student"
                           className="flex flex-col items-center justify-center p-3 rounded-lg hover:bg-gray-50 text-center"
                         >
                           <BookOpen className="h-7 w-7 text-primary-green mb-1" />
@@ -748,7 +747,7 @@ export default function Home() {
                           </span>
                         </Link>
                         <Link
-                          href="#"
+                          href="/teacher"
                           className="flex flex-col items-center justify-center p-3 rounded-lg hover:bg-gray-50 text-center"
                         >
                           <Briefcase className="h-7 w-7 text-primary-green mb-1" />
@@ -757,7 +756,7 @@ export default function Home() {
                           </span>
                         </Link>
                         <Link
-                          href="#"
+                          href="/admin"
                           className="flex flex-col items-center justify-center p-3 rounded-lg hover:bg-gray-50 text-center"
                         >
                           <Settings className="h-7 w-7 text-primary-green mb-1" />
@@ -872,12 +871,12 @@ export default function Home() {
 
                 {/* Check results */}
                 <Link
-                  href="#"
+                  href="/parent"
                   className={`px-3 py-2 flex items-center cursor-pointer transition-colors ${
                     isScrolled ? "text-primary-green-text" : "text-white"
                   } font-bold text-sm hover:text-primary-green`}
                 >
-                  Check results
+                  Check Results
                 </Link>
 
                 {/* News */}

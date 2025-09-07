@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Classroom } from "../../models/Classroom";
+import { Classroom, ALLOWED_CLASSROOMS } from "../../models/Classroom";
 import { User } from "../../models/User";
 import { Student } from "../../models/Student";
 import { AuditLog } from "../../models/AuditLog";
@@ -11,10 +11,29 @@ export const createClassroom = async (req: Request, res: Response) => {
   try {
     const { name, teacherId, timetable } = req.body;
 
+    //  Step 1: Validate classroom name
+    if (!ALLOWED_CLASSROOMS.includes(name)) {
+      return res.status(400).json({
+        message: `Invalid class name. Allowed: ${ALLOWED_CLASSROOMS.join(
+          ", "
+        )}`,
+      });
+    }
+
+    //  Check if classroom name already exists
+    const existingClassroom = await Classroom.findOne({ name });
+    if (existingClassroom) {
+      return res
+        .status(400)
+        .json({ message: `Classroom "${name}" already exists` });
+    }
+
     // Check if teacher exists and is actually a teacher
     const teacher = await User.findOne({ _id: teacherId, role: "teacher" });
     if (!teacher) {
-      return res.status(404).json({ message: "Teacher not found" });
+      return res
+        .status(404)
+        .json({ message: "Teacher not found or invalid role" });
     }
 
     const classroom = await Classroom.create({
@@ -37,7 +56,14 @@ export const createClassroom = async (req: Request, res: Response) => {
 
     res.status(201).json(classroom);
   } catch (error: any) {
+    if (error.code === 11000) {
+      return res
+        .status(400)
+        .json({ message: "Classroom name already exists (duplicate)" });
+    }
+
     res.status(500).json({ message: "Server error", error: error.message });
+    console.log(error.message);
   }
 };
 

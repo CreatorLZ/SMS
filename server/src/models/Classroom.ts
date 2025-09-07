@@ -11,6 +11,22 @@ export interface IClassroom extends Document {
   students: Schema.Types.ObjectId[];
 }
 
+// Define allowed classroom names
+const ALLOWED_CLASSROOMS = [
+  "Primary 1",
+  "Primary 2",
+  "Primary 3",
+  "Primary 4",
+  "Primary 5",
+  "Primary 6",
+  "JSS1",
+  "JSS2",
+  "JSS3",
+  "SS1",
+  "SS2",
+  "SS3",
+];
+
 const classroomSchema = new Schema(
   {
     name: {
@@ -18,6 +34,10 @@ const classroomSchema = new Schema(
       required: [true, "Class name is required"],
       unique: true,
       trim: true,
+      enum: {
+        values: ALLOWED_CLASSROOMS,
+        message: "Class name must be one of the predefined options",
+      },
     },
     teacherId: {
       type: Schema.Types.ObjectId,
@@ -60,3 +80,4 @@ export const Classroom = mongoose.model<IClassroom>(
   "Classroom",
   classroomSchema
 );
+export { ALLOWED_CLASSROOMS };

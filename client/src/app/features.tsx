@@ -1,4 +1,46 @@
 "use client";
+// MVP system features for documentation/onboarding
+export const mvpFeatures = [
+  {
+    title: "Role-based Dashboards",
+    description:
+      "Separate dashboards for admin, teacher, student, and parent with secure access.",
+  },
+  {
+    title: "Attendance Tracking",
+    description:
+      "Teachers can mark and view attendance. Students and parents can view attendance history.",
+  },
+  {
+    title: "Result Management",
+    description:
+      "Teachers submit results, students/parents unlock with PIN, and admins audit all changes.",
+  },
+  {
+    title: "Fee Lock & PIN Security",
+    description:
+      "Results are locked if fees are unpaid. PIN + student ID required for result access.",
+  },
+  {
+    title: "Messaging & Announcements",
+    description:
+      "Teachers and admins can send messages and announcements to students and parents.",
+  },
+  {
+    title: "Audit Logs",
+    description: "All sensitive actions are logged for admin review.",
+  },
+  {
+    title: "PDF Export",
+    description: "Students and parents can export results as PDF.",
+  },
+  {
+    title: "Edge Case Handling",
+    description:
+      "Handles mid-term joins, teacher reassignments, and multiple children per parent.",
+  },
+];
+
 import { motion } from "framer-motion";
 import { FeatureCard } from "@/components/feature-card";
 

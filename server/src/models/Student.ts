@@ -4,6 +4,7 @@ export interface IStudent extends Document {
   fullName: string;
   studentId: string;
   currentClass: string;
+  status: "active" | "inactive";
   termFees: {
     term: "1st" | "2nd" | "3rd";
     year: number;
@@ -45,6 +46,11 @@ const studentSchema = new Schema(
       type: String,
       required: [true, "Current class is required"],
       trim: true,
+    },
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
     },
     termFees: [
       {

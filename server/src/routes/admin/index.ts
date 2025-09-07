@@ -3,6 +3,10 @@ import { protect, authorize } from "../../middleware/auth";
 import {
   registerUser,
   getUsers,
+  getStudents,
+  createStudent,
+  updateStudent,
+  toggleStudentStatus,
   getAuditLogs,
 } from "../../controllers/admin/userController";
 import {
@@ -20,10 +24,17 @@ const router = express.Router();
 
 // Protect all routes and restrict to admin only
 router.use(protect);
-router.use(authorize("admin"));
+router.use(authorize("admin", "superadmin"));
 
 // User routes
 router.route("/users").post(registerUser).get(getUsers);
+
+// Student routes
+router.route("/students").get(getStudents).post(createStudent);
+
+router.route("/students/:id").put(updateStudent);
+
+router.patch("/students/:id/status", toggleStudentStatus);
 
 router.get("/logs", getAuditLogs);
 
