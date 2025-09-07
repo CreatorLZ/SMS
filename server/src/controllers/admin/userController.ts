@@ -521,15 +521,73 @@ export const deleteTeacher = async (req: Request, res: Response) => {
   }
 };
 
-// @desc    Get audit logs
+// @desc    Get audit logs with advanced filtering and pagination
 // @route   GET /api/admin/logs
 // @access  Private/Admin
 export const getAuditLogs = async (req: Request, res: Response) => {
   try {
-    const logs = await AuditLog.find()
+    const {
+      search,
+      userId,
+      actionType,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    let query: any = {};
+
+    // Text search filter (action type and description)
+    if (search) {
+      query.$or = [
+        { actionType: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // User filter
+    if (userId) {
+      query.userId = userId;
+    }
+
+    // Action type filter
+    if (actionType) {
+      query.actionType = actionType;
+    }
+
+    // Date range filter
+    if (startDate || endDate) {
+      query.timestamp = {};
+      if (startDate) {
+        query.timestamp.$gte = new Date(startDate as string);
+      }
+      if (endDate) {
+        query.timestamp.$lte = new Date(endDate as string);
+      }
+    }
+
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    const logs = await AuditLog.find(query)
       .populate("userId", "name email")
-      .sort({ timestamp: -1 });
-    res.json(logs);
+      .sort({ timestamp: -1 })
+      .skip(skip)
+      .limit(limitNum);
+
+    const total = await AuditLog.countDocuments(query);
+
+    res.json({
+      logs,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum),
+      },
+    });
   } catch (error) {
     res.status(500).json({
       message: "Server error",

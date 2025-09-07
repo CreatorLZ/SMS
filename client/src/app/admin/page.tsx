@@ -1,18 +1,108 @@
 "use client";
 import DashboardLayout from "../../components/ui/dashboard-layout";
 import RoleGuard from "../../components/ui/role-guard";
-import { useFetchAuditLogs } from "../../hooks/useAuditLogs";
+import { useAuditLogsQuery } from "../../hooks/useAuditLogs";
 import AuditLogTable from "../../components/ui/audit-log-table";
-import { useEffect, useState } from "react";
+import { useAuditLogsStore } from "../../store/auditLogsStore";
+import { useUsersQuery } from "../../hooks/useUsersQuery";
 import Link from "next/link";
 
 export default function AdminDashboard() {
-  const [logs, setLogs] = useState<any[]>([]);
-  const fetchLogs = useFetchAuditLogs();
+  const {
+    searchQuery,
+    userId,
+    actionType,
+    startDate,
+    endDate,
+    currentPage,
+    setSearchQuery,
+    setUserId,
+    setActionType,
+    setStartDate,
+    setEndDate,
+    setCurrentPage,
+    clearFilters,
+  } = useAuditLogsStore();
 
-  useEffect(() => {
-    fetchLogs().then((data) => setLogs(data as any[]));
-  }, []);
+  const {
+    data: logsResponse,
+    isLoading,
+    error,
+  } = useAuditLogsQuery(
+    searchQuery,
+    userId,
+    actionType,
+    startDate,
+    endDate,
+    currentPage
+  );
+
+  const { data: users } = useUsersQuery();
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setUserId(e.target.value);
+  };
+
+  const handleActionTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setActionType(e.target.value);
+  };
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStartDate(e.target.value);
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEndDate(e.target.value);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Get unique action types from current logs for dropdown
+  const actionTypes = logsResponse?.logs
+    ? [...new Set(logsResponse.logs.map((log) => log.actionType))]
+    : [];
+
+  // CSV generation and download functions
+  const generateCSV = (logs: any[]) => {
+    const headers = [
+      "User",
+      "Action Type",
+      "Description",
+      "Target",
+      "Timestamp",
+    ];
+    const rows = logs.map((log) => [
+      typeof log.userId === "object" ? log.userId.name : log.userId,
+      log.actionType,
+      log.description,
+      log.targetId || "",
+      new Date(log.timestamp).toLocaleString(),
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((field) => `"${field}"`).join(","))
+      .join("\n");
+
+    return csvContent;
+  };
+
+  const downloadCSV = (csvContent: string, filename: string) => {
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <RoleGuard allowed={["admin", "superadmin"]}>
@@ -51,8 +141,170 @@ export default function AdminDashboard() {
           </Link>
         </div>
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-2">Audit Logs</h2>
-          <AuditLogTable logs={logs} />
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Audit Logs</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              >
+                Export PDF
+              </button>
+              <button
+                onClick={() => {
+                  const csv = generateCSV(logsResponse?.logs || []);
+                  downloadCSV(csv, "audit-logs.csv");
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          {/* Summary Statistics */}
+          {logsResponse && (
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="text-sm font-medium text-blue-800">
+                  Total Logs
+                </h3>
+                <p className="text-2xl font-bold text-blue-900">
+                  {logsResponse.pagination.total}
+                </p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h3 className="text-sm font-medium text-green-800">
+                  Current Page
+                </h3>
+                <p className="text-2xl font-bold text-green-900">
+                  {logsResponse.pagination.page} /{" "}
+                  {logsResponse.pagination.pages}
+                </p>
+              </div>
+              <div className="bg-yellow-50 p-4 rounded-lg">
+                <h3 className="text-sm font-medium text-yellow-800">
+                  Unique Users
+                </h3>
+                <p className="text-2xl font-bold text-yellow-900">
+                  {logsResponse.logs
+                    ? new Set(
+                        logsResponse.logs.map((log) =>
+                          typeof log.userId === "object"
+                            ? log.userId._id
+                            : log.userId
+                        )
+                      ).size
+                    : 0}
+                </p>
+              </div>
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <h3 className="text-sm font-medium text-purple-800">
+                  Action Types
+                </h3>
+                <p className="text-2xl font-bold text-purple-900">
+                  {actionTypes.length}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Search */}
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="Search audit logs..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="w-full max-w-md p-2 border rounded"
+            />
+          </div>
+
+          {/* Advanced Filters */}
+          <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* User Filter */}
+            <div>
+              <label className="block text-sm font-medium mb-1">User</label>
+              <select
+                value={userId}
+                onChange={handleUserChange}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">All Users</option>
+                {users?.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Action Type Filter */}
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Action Type
+              </label>
+              <select
+                value={actionType}
+                onChange={handleActionTypeChange}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">All Actions</option>
+                {actionTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Start Date Filter */}
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                From Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={handleStartDateChange}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+
+            {/* End Date Filter */}
+            <div>
+              <label className="block text-sm font-medium mb-1">To Date</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={handleEndDateChange}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+
+            {/* Clear Filters Button */}
+            <div className="flex items-end">
+              <button
+                onClick={clearFilters}
+                className="w-full px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+
+          {/* Loading and Error States */}
+          {isLoading && <div>Loading audit logs...</div>}
+          {error && <div>Error loading audit logs.</div>}
+
+          {/* Audit Log Table */}
+          {!isLoading && !error && (
+            <AuditLogTable
+              logsResponse={logsResponse}
+              onPageChange={handlePageChange}
+              currentPage={currentPage}
+            />
+          )}
         </section>
         {/* Add more admin features here */}
       </DashboardLayout>
