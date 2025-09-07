@@ -10,6 +10,7 @@ import { useDeleteTeacherMutation } from "@/hooks/useDeleteTeacherMutation";
 import TeacherTable from "@/components/ui/TeacherTable";
 import CreateTeacherModal from "@/components/ui/CreateTeacherModal";
 import EditTeacherModal from "@/components/ui/EditTeacherModal";
+import DeleteConfirmationModal from "@/components/ui/DeleteConfirmationModal";
 import { useTeacherManagementStore } from "@/store/teacherManagementStore";
 
 export default function TeacherManagement() {
@@ -32,6 +33,8 @@ export default function TeacherManagement() {
     type: "success" | "error";
   } | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [teacherToDelete, setTeacherToDelete] = useState<any>(null);
 
   const showToastMessage = (message: string, type: "success" | "error") => {
     setToastProps({ message, type });
@@ -72,27 +75,31 @@ export default function TeacherManagement() {
     }
   };
 
-  const handleDeleteTeacher = async (teacherId: string) => {
-    // Show confirmation toast instead of browser confirm dialog
-    showToastMessage(
-      "Are you sure you want to delete this teacher? This action cannot be undone.",
-      "error"
-    );
+  const handleDeleteTeacher = (teacher: any) => {
+    setTeacherToDelete(teacher);
+    setIsDeleteModalOpen(true);
+  };
 
-    // For immediate deletion, we'll proceed after a short delay to allow user to see the message
-    // In a real app, you'd want a proper confirmation modal
-    setTimeout(async () => {
-      try {
-        await deleteTeacherMutation.mutateAsync(teacherId);
-        showToastMessage("Teacher deleted successfully", "success");
-        refetch();
-      } catch (error: any) {
-        showToastMessage(
-          error.response?.data?.message || "Failed to delete teacher",
-          "error"
-        );
-      }
-    }, 2000); // 2 second delay
+  const handleConfirmDelete = async () => {
+    if (!teacherToDelete) return;
+
+    try {
+      await deleteTeacherMutation.mutateAsync(teacherToDelete._id);
+      showToastMessage("Teacher deleted successfully", "success");
+      setIsDeleteModalOpen(false);
+      setTeacherToDelete(null);
+      refetch();
+    } catch (error: any) {
+      showToastMessage(
+        error.response?.data?.message || "Failed to delete teacher",
+        "error"
+      );
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setIsDeleteModalOpen(false);
+    setTeacherToDelete(null);
   };
 
   const handleEditTeacher = (teacher: any) => {
@@ -140,6 +147,15 @@ export default function TeacherManagement() {
             onSubmit={handleUpdateTeacher}
             teacher={selectedTeacher}
             isLoading={updateTeacherMutation.isPending}
+          />
+
+          <DeleteConfirmationModal
+            isOpen={isDeleteModalOpen}
+            onClose={handleCancelDelete}
+            onConfirm={handleConfirmDelete}
+            title="Delete Teacher"
+            message={`Are you sure you want to delete ${teacherToDelete?.name}? This action cannot be undone.`}
+            isLoading={deleteTeacherMutation.isPending}
           />
 
           {showToast && toastProps && (

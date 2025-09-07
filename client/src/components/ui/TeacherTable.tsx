@@ -14,7 +14,7 @@ interface Teacher {
 interface TeacherTableProps {
   teachers: Teacher[];
   onEdit: (teacher: Teacher) => void;
-  onDelete: (teacherId: string) => void;
+  onDelete: (teacher: Teacher) => void;
 }
 
 export default function TeacherTable({
@@ -58,7 +58,7 @@ export default function TeacherTable({
                     Edit
                   </button>
                   <button
-                    onClick={() => onDelete(teacher._id)}
+                    onClick={() => onDelete(teacher)}
                     className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
                   >
                     Delete
