@@ -3,22 +3,24 @@ import DashboardLayout from "../../components/ui/dashboard-layout";
 import RoleGuard from "../../components/ui/role-guard";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "../../store/authStore";
-import { useFetchTimetable } from "../../hooks/useTimetable";
+import { useGetTimetable } from "../../hooks/useTimetable";
 import TimetableTable from "../../components/ui/timetable-table";
-import { useFetchAttendance } from "../../hooks/useAttendance";
+import { useGetAttendanceHistory } from "../../hooks/useAttendance";
 import AttendanceHistory from "../../components/ui/attendance-history";
 
 export default function TeacherDashboard() {
   const user = useAuthStore((s) => s.user);
   const [timetable, setTimetable] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
-  const fetchTimetable = useFetchTimetable(user?.assignedClassId || "");
-  const fetchAttendance = useFetchAttendance();
+  const { mutateAsync: fetchTimetable } = useGetTimetable();
+  const fetchAttendance = useGetAttendanceHistory();
 
   useEffect(() => {
     if (user?.assignedClassId) {
-      fetchTimetable().then(setTimetable);
-      fetchAttendance().then((data) => setAttendance(data as any[]));
+      fetchTimetable(user?.assignedClassId || "").then((data) =>
+        setTimetable(data as any[])
+      );
+      fetchAttendance({}).then((data: any) => setAttendance(data as any[]));
     }
   }, [user?.assignedClassId]);
 

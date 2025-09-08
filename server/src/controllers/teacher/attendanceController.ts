@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { Student, IStudent } from "../../models/Student";
 import { Classroom, IClassroom } from "../../models/Classroom";
+import { Attendance } from "../../models/Attendance";
 import { AuditLog } from "../../models/AuditLog";
-import { Types } from "mongoose";
 
 interface AttendanceRecord {
   studentId: string;
-  status: "present" | "absent";
+  status: "present" | "absent" | "late";
 }
 
 // @desc    Mark attendance for students in a class
@@ -22,7 +23,7 @@ export const markAttendance = async (req: Request, res: Response) => {
 
     // Verify teacher has an assigned classroom
     const classroom = await Classroom.findOne({ teacherId })
-      .populate<{ students: IStudent[] }>("students")
+      .populate("students")
       .exec();
 
     if (!classroom) {
@@ -32,7 +33,7 @@ export const markAttendance = async (req: Request, res: Response) => {
     // Validate attendance data
     for (const record of attendanceData) {
       const studentExists = classroom.students.some(
-        (student) => student.studentId === record.studentId
+        (student: any) => student._id.toString() === record.studentId
       );
 
       if (!studentExists) {
@@ -42,35 +43,55 @@ export const markAttendance = async (req: Request, res: Response) => {
       }
     }
 
-    // Update attendance records for each student
-    const updatePromises = attendanceData.map((record: AttendanceRecord) =>
-      Student.findByIdAndUpdate(
-        record.studentId,
-        {
-          $push: {
-            attendance: {
-              date: new Date(date),
-              status: record.status,
-            },
-          },
-        },
-        { new: true }
-      )
-    );
+    // Check if attendance already exists for this date and classroom
+    const existingAttendance = await Attendance.findOne({
+      classroomId: classroom._id,
+      date: new Date(date),
+    });
 
-    await Promise.all(updatePromises);
+    let attendance;
+    if (existingAttendance) {
+      // Update existing attendance
+      existingAttendance.records = attendanceData.map((record) => ({
+        studentId: record.studentId as any,
+        status: record.status,
+      }));
+      existingAttendance.markedBy = teacherId as any;
+      attendance = await existingAttendance.save();
+    } else {
+      // Create new attendance record
+      attendance = await Attendance.create({
+        classroomId: classroom._id,
+        date: new Date(date),
+        records: attendanceData.map((record) => ({
+          studentId: record.studentId as any,
+          status: record.status,
+        })),
+        markedBy: teacherId as any,
+      });
+    }
 
     // Create audit log
     await AuditLog.create({
       userId: teacherId,
-      actionType: "ATTENDANCE_MARK",
+      actionType: "ATTENDANCE_MARKED",
       description: `Marked attendance for ${attendanceData.length} students in ${classroom.name}`,
-      targetId: classroom._id,
+      targetId: attendance._id,
     });
 
-    res.json({ message: "Attendance marked successfully" });
+    res.json({
+      success: true,
+      message: existingAttendance
+        ? "Attendance updated successfully"
+        : "Attendance marked successfully",
+      data: attendance,
+    });
   } catch (error: any) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
 

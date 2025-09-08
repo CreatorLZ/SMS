@@ -1,6 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "../lib/api";
 
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+}
+
 export interface AuditLog {
   _id: string;
   userId: User | string;
@@ -8,12 +14,6 @@ export interface AuditLog {
   description: string;
   targetId?: string;
   timestamp: string;
-}
-
-interface User {
-  _id: string;
-  name: string;
-  email: string;
 }
 
 export interface AuditLogsResponse {

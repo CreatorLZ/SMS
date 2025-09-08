@@ -113,6 +113,91 @@ export const assignStudents = async (req: Request, res: Response) => {
   }
 };
 
+// @desc    Remove student from classroom
+// @route   DELETE /api/admin/classrooms/:classroomId/students/:studentId
+// @access  Private/Admin
+export const removeStudentFromClassroom = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { classroomId, studentId } = req.params;
+
+    // Check if classroom exists
+    const classroom = await Classroom.findById(classroomId);
+    if (!classroom) {
+      return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    // Check if student exists
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Check if student is actually in this classroom
+    if (!classroom.students.includes(studentId as any)) {
+      return res
+        .status(400)
+        .json({ message: "Student is not in this classroom" });
+    }
+
+    // Remove student from classroom
+    classroom.students = classroom.students.filter(
+      (id) => id.toString() !== studentId
+    );
+    await classroom.save();
+
+    // Update student's current class to empty (or you could set it to null)
+    await Student.findByIdAndUpdate(studentId, { currentClass: "" });
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user?._id,
+      actionType: "STUDENT_REMOVED_FROM_CLASSROOM",
+      description: `Removed student ${student.fullName} from classroom ${classroom.name}`,
+      targetId: classroom._id,
+    });
+
+    res.json({
+      message: "Student removed from classroom successfully",
+      classroom,
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Get students for a specific classroom
+// @route   GET /api/admin/classrooms/:id/students
+// @access  Private/Admin
+export const getClassroomStudents = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if classroom exists
+    const classroom = await Classroom.findById(id);
+    if (!classroom) {
+      return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    // Get students for this classroom
+    const students = await Student.find({ _id: { $in: classroom.students } })
+      .select("fullName studentId currentClass status createdAt")
+      .sort({ fullName: 1 });
+
+    res.json({
+      classroom: {
+        _id: classroom._id,
+        name: classroom.name,
+      },
+      students,
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 // @desc    Get all classrooms with teacher and student details
 // @route   GET /api/admin/classrooms
 // @access  Private/Admin

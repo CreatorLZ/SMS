@@ -12,8 +12,10 @@ dotenv.config();
 import "./models/User";
 import "./models/Student";
 import "./models/Classroom";
+import "./models/Attendance";
 import "./models/AuditLog";
 import "./models/Term";
+import "./models/Timetable";
 
 // Import routes
 import authRoutes from "./routes/auth.routes";

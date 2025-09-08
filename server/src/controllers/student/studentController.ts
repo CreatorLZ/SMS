@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { Student } from "../../models/Student";
 import { User } from "../../models/User";
+import { Attendance } from "../../models/Attendance";
 import { AuditLog } from "../../models/AuditLog";
 
 // @desc    Get student's results with PIN
@@ -77,7 +78,7 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
     // Check if user is a student
     if (req.user?.role === "student") {
       student = await Student.findOne({ userId }).select(
-        "fullName studentId attendance"
+        "fullName studentId classroomId"
       );
     }
     // If parent, get attendance for the specified child
@@ -98,7 +99,7 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
       }
 
       student = await Student.findById(studentId).select(
-        "fullName studentId attendance"
+        "fullName studentId classroomId"
       );
     }
 
@@ -106,24 +107,46 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Student not found" });
     }
 
-    // Filter attendance by date range if provided
-    let filteredAttendance = student.attendance;
+    // Build query for attendance records
+    let attendanceQuery: any = {
+      classroomId: student.classroomId,
+      "records.studentId": student._id,
+    };
+
+    // Filter by date range if provided
     if (startDate || endDate) {
-      filteredAttendance = student.attendance.filter((record) => {
-        const recordDate = new Date(record.date);
-        return (
-          (!startDate || recordDate >= new Date(startDate as string)) &&
-          (!endDate || recordDate <= new Date(endDate as string))
-        );
-      });
+      attendanceQuery.date = {};
+      if (startDate) {
+        attendanceQuery.date.$gte = new Date(startDate as string);
+      }
+      if (endDate) {
+        attendanceQuery.date.$lte = new Date(endDate as string);
+      }
     }
+
+    // Get attendance records
+    const attendanceRecords = await Attendance.find(attendanceQuery)
+      .populate("markedBy", "name")
+      .sort({ date: -1 });
+
+    // Format the attendance data
+    const formattedAttendance = attendanceRecords.map((record) => {
+      const studentRecord = record.records.find(
+        (r) => r.studentId.toString() === student._id.toString()
+      );
+      return {
+        date: record.date,
+        status: studentRecord?.status || "absent",
+        markedBy: (record.markedBy as any)?.name || "Unknown",
+      };
+    });
 
     res.json({
       studentInfo: {
         fullName: student.fullName,
         studentId: student.studentId,
       },
-      attendance: filteredAttendance,
+      attendance: formattedAttendance,
     });
   } catch (error: any) {
     res.status(500).json({ message: "Server error", error: error.message });

@@ -1,29 +1,80 @@
-import { useAttendanceStore } from "../store/attendanceStore";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../lib/api";
 
 interface AttendanceRecord {
-  date: string;
-  status: "present" | "absent";
+  studentId: string;
+  status: "present" | "absent" | "late";
 }
 
-// For student/parent: returns { studentInfo, attendance }
-// For teacher: returns array of students with attendance
-export function useFetchAttendance(studentId?: string) {
-  const setAttendance = useAttendanceStore((s) => s.setAttendance);
-  return async () => {
-    if (studentId) {
-      // Student/parent view
-      const res = await api.get(`/student/attendance`, {
-        params: { studentId },
+export function useMarkAttendance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      classroomId,
+      date,
+      records,
+    }: {
+      classroomId: string;
+      date: string;
+      records: AttendanceRecord[];
+    }) => {
+      const response = await api.post(`/admin/attendance/${classroomId}`, {
+        date,
+        records,
       });
-      const data = res.data as { attendance: AttendanceRecord[] };
-      setAttendance(data.attendance);
-      return data.attendance;
-    } else {
-      // Teacher view: get all students in class
-      const res = await api.get(`/teacher/attendance`);
-      // res.data is array of students with attendance
-      return res.data;
-    }
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate and refetch classroom data
+      queryClient.invalidateQueries({ queryKey: ["classrooms"] });
+      // Invalidate attendance data if we have attendance queries
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
+    },
+  });
+}
+
+export function useGetAttendance() {
+  const queryClient = useQueryClient();
+
+  return async ({
+    classroomId,
+    date,
+  }: {
+    classroomId: string;
+    date: string;
+  }) => {
+    return queryClient.fetchQuery({
+      queryKey: ["attendance", classroomId, date],
+      queryFn: async () => {
+        const response = await api.get(`/admin/attendance/${classroomId}`, {
+          params: { date },
+        });
+        return response.data;
+      },
+    });
+  };
+}
+
+export function useGetAttendanceHistory() {
+  const queryClient = useQueryClient();
+
+  return async (filters: {
+    classroomId?: string;
+    studentId?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }) => {
+    return queryClient.fetchQuery({
+      queryKey: ["attendance-history", filters],
+      queryFn: async () => {
+        const response = await api.get("/admin/attendance", {
+          params: filters,
+        });
+        return response.data;
+      },
+    });
   };
 }

@@ -7,6 +7,7 @@ import {
   updateUser,
   deleteUser,
   getStudents,
+  getStudentById,
   createStudent,
   updateStudent,
   toggleStudentStatus,
@@ -25,8 +26,13 @@ import {
 import {
   createClassroom,
   assignStudents,
+  removeStudentFromClassroom,
+  getClassroomStudents,
   getClassrooms,
 } from "../../controllers/admin/classroomController";
+import attendanceRoutes from "./attendance.routes";
+import timetableRoutes from "./timetable.routes";
+import reportsRoutes from "./reports.routes";
 
 const router = express.Router();
 
@@ -45,7 +51,7 @@ router
 // Student routes
 router.route("/students").get(getStudents).post(createStudent);
 
-router.route("/students/:id").put(updateStudent);
+router.route("/students/:id").get(getStudentById).put(updateStudent);
 
 router.patch("/students/:id/status", toggleStudentStatus);
 
@@ -61,6 +67,13 @@ router.route("/classrooms").post(createClassroom).get(getClassrooms);
 
 router.post("/classrooms/:id/students", assignStudents);
 
+router.get("/classrooms/:id/students", getClassroomStudents);
+
+router.delete(
+  "/classrooms/:classroomId/students/:studentId",
+  removeStudentFromClassroom
+);
+
 // Teacher routes
 router.route("/teachers").post(createTeacher).get(getTeachers);
 
@@ -69,5 +82,10 @@ router
   .get(getTeacherById)
   .put(updateTeacher)
   .delete(deleteTeacher);
+
+// Mount modular routes
+router.use("/attendance", attendanceRoutes);
+router.use("/timetable", timetableRoutes);
+router.use("/reports", reportsRoutes);
 
 export default router;

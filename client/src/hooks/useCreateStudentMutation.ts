@@ -6,6 +6,14 @@ interface CreateStudentData {
   studentId: string;
   currentClass: string;
   parentId?: string;
+  gender: string;
+  dateOfBirth: string;
+  address: string;
+  location: string;
+  parentName: string;
+  parentPhone: string;
+  relationshipToStudent: string;
+  admissionDate: string;
 }
 
 export const useCreateStudentMutation = () => {

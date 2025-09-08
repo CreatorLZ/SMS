@@ -1,14 +1,20 @@
 import { create } from "zustand";
 
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+}
+
 interface AuditLogsState {
   searchQuery: string;
-  userId: string;
+  userId: User | string;
   actionType: string;
   startDate: string;
   endDate: string;
   currentPage: number;
   setSearchQuery: (query: string) => void;
-  setUserId: (userId: string) => void;
+  setUserId: (userId: User | string) => void;
   setActionType: (actionType: string) => void;
   setStartDate: (startDate: string) => void;
   setEndDate: (endDate: string) => void;

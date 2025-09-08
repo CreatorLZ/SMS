@@ -66,8 +66,8 @@ export const registerUser = async (req: Request, res: Response) => {
         fullName: name,
         studentId,
         currentClass,
+        userId: user._id,
         termFees: [],
-        attendance: [],
         results: [],
       });
     }
@@ -228,6 +228,62 @@ export const getStudents = async (req: Request, res: Response) => {
   }
 };
 
+// @desc    Get student by ID
+// @route   GET /api/admin/students/:id
+// @access  Private/Admin
+export const getStudentById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    const student = await Student.findById(id)
+      .populate("classroomId", "name")
+      .populate("parentId", "name email");
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Check if user has access to this student
+    if (req.user.role !== "admin" && req.user.role !== "superadmin") {
+      // For teachers, check if they teach this student's class
+      if (req.user.role === "teacher") {
+        const classroom = await Classroom.findOne({
+          _id: student.classroomId,
+          teacherId: req.user._id,
+        });
+        if (!classroom) {
+          return res.status(403).json({
+            message: "Not authorized to view this student",
+          });
+        }
+      } else if (req.user.role === "parent") {
+        // Parents can only view their own children
+        if (student.parentId?.toString() !== req.user._id.toString()) {
+          return res.status(403).json({
+            message: "Not authorized to view this student",
+          });
+        }
+      } else {
+        return res.status(403).json({
+          message: "Not authorized to view students",
+        });
+      }
+    }
+
+    res.json(student);
+  } catch (error: any) {
+    console.error("Error fetching student:", error);
+    res.status(500).json({
+      message: "Failed to fetch student",
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Create a new student
 // @route   POST /api/admin/students
 // @access  Private/Admin
@@ -238,7 +294,40 @@ export const createStudent = async (req: Request, res: Response) => {
       studentId: providedStudentId,
       currentClass,
       parentId,
+      gender,
+      dateOfBirth,
+      address,
+      location,
+      parentName,
+      parentPhone,
+      relationshipToStudent,
+      admissionDate,
     } = req.body;
+
+    // Validation
+    if (!gender || !["Male", "Female", "Other"].includes(gender)) {
+      return res
+        .status(400)
+        .json({ message: "Gender must be Male, Female, or Other" });
+    }
+
+    if (dateOfBirth && new Date(dateOfBirth) > new Date()) {
+      return res
+        .status(400)
+        .json({ message: "Date of birth cannot be in the future" });
+    }
+
+    if (admissionDate && new Date(admissionDate) > new Date()) {
+      return res
+        .status(400)
+        .json({ message: "Admission date cannot be in the future" });
+    }
+
+    if (parentPhone && !/^\d+$/.test(parentPhone)) {
+      return res
+        .status(400)
+        .json({ message: "Parent phone must contain only digits" });
+    }
 
     let studentId = providedStudentId;
 
@@ -258,8 +347,15 @@ export const createStudent = async (req: Request, res: Response) => {
       fullName,
       studentId,
       currentClass,
+      gender,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      address,
+      location,
+      parentName,
+      parentPhone,
+      relationshipToStudent,
+      admissionDate: admissionDate ? new Date(admissionDate) : new Date(),
       termFees: [],
-      attendance: [],
       results: [],
     });
 
@@ -301,12 +397,50 @@ export const createStudent = async (req: Request, res: Response) => {
 export const updateStudent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { fullName, studentId, currentClass, parentId } = req.body;
+    const {
+      fullName,
+      studentId,
+      currentClass,
+      parentId,
+      gender,
+      dateOfBirth,
+      address,
+      location,
+      parentName,
+      parentPhone,
+      relationshipToStudent,
+      admissionDate,
+    } = req.body;
 
     // Check if student exists
     const student = await Student.findById(id);
     if (!student) {
       return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Validation
+    if (gender && !["Male", "Female", "Other"].includes(gender)) {
+      return res
+        .status(400)
+        .json({ message: "Gender must be Male, Female, or Other" });
+    }
+
+    if (dateOfBirth && new Date(dateOfBirth) > new Date()) {
+      return res
+        .status(400)
+        .json({ message: "Date of birth cannot be in the future" });
+    }
+
+    if (admissionDate && new Date(admissionDate) > new Date()) {
+      return res
+        .status(400)
+        .json({ message: "Admission date cannot be in the future" });
+    }
+
+    if (parentPhone && !/^\d+$/.test(parentPhone)) {
+      return res
+        .status(400)
+        .json({ message: "Parent phone must contain only digits" });
     }
 
     // Check if new student ID conflicts (if changed)
@@ -320,7 +454,19 @@ export const updateStudent = async (req: Request, res: Response) => {
     // Update student
     const updatedStudent = await Student.findByIdAndUpdate(
       id,
-      { fullName, studentId, currentClass },
+      {
+        fullName,
+        studentId,
+        currentClass,
+        gender,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        address,
+        location,
+        parentName,
+        parentPhone,
+        relationshipToStudent,
+        admissionDate: admissionDate ? new Date(admissionDate) : undefined,
+      },
       { new: true }
     );
 

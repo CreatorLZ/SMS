@@ -8,6 +8,22 @@ export interface Student {
   currentClass: string;
   status: "active" | "inactive";
   createdAt: string;
+  gender?: "Male" | "Female" | "Other";
+  dateOfBirth?: Date | string;
+  address?: string;
+  location?: string;
+  parentName?: string;
+  parentPhone?: string;
+  relationshipToStudent?: "Father" | "Mother" | "Guardian";
+  admissionDate?: Date | string;
+  email?: string;
+  phoneNumber?: string;
+  emergencyContact?: {
+    name: string;
+    relationship: string;
+    phoneNumber: string;
+  };
+  enrollmentDate?: Date | string;
 }
 
 export interface StudentsResponse {

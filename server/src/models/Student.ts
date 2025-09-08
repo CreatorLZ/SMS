@@ -3,8 +3,24 @@ import mongoose, { Document, Schema } from "mongoose";
 export interface IStudent extends Document {
   fullName: string;
   studentId: string;
+  gender: "Male" | "Female" | "Other";
+  dateOfBirth: Date;
+  address: string;
+  location: string;
+  photo?: string;
+
+  parentName: string;
+  parentPhone: string;
+  parentEmail?: string;
+  relationshipToStudent: "Father" | "Mother" | "Guardian";
+
   currentClass: string;
-  status: "active" | "inactive";
+  classroomId: Schema.Types.ObjectId;
+  userId?: Schema.Types.ObjectId;
+  parentId?: Schema.Types.ObjectId;
+  status: "active" | "inactive" | "graduated" | "transferred";
+  admissionDate: Date;
+
   termFees: {
     term: "1st" | "2nd" | "3rd";
     year: number;
@@ -12,10 +28,7 @@ export interface IStudent extends Document {
     pinCode: string;
     viewable: boolean;
   }[];
-  attendance: {
-    date: Date;
-    status: "present" | "absent";
-  }[];
+
   results: {
     term: string;
     year: number;
@@ -42,16 +55,72 @@ const studentSchema = new Schema(
       unique: true,
       trim: true,
     },
+    gender: {
+      type: String,
+      enum: ["Male", "Female", "Other"],
+      required: true,
+    },
+    dateOfBirth: {
+      type: Date,
+      required: true,
+    },
+    address: {
+      type: String,
+      required: true,
+    },
+    location: {
+      type: String,
+      required: true,
+    },
+    photo: {
+      type: String, // URL of uploaded profile picture
+    },
+
+    parentName: {
+      type: String,
+      required: true,
+    },
+    parentPhone: {
+      type: String,
+      required: true,
+    },
+    parentEmail: {
+      type: String,
+    },
+    relationshipToStudent: {
+      type: String,
+      enum: ["Father", "Mother", "Guardian"],
+      required: true,
+    },
+
     currentClass: {
       type: String,
       required: [true, "Current class is required"],
       trim: true,
     },
+    classroomId: {
+      type: Schema.Types.ObjectId,
+      ref: "Classroom",
+      required: [true, "Classroom is required"],
+    },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    parentId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
     status: {
       type: String,
-      enum: ["active", "inactive"],
+      enum: ["active", "inactive", "graduated", "transferred"],
       default: "active",
     },
+    admissionDate: {
+      type: Date,
+      default: Date.now,
+    },
+
     termFees: [
       {
         term: {
@@ -77,19 +146,7 @@ const studentSchema = new Schema(
         },
       },
     ],
-    attendance: [
-      {
-        date: {
-          type: Date,
-          required: [true, "Date is required"],
-        },
-        status: {
-          type: String,
-          enum: ["present", "absent"],
-          required: [true, "Status is required"],
-        },
-      },
-    ],
+
     results: [
       {
         term: {
