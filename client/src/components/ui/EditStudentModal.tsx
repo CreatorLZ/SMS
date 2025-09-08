@@ -10,6 +10,14 @@ import {
   isValidStudentClass,
 } from "@/constants/classes";
 
+const toDateInputValue = (date: string | Date | undefined | null) => {
+  if (!date) return "";
+  const d = new Date(date);
+  const offset = d.getTimezoneOffset() * 60000; // offset in milliseconds
+  const localDate = new Date(d.getTime() - offset);
+  return localDate.toISOString().slice(0, 10);
+};
+
 export default function EditStudentModal() {
   const { isEditModalOpen, selectedStudentId, setEditModalOpen } =
     useStudentManagementStore();
@@ -69,17 +77,13 @@ export default function EditStudentModal() {
         currentClass: selectedStudent.currentClass || "",
         parentId: parentId,
         gender: selectedStudent.gender || "",
-        dateOfBirth: selectedStudent.dateOfBirth
-          ? new Date(selectedStudent.dateOfBirth).toISOString().split("T")[0]
-          : "",
+        dateOfBirth: toDateInputValue(selectedStudent.dateOfBirth),
         address: selectedStudent.address || "",
         location: selectedStudent.location || "",
         parentName: selectedStudent.parentName || "",
         parentPhone: selectedStudent.parentPhone || "",
         relationshipToStudent: selectedStudent.relationshipToStudent || "",
-        admissionDate: selectedStudent.admissionDate
-          ? new Date(selectedStudent.admissionDate).toISOString().split("T")[0]
-          : "",
+        admissionDate: toDateInputValue(selectedStudent.admissionDate),
       });
     }
   }, [selectedStudent, isEditModalOpen, users]);

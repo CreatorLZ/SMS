@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Classroom } from "../../hooks/useClassroomsQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Button } from "./button";
@@ -8,7 +8,10 @@ import TimetableManager from "./TimetableManager";
 import ReportsDashboard from "./ReportsDashboard";
 import StudentProfile from "./StudentProfile";
 import ConfirmDialog from "./ConfirmDialog";
-import { useMarkAttendance } from "../../hooks/useAttendance";
+import {
+  useMarkAttendance,
+  useGetAttendanceHistory,
+} from "../../hooks/useAttendance";
 import { useSaveTimetable } from "../../hooks/useTimetable";
 import { useRemoveStudentFromClassroom } from "../../hooks/useRemoveStudentFromClassroom";
 import { useToast } from "./use-toast";
@@ -58,12 +61,37 @@ export default function ClassroomDetailView({
   const markAttendance = useMarkAttendance();
   const saveTimetable = useSaveTimetable();
   const removeStudentFromClassroom = useRemoveStudentFromClassroom();
+  const fetchAttendance = useGetAttendanceHistory();
 
-  const getAttendanceRate = (students: any[]) => {
-    return Math.floor(Math.random() * 20) + 80;
-  };
+  const [attendanceRate, setAttendanceRate] = useState(0);
+  const [loadingRate, setLoadingRate] = useState(true);
 
-  const attendanceRate = getAttendanceRate(classroom.students);
+  useEffect(() => {
+    const loadRate = async () => {
+      try {
+        const data = await fetchAttendance({ classroomId: classroom._id });
+        let totalPresent = 0;
+        let totalPossible = 0;
+        data.attendance.forEach((att) => {
+          att.records.forEach((record) => {
+            totalPossible++;
+            if (record.status === "present" || record.status === "late")
+              totalPresent++;
+          });
+        });
+        const rate =
+          totalPossible > 0
+            ? Math.round((totalPresent / totalPossible) * 100)
+            : 0;
+        setAttendanceRate(rate);
+      } catch (error) {
+        setAttendanceRate(0);
+      } finally {
+        setLoadingRate(false);
+      }
+    };
+    loadRate();
+  }, [classroom._id, fetchAttendance]);
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
@@ -305,7 +333,7 @@ export default function ClassroomDetailView({
               <TrendingUp className="h-8 w-8 text-orange-600" />
               <div>
                 <p className="text-2xl font-bold text-gray-900">
-                  +{Math.floor(Math.random() * 5) + 1}%
+                  +{attendanceRate}%
                 </p>
                 <p className="text-sm text-gray-600">vs Last Month</p>
               </div>

@@ -23,7 +23,7 @@ interface AttendanceMarkerProps {
   students: Student[];
   onSave: (attendanceData: {
     [studentId: string]: "present" | "absent" | "late";
-  }) => void;
+  }) => Promise<void>;
   onCancel: () => void;
   existingAttendance?: {
     [studentId: string]: "present" | "absent" | "late";

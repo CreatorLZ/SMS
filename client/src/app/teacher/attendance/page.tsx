@@ -5,7 +5,9 @@ import { useClassroomsQuery } from "../../../hooks/useClassroomsQuery";
 import {
   useMarkAttendance,
   useGetAttendance,
+  AttendanceResponse,
 } from "../../../hooks/useAttendance";
+
 import DashboardLayout from "../../../components/ui/dashboard-layout";
 import RoleGuard from "../../../components/ui/role-guard";
 import { Button } from "../../../components/ui/button";
@@ -66,15 +68,15 @@ export default function TeacherAttendancePage() {
   const loadExistingAttendance = async () => {
     try {
       setIsLoading(true);
-      const response: any = await fetchAttendance({
+      const response: AttendanceResponse = await fetchAttendance({
         classroomId: selectedClassroom,
         date: selectedDate,
       });
       if (response && response.records) {
         const attendanceMap: { [key: string]: "present" | "absent" | "late" } =
           {};
-        response.records.forEach((record: any) => {
-          attendanceMap[record.studentId] = record.status;
+        response.records.forEach((record) => {
+          attendanceMap[record.studentId._id] = record.status;
         });
         setAttendanceData(attendanceMap);
       } else {
@@ -130,10 +132,11 @@ export default function TeacherAttendancePage() {
         message: "Attendance marked successfully",
         type: "success",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error marking attendance:", error);
       setToastMessage({
-        message: error.response?.data?.message || "Failed to mark attendance",
+        message:
+          (error as any).response?.data?.message || "Failed to mark attendance",
         type: "error",
       });
     } finally {

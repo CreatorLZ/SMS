@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react";
 import { Classroom } from "../../hooks/useClassroomsQuery";
 import { useClassroomManagementStore } from "../../store/classroomManagementStore";
+import { useGetAttendanceHistory } from "../../hooks/useAttendance";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Button } from "./button";
 import { Users, UserCheck, Calendar, TrendingUp } from "lucide-react";
@@ -14,16 +16,59 @@ export default function ClassroomCards({
   onViewDetails,
 }: ClassroomCardsProps) {
   const { setAssignModalOpen } = useClassroomManagementStore();
+  const fetchAttendance = useGetAttendanceHistory();
 
-  const getAttendanceRate = (students: any[]) => {
-    // Mock attendance rate - in real implementation, this would come from attendance data
-    return Math.floor(Math.random() * 20) + 80; // Random between 80-100%
-  };
+  const [attendanceRates, setAttendanceRates] = useState<{
+    [classroomId: string]: number;
+  }>({});
+  const [loadingRates, setLoadingRates] = useState(true);
+
+  useEffect(() => {
+    const loadRates = async () => {
+      if (classrooms.length === 0) return;
+      setLoadingRates(true);
+      try {
+        const promises = classrooms.map(async (classroom) => {
+          const data = await fetchAttendance({ classroomId: classroom._id });
+          let totalPresent = 0;
+          let totalPossible = 0;
+          data.attendance.forEach((att) => {
+            att.records.forEach((record) => {
+              totalPossible++;
+              if (record.status === "present" || record.status === "late")
+                totalPresent++;
+            });
+          });
+          const rate =
+            totalPossible > 0
+              ? Math.round((totalPresent / totalPossible) * 100)
+              : 0;
+          return { classroomId: classroom._id, rate };
+        });
+        const results = await Promise.all(promises);
+        const rates: { [classroomId: string]: number } = {};
+        results.forEach(({ classroomId, rate }) => {
+          rates[classroomId] = rate;
+        });
+        setAttendanceRates(rates);
+      } catch (error) {
+        console.error("Error fetching attendance rates:", error);
+        const rates: { [classroomId: string]: number } = {};
+        classrooms.forEach((c) => (rates[c._id] = 0));
+        setAttendanceRates(rates);
+      } finally {
+        setLoadingRates(false);
+      }
+    };
+    loadRates();
+  }, [classrooms, fetchAttendance]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {classrooms.map((classroom) => {
-        const attendanceRate = getAttendanceRate(classroom.students);
+        const attendanceRate = loadingRates
+          ? 0
+          : attendanceRates[classroom._id] ?? 0;
 
         return (
           <Card

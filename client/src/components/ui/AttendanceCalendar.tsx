@@ -64,13 +64,20 @@ export default function AttendanceCalendar({
     return days;
   };
 
+  const toLocalDateKey = (date: Date) => {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const getAttendanceStatus = (date: Date) => {
     if (!attendanceData) return "no-data";
 
-    const dateKey = date.toISOString().split("T")[0];
+    const dateKey = toLocalDateKey(date);
     const data = attendanceData[dateKey];
 
-    if (!data) return "no-data";
+    if (!data || data.total <= 0) return "no-data";
 
     const attendanceRate = (data.present + data.late) / data.total;
 

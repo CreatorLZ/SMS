@@ -6,6 +6,33 @@ interface AttendanceRecord {
   status: "present" | "absent" | "late";
 }
 
+export interface AttendanceResponse {
+  _id: string;
+  classroomId: string;
+  date: string;
+  records: Array<{
+    studentId: {
+      _id: string;
+      fullName: string;
+      studentId: string;
+    };
+    status: "present" | "absent" | "late";
+  }>;
+  markedBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AttendanceHistoryResponse {
+  attendance: AttendanceResponse[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
 export function useMarkAttendance() {
   const queryClient = useQueryClient();
 
@@ -43,14 +70,14 @@ export function useGetAttendance() {
   }: {
     classroomId: string;
     date: string;
-  }) => {
+  }): Promise<AttendanceResponse> => {
     return queryClient.fetchQuery({
       queryKey: ["attendance", classroomId, date],
-      queryFn: async () => {
+      queryFn: async (): Promise<AttendanceResponse> => {
         const response = await api.get(`/admin/attendance/${classroomId}`, {
           params: { date },
         });
-        return response.data;
+        return response.data as AttendanceResponse;
       },
     });
   };
@@ -66,14 +93,14 @@ export function useGetAttendanceHistory() {
     endDate?: string;
     page?: number;
     limit?: number;
-  }) => {
+  }): Promise<AttendanceHistoryResponse> => {
     return queryClient.fetchQuery({
       queryKey: ["attendance-history", filters],
-      queryFn: async () => {
+      queryFn: async (): Promise<AttendanceHistoryResponse> => {
         const response = await api.get("/admin/attendance", {
           params: filters,
         });
-        return response.data;
+        return response.data as AttendanceHistoryResponse;
       },
     });
   };
