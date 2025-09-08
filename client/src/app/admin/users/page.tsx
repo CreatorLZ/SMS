@@ -9,7 +9,7 @@ import DeleteConfirmationModal from "../../../components/ui/DeleteConfirmationMo
 import { useUserManagementStore } from "../../../store/userManagementStore";
 import { useDeleteUserMutation } from "../../../hooks/useDeleteUserMutation";
 import { useUsersQuery } from "../../../hooks/useUsersQuery";
-import { Toast } from "../../../components/ui/toast";
+import { Toast } from "../../../components/ui/Toast";
 
 export default function AdminUsersPage() {
   const {
@@ -48,10 +48,13 @@ export default function AdminUsersPage() {
       );
       setDeleteModalOpen(false);
     } catch (error: any) {
-      showToastMessage(
-        error?.response?.data?.message || "Failed to delete user",
-        "error"
-      );
+      console.error("Delete user error:", error);
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        String(error) ||
+        "Failed to delete user";
+      showToastMessage(message, "error");
     }
   };
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useCreateUserMutation } from "@/hooks/useCreateUserMutation";
 import { useUserManagementStore } from "@/store/userManagementStore";
-import { Toast } from "./toast";
+import { Toast } from "./Toast";
 import { STUDENT_CLASSES } from "@/constants/classes";
 
 export default function CreateUserModal() {
@@ -33,19 +33,39 @@ export default function CreateUserModal() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const submitData = { ...formData };
+      // Type-safe object construction based on role
+      const baseData = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      };
 
-      // Clean up role-specific fields
-      if (formData.role !== "student") {
-        delete (submitData as any).studentId;
-        delete (submitData as any).currentClass;
-      }
-      if (formData.role !== "parent") {
-        delete (submitData as any).linkedStudentIds;
-      }
-      if (formData.role !== "teacher") {
-        delete (submitData as any).subjectSpecialization;
-        delete (submitData as any).assignedClassId;
+      let submitData: typeof baseData & Record<string, any>;
+
+      switch (formData.role) {
+        case "student":
+          submitData = {
+            ...baseData,
+            studentId: formData.studentId,
+            currentClass: formData.currentClass,
+          };
+          break;
+        case "parent":
+          submitData = {
+            ...baseData,
+            linkedStudentIds: formData.linkedStudentIds,
+          };
+          break;
+        case "teacher":
+          submitData = {
+            ...baseData,
+            subjectSpecialization: formData.subjectSpecialization,
+            assignedClassId: formData.assignedClassId,
+          };
+          break;
+        default:
+          submitData = baseData;
       }
 
       await createUserMutation.mutateAsync(submitData);

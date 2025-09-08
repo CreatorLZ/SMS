@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useCreateStudentMutation } from "@/hooks/useCreateStudentMutation";
 import { useUsersQuery } from "@/hooks/useUsersQuery";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
-import { Toast } from "./toast";
+import { Toast } from "./Toast";
 import {
   STUDENT_CLASSES,
   STUDENT_CLASS_VALUES,

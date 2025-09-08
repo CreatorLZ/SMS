@@ -39,19 +39,35 @@ export default function AuditLogTable({
   }
 
   const getActionTypeColor = (actionType: string) => {
-    const colors: Record<string, string> = {
-      CREATE: "bg-green-100 text-green-800",
-      UPDATE: "bg-blue-100 text-blue-800",
-      DELETE: "bg-red-100 text-red-800",
-      LOGIN: "bg-emerald-100 text-emerald-800",
-      LOGOUT: "bg-gray-100 text-gray-800",
-      default: "bg-purple-100 text-purple-800",
-    };
-    return colors[actionType.toUpperCase()] || colors.default;
+    const normalized = actionType.toUpperCase().trim();
+
+    if (normalized.includes("CREATE")) {
+      return "bg-green-100 text-green-800";
+    }
+    if (normalized.includes("UPDATE")) {
+      return "bg-blue-100 text-blue-800";
+    }
+    if (normalized.includes("DELETE")) {
+      return "bg-red-100 text-red-800";
+    }
+    if (
+      normalized.includes("LOGIN") ||
+      normalized.includes("LOGOUT") ||
+      normalized.includes("ACTIVATE") ||
+      normalized.includes("DEACTIVATE")
+    ) {
+      return "bg-emerald-100 text-emerald-800";
+    }
+
+    return "bg-purple-100 text-purple-800";
   };
 
   const formatTimeAgo = (timestamp: string | number) => {
+    if (timestamp === null || timestamp === undefined) return "Unknown";
+
     const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return "Unknown";
+
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -182,13 +198,17 @@ export default function AuditLogTable({
       {pagination && onPageChange && pagination.pages > 1 && (
         <div className="flex items-center justify-between pt-6 border-t border-gray-100">
           <div className="text-sm text-gray-600">
-            Showing{" "}
-            {(currentPage - 1) * (pagination.total / pagination.pages) + 1} to{" "}
-            {Math.min(
-              currentPage * (pagination.total / pagination.pages),
-              pagination.total
-            )}{" "}
-            of {pagination.total} results
+            {(() => {
+              const start =
+                pagination.total === 0
+                  ? 0
+                  : (currentPage - 1) * pagination.limit + 1;
+              const end = Math.min(
+                currentPage * pagination.limit,
+                pagination.total
+              );
+              return `Showing ${start} to ${end} of ${pagination.total} results`;
+            })()}
           </div>
 
           <div className="flex items-center gap-2">

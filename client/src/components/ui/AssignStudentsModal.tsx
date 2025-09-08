@@ -3,7 +3,7 @@ import { useStudentsQuery, Student } from "@/hooks/useStudentsQuery";
 import { useAssignStudentsMutation } from "@/hooks/useAssignStudentsMutation";
 import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useClassroomManagementStore } from "@/store/classroomManagementStore";
-import { Toast } from "./toast";
+import { Toast } from "./Toast";
 
 export default function AssignStudentsModal() {
   const { isAssignModalOpen, selectedClassroomId, setAssignModalOpen } =

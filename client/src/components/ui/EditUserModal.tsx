@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useUpdateUserMutation } from "@/hooks/useUpdateUserMutation";
 import { useUserManagementStore } from "@/store/userManagementStore";
-import { useUsersQuery } from "@/hooks/useUsersQuery";
-import { Toast } from "./toast";
+import { useUsersQuery, useUserQuery } from "@/hooks/useUsersQuery";
+import { Toast } from "./Toast";
 import { STUDENT_CLASSES } from "@/constants/classes";
 
 export default function EditUserModal() {
@@ -32,11 +32,16 @@ export default function EditUserModal() {
     assignedClassId: "",
   });
 
-  // Get user data for editing
+  // Get user data for editing - use single user query with fallback to users list
+  const {
+    data: singleUserData,
+    isLoading: isSingleUserLoading,
+    error: singleUserError,
+  } = useUserQuery(selectedUserId);
   const { data: usersData } = useUsersQuery({});
-  const currentUser = usersData?.data?.find(
-    (user) => user._id === selectedUserId
-  );
+  const currentUser =
+    singleUserData?.data ||
+    usersData?.data?.find((user) => user._id === selectedUserId);
 
   useEffect(() => {
     if (currentUser && isEditModalOpen) {
@@ -67,6 +72,10 @@ export default function EditUserModal() {
       const submitData = { ...formData };
 
       // Clean up role-specific fields
+      if (formData.role !== "student") {
+        delete (submitData as any).studentId;
+        delete (submitData as any).currentClass;
+      }
       if (formData.role !== "parent") {
         delete (submitData as any).linkedStudentIds;
       }
@@ -96,7 +105,18 @@ export default function EditUserModal() {
     setSelectedUserId(null);
   };
 
-  if (!isEditModalOpen || !currentUser) return null;
+  // Show loading state while fetching single user data
+  if (!isEditModalOpen) return null;
+  if (selectedUserId && isSingleUserLoading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg w-full max-w-md">
+          <div className="text-center">Loading user data...</div>
+        </div>
+      </div>
+    );
+  }
+  if (!currentUser) return null;
 
   return (
     <>

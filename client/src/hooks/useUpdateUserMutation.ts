@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 
-interface UpdateUserData {
+export interface UpdateUserData {
   name?: string;
   email?: string;
   role?: string;

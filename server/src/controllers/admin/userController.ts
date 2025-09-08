@@ -130,6 +130,22 @@ export const getUsers = async (req: Request, res: Response) => {
 
     const pageNum = parseInt(page as string, 10);
     const limitNum = parseInt(limit as string, 10);
+
+    // Validate page and limit
+    if (isNaN(pageNum) || pageNum < 1 || !isFinite(pageNum)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid page parameter. Must be a positive integer.",
+      });
+    }
+
+    if (isNaN(limitNum) || limitNum < 1 || !isFinite(limitNum)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid limit parameter. Must be a positive integer.",
+      });
+    }
+
     const skip = (pageNum - 1) * limitNum;
 
     const users = await User.find(query)
@@ -652,15 +668,9 @@ export const getUserById = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const {
-      name,
-      email,
-      role,
-      status,
-      linkedStudentIds,
-      subjectSpecialization,
-      assignedClassId,
-    } = req.body;
+    const { name, email, role, status } = req.body;
+
+    let { linkedStudentIds, subjectSpecialization, assignedClassId } = req.body;
 
     // Check if user exists
     const user = await User.findById(id);
@@ -682,37 +692,58 @@ export const updateUser = async (req: Request, res: Response) => {
       }
     }
 
-    // Handle classroom reassignment for teachers
-    if (
-      role === "teacher" &&
-      assignedClassId !== user.assignedClassId?.toString()
-    ) {
-      // Remove teacher from old classroom
+    // Detect role changes and handle cleanup/promotion
+    const roleChanged = user.role !== role;
+
+    // Handle teacher demotion - clear teacher-specific fields and classroom assignment
+    if (roleChanged && user.role === "teacher" && role !== "teacher") {
+      // Clear teacher-only fields
+      subjectSpecialization = undefined;
+      assignedClassId = undefined;
+
+      // Remove teacher from assigned classroom
       if (user.assignedClassId) {
         await Classroom.findByIdAndUpdate(user.assignedClassId, {
           teacherId: null,
         });
       }
+    }
 
-      // Check if new classroom exists and is not already assigned
-      if (assignedClassId) {
-        const classroom = await Classroom.findById(assignedClassId);
-        if (!classroom) {
-          return res.status(400).json({
-            success: false,
-            message: "Classroom not found",
+    // Handle parent demotion - clear linked students
+    if (roleChanged && user.role === "parent" && role !== "parent") {
+      linkedStudentIds = undefined;
+    }
+
+    // Handle classroom reassignment for teachers
+    if (role === "teacher") {
+      if (assignedClassId !== user.assignedClassId?.toString()) {
+        // Remove teacher from old classroom
+        if (user.assignedClassId) {
+          await Classroom.findByIdAndUpdate(user.assignedClassId, {
+            teacherId: null,
           });
         }
-        if (classroom.teacherId && classroom.teacherId.toString() !== id) {
-          return res.status(400).json({
-            success: false,
-            message: "Classroom already has a teacher assigned",
-          });
+
+        // Check if new classroom exists and is not already assigned
+        if (assignedClassId) {
+          const classroom = await Classroom.findById(assignedClassId);
+          if (!classroom) {
+            return res.status(400).json({
+              success: false,
+              message: "Classroom not found",
+            });
+          }
+          if (classroom.teacherId && classroom.teacherId.toString() !== id) {
+            return res.status(400).json({
+              success: false,
+              message: "Classroom already has a teacher assigned",
+            });
+          }
         }
       }
     }
 
-    // Update user
+    // Update user with validation enabled
     const updatedUser = await User.findByIdAndUpdate(
       id,
       {
@@ -725,7 +756,7 @@ export const updateUser = async (req: Request, res: Response) => {
           role === "teacher" ? subjectSpecialization : undefined,
         assignedClassId: role === "teacher" ? assignedClassId : undefined,
       },
-      { new: true }
+      { new: true, runValidators: true }
     ).select("-password -refreshTokens");
 
     // Update classroom's teacherId if assigned
@@ -776,6 +807,14 @@ export const deleteUser = async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         message: "Cannot delete superadmin users",
+      });
+    }
+
+    // Handle teacher-specific cleanup before deactivation
+    if (user.role === "teacher" && user.assignedClassId) {
+      // Remove teacher from assigned classroom
+      await Classroom.findByIdAndUpdate(user.assignedClassId, {
+        teacherId: null,
       });
     }
 

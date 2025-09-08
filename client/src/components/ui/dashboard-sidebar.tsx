@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
+import { Toast } from "./Toast";
+import { useState } from "react";
 
 type ColorType = "emerald" | "blue" | "purple" | "cyan" | "orange" | "teal";
 
@@ -115,6 +117,16 @@ export function DashboardSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastProps, setToastProps] = useState<{
+    message: string;
+    type: "success" | "error";
+  }>({ message: "", type: "success" });
+
+  const showToastMessage = (message: string, type: "success" | "error") => {
+    setToastProps({ message, type });
+    setShowToast(true);
+  };
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -122,12 +134,12 @@ export function DashboardSidebar() {
     setIsLoggingOut(true);
     try {
       await api.post("/auth/logout");
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
       logout();
       router.push("/admin/login");
+    } catch (error) {
+      console.error("Logout error:", error);
       setIsLoggingOut(false);
+      showToastMessage("Logout failed, please try again", "error");
     }
   };
 
@@ -273,7 +285,9 @@ export function DashboardSidebar() {
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarFallback className="rounded-lg bg-gradient-to-br from-gray-400 to-gray-600 text-white">
-                      {user.name?.charAt(0).toUpperCase()}
+                      {user?.name && user.name.length
+                        ? user.name.charAt(0).toUpperCase()
+                        : "?"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
@@ -291,6 +305,14 @@ export function DashboardSidebar() {
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
+
+      {showToast && toastProps && (
+        <Toast
+          message={toastProps.message}
+          type={toastProps.type}
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </>
   );
 }

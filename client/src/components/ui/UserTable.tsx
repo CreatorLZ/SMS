@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useUsersQuery, User } from "@/hooks/useUsersQuery";
 import { useUserManagementStore } from "@/store/userManagementStore";
-import { Toast } from "./toast";
+import { Toast } from "./Toast";
 
 export default function UserTable() {
   const {
@@ -21,11 +21,19 @@ export default function UserTable() {
     type: "success" | "error";
   } | null>(null);
 
-  const { data, isLoading, error } = useUsersQuery({
-    role: roleFilter,
-    status: statusFilter,
-    search: searchQuery,
-  });
+  // Sanitize inputs before calling useUsersQuery
+  const queryParams: any = {};
+  if (searchQuery.trim()) {
+    queryParams.search = searchQuery.trim();
+  }
+  if (roleFilter && roleFilter !== "all") {
+    queryParams.role = roleFilter;
+  }
+  if (statusFilter && statusFilter !== "all") {
+    queryParams.status = statusFilter;
+  }
+
+  const { data, isLoading, error } = useUsersQuery(queryParams);
 
   const handleDeleteClick = (userId: string) => {
     setDeleteModalOpen(true, userId);

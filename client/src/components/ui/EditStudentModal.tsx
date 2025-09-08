@@ -3,7 +3,7 @@ import { useUpdateStudentMutation } from "@/hooks/useUpdateStudentMutation";
 import { useStudentsQuery, Student } from "@/hooks/useStudentsQuery";
 import { useUsersQuery } from "@/hooks/useUsersQuery";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
-import { Toast } from "./toast";
+import { Toast } from "./Toast";
 import {
   STUDENT_CLASSES,
   STUDENT_CLASS_VALUES,

@@ -4,7 +4,7 @@ import DashboardLayout from "../../../components/ui/dashboard-layout";
 import RoleGuard from "../../../components/ui/role-guard";
 import { useTeachersQuery } from "../../../hooks/useTeachersQuery";
 import { useUpdateTeacherMutation } from "../../../hooks/useUpdateTeacherMutation";
-import { Toast } from "../../../components/ui/toast";
+import { Toast } from "../../../components/ui/Toast";
 import { useCreateTeacherMutation } from "@/hooks/useCreateTeacherMutation";
 import { useDeleteTeacherMutation } from "@/hooks/useDeleteTeacherMutation";
 import TeacherTable from "@/components/ui/TeacherTable";

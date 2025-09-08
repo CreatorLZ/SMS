@@ -32,6 +32,11 @@ interface UsersResponse {
   };
 }
 
+interface UserResponse {
+  success: boolean;
+  data: User;
+}
+
 export const useUsersQuery = (filters?: {
   role?: string;
   status?: string;
@@ -54,5 +59,16 @@ export const useUsersQuery = (filters?: {
       const response = await api.get(`/admin/users?${params.toString()}`);
       return response.data as UsersResponse;
     },
+  });
+};
+
+export const useUserQuery = (userId: string | null) => {
+  return useQuery<UserResponse>({
+    queryKey: ["user", userId],
+    queryFn: async (): Promise<UserResponse> => {
+      const response = await api.get(`/admin/users/${userId}`);
+      return response.data as UserResponse;
+    },
+    enabled: !!userId,
   });
 };

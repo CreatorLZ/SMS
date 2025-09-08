@@ -1,7 +1,7 @@
 import { useStudentsQuery, Student } from "@/hooks/useStudentsQuery";
 import { useToggleStudentStatusMutation } from "@/hooks/useToggleStudentStatusMutation";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
-import { Toast } from "./toast";
+import { Toast } from "./Toast";
 import { useState } from "react";
 
 export default function StudentTable() {

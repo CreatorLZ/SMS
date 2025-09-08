@@ -1,78 +1,60 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import * as React from "react";
+import { X, CheckCircle, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export type ToastProps = {
+interface ToastProps {
   message: string;
-  type?: "success" | "error";
-  duration?: number;
-  onClose?: () => void;
-};
+  type: "success" | "error";
+  onClose: () => void;
+}
 
-export function Toast({
-  message,
-  type = "success",
-  duration = 3000,
-  onClose,
-}: ToastProps) {
-  const [show, setShow] = useState(true);
-  const onCloseRef = useRef(onClose);
-  const closedByTimerRef = useRef(false);
+export function Toast({ message, type, onClose }: ToastProps) {
+  const [isVisible, setIsVisible] = React.useState(true);
 
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
-  useEffect(() => {
-    closedByTimerRef.current = false;
-    const timer = setTimeout(() => {
-      closedByTimerRef.current = true;
-      setShow(false);
-    }, duration);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [duration]);
-
-  const baseClasses =
-    "fixed bottom-4 right-4 p-4 rounded-lg shadow-lg flex items-center gap-2 min-w-[300px] z-50";
-  const typeClasses = {
-    success: "bg-green-50 text-green-800 border border-green-200",
-    error: "bg-red-50 text-red-800 border border-red-200",
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(onClose, 300); // Allow animation to complete
   };
 
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      handleClose();
+    }, 5000); // Auto close after 5 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!isVisible) return null;
+
   return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          onAnimationComplete={(definition) => {
-            if (definition === "exit" && closedByTimerRef.current) {
-              onCloseRef.current?.();
-            }
-          }}
-          role="status"
-          aria-live="polite"
-          className={`${baseClasses} ${typeClasses[type]}`}
-        >
-          <span className="flex-1">{message}</span>
-          <button
-            onClick={() => {
-              setShow(false);
-              onClose?.();
-            }}
-            className="hover:opacity-70 transition-opacity"
-            aria-label="Close notification"
-          >
-            <X size={18} />
-          </button>
-        </motion.div>
+    <div
+      className={cn(
+        "fixed top-4 right-4 z-50 flex items-center gap-3 rounded-lg border p-4 shadow-lg transition-all duration-300",
+        "animate-in slide-in-from-top-2 fade-in",
+        type === "success"
+          ? "border-green-200 bg-green-50 text-green-800"
+          : "border-red-200 bg-red-50 text-red-800"
       )}
-    </AnimatePresence>
+    >
+      {type === "success" ? (
+        <CheckCircle className="h-5 w-5 text-green-600" />
+      ) : (
+        <AlertCircle className="h-5 w-5 text-red-600" />
+      )}
+
+      <p className="text-sm font-medium">{message}</p>
+
+      <button
+        onClick={handleClose}
+        className={cn(
+          "ml-2 rounded-full p-1 transition-colors hover:bg-black/10",
+          type === "success" ? "text-green-600" : "text-red-600"
+        )}
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
   );
 }
