@@ -11,6 +11,7 @@ export interface IUser extends Document {
   linkedStudentIds?: string[];
   assignedClassId?: string;
   subjectSpecialization?: string;
+  status: "active" | "inactive";
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 

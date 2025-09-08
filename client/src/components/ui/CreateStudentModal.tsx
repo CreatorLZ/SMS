@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
 import { useCreateStudentMutation } from "@/hooks/useCreateStudentMutation";
-import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useUsersQuery } from "@/hooks/useUsersQuery";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
 import { Toast } from "./toast";
+import {
+  STUDENT_CLASSES,
+  STUDENT_CLASS_VALUES,
+  isValidStudentClass,
+} from "@/constants/classes";
 
 export default function CreateStudentModal() {
   const { isCreateModalOpen, setCreateModalOpen } = useStudentManagementStore();
   const createStudentMutation = useCreateStudentMutation();
-  const { data: classrooms } = useClassroomsQuery();
   const { data: users } = useUsersQuery();
 
   const [formData, setFormData] = useState({
@@ -76,7 +79,8 @@ export default function CreateStudentModal() {
   };
 
   // Filter only parent users
-  const parentUsers = users?.filter((user) => user.role === "parent") || [];
+  const parentUsers =
+    users?.data?.filter((user) => user.role === "parent") || [];
 
   if (!isCreateModalOpen) return null;
 
@@ -158,9 +162,9 @@ export default function CreateStudentModal() {
               required
             >
               <option value="">Select a class</option>
-              {classrooms?.map((classroom) => (
-                <option key={classroom._id} value={classroom.name}>
-                  {classroom.name}
+              {STUDENT_CLASSES.map((classOption) => (
+                <option key={classOption.value} value={classOption.value}>
+                  {classOption.label}
                 </option>
               ))}
             </select>

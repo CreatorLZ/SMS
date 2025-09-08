@@ -2,22 +2,7 @@ import { useState } from "react";
 import { useCreateClassroomMutation } from "@/hooks/useCreateClassroomMutation";
 import { useTeachersQuery, Teacher } from "@/hooks/useTeachersQuery";
 import { useClassroomManagementStore } from "@/store/classroomManagementStore";
-
-// Allowed classroom names from backend
-const ALLOWED_CLASSROOMS = [
-  "Primary 1",
-  "Primary 2",
-  "Primary 3",
-  "Primary 4",
-  "Primary 5",
-  "Primary 6",
-  "JSS1",
-  "JSS2",
-  "JSS3",
-  "SS1",
-  "SS2",
-  "SS3",
-];
+import { STUDENT_CLASSES } from "@/constants/classes";
 
 export default function CreateClassroomModal() {
   const { isCreateModalOpen, setCreateModalOpen } =
@@ -63,9 +48,9 @@ export default function CreateClassroomModal() {
               required
             >
               <option value="">Select a classroom</option>
-              {ALLOWED_CLASSROOMS.map((classroom) => (
-                <option key={classroom} value={classroom}>
-                  {classroom}
+              {STUDENT_CLASSES.map((classOption) => (
+                <option key={classOption.value} value={classOption.value}>
+                  {classOption.label}
                 </option>
               ))}
             </select>

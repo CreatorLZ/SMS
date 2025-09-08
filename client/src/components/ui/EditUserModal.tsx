@@ -1,12 +1,19 @@
-import { useState } from "react";
-import { useCreateUserMutation } from "@/hooks/useCreateUserMutation";
+import { useState, useEffect } from "react";
+import { useUpdateUserMutation } from "@/hooks/useUpdateUserMutation";
 import { useUserManagementStore } from "@/store/userManagementStore";
+import { useUsersQuery } from "@/hooks/useUsersQuery";
 import { Toast } from "./toast";
 import { STUDENT_CLASSES } from "@/constants/classes";
 
-export default function CreateUserModal() {
-  const { isCreateModalOpen, setCreateModalOpen } = useUserManagementStore();
-  const createUserMutation = useCreateUserMutation();
+export default function EditUserModal() {
+  const {
+    isEditModalOpen,
+    selectedUserId,
+    setEditModalOpen,
+    setSelectedUserId,
+  } = useUserManagementStore();
+
+  const updateUserMutation = useUpdateUserMutation();
   const [showToast, setShowToast] = useState(false);
   const [toastProps, setToastProps] = useState<{
     message: string;
@@ -16,14 +23,36 @@ export default function CreateUserModal() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
     role: "student",
+    status: "active",
     studentId: "",
     currentClass: "",
     linkedStudentIds: [] as string[],
     subjectSpecialization: "",
     assignedClassId: "",
   });
+
+  // Get user data for editing
+  const { data: usersData } = useUsersQuery({});
+  const currentUser = usersData?.data?.find(
+    (user) => user._id === selectedUserId
+  );
+
+  useEffect(() => {
+    if (currentUser && isEditModalOpen) {
+      setFormData({
+        name: currentUser.name,
+        email: currentUser.email,
+        role: currentUser.role,
+        status: currentUser.status,
+        studentId: (currentUser as any).studentId || "",
+        currentClass: (currentUser as any).currentClass || "",
+        linkedStudentIds: currentUser.linkedStudentIds?.map((s) => s._id) || [],
+        subjectSpecialization: currentUser.subjectSpecialization || "",
+        assignedClassId: currentUser.assignedClassId?._id || "",
+      });
+    }
+  }, [currentUser, isEditModalOpen]);
 
   const showToastMessage = (message: string, type: "success" | "error") => {
     setToastProps({ message, type });
@@ -32,14 +61,12 @@ export default function CreateUserModal() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedUserId) return;
+
     try {
       const submitData = { ...formData };
 
       // Clean up role-specific fields
-      if (formData.role !== "student") {
-        delete (submitData as any).studentId;
-        delete (submitData as any).currentClass;
-      }
       if (formData.role !== "parent") {
         delete (submitData as any).linkedStudentIds;
       }
@@ -48,48 +75,34 @@ export default function CreateUserModal() {
         delete (submitData as any).assignedClassId;
       }
 
-      await createUserMutation.mutateAsync(submitData);
-      showToastMessage("User created successfully", "success");
-      setCreateModalOpen(false);
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-        role: "student",
-        studentId: "",
-        currentClass: "",
-        linkedStudentIds: [],
-        subjectSpecialization: "",
-        assignedClassId: "",
+      await updateUserMutation.mutateAsync({
+        id: selectedUserId,
+        data: submitData,
       });
+
+      showToastMessage("User updated successfully", "success");
+      setEditModalOpen(false);
+      setSelectedUserId(null);
     } catch (error: any) {
       showToastMessage(
-        error?.response?.data?.message || "Failed to create user",
+        error?.response?.data?.message || "Failed to update user",
         "error"
       );
     }
   };
 
-  const handleRoleChange = (role: string) => {
-    setFormData({
-      ...formData,
-      role,
-      // Reset role-specific fields when role changes
-      studentId: "",
-      currentClass: "",
-      linkedStudentIds: [],
-      subjectSpecialization: "",
-      assignedClassId: "",
-    });
+  const handleClose = () => {
+    setEditModalOpen(false);
+    setSelectedUserId(null);
   };
 
-  if (!isCreateModalOpen) return null;
+  if (!isEditModalOpen || !currentUser) return null;
 
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-          <h2 className="text-xl font-bold mb-4">Create New User</h2>
+          <h2 className="text-xl font-bold mb-4">Edit User</h2>
           <form onSubmit={handleSubmit}>
             {/* Common Fields */}
             <div className="mb-4">
@@ -117,28 +130,31 @@ export default function CreateUserModal() {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Password</label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                className="w-full p-2 border rounded"
-                required
-              />
-            </div>
-            <div className="mb-4">
               <label className="block text-sm font-medium mb-1">Role</label>
               <select
                 value={formData.role}
-                onChange={(e) => handleRoleChange(e.target.value)}
+                onChange={(e) =>
+                  setFormData({ ...formData, role: e.target.value })
+                }
                 className="w-full p-2 border rounded"
               >
                 <option value="admin">Admin</option>
                 <option value="teacher">Teacher</option>
                 <option value="student">Student</option>
                 <option value="parent">Parent</option>
+              </select>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value })
+                }
+                className="w-full p-2 border rounded"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
               </select>
             </div>
 
@@ -156,7 +172,7 @@ export default function CreateUserModal() {
                       setFormData({ ...formData, studentId: e.target.value })
                     }
                     className="w-full p-2 border rounded"
-                    placeholder="Auto-generated if empty"
+                    required
                   />
                 </div>
                 <div className="mb-4">
@@ -204,7 +220,7 @@ export default function CreateUserModal() {
                 </div>
                 <div className="mb-4">
                   <label className="block text-sm font-medium mb-1">
-                    Assigned Class ID (Optional)
+                    Assigned Class ID
                   </label>
                   <input
                     type="text"
@@ -216,7 +232,7 @@ export default function CreateUserModal() {
                       })
                     }
                     className="w-full p-2 border rounded"
-                    placeholder="Classroom ID to assign"
+                    placeholder="Classroom ID"
                   />
                 </div>
               </>
@@ -226,7 +242,7 @@ export default function CreateUserModal() {
             {formData.role === "parent" && (
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-1">
-                  Linked Student IDs (Optional)
+                  Linked Student IDs
                 </label>
                 <input
                   type="text"
@@ -249,7 +265,7 @@ export default function CreateUserModal() {
             <div className="flex justify-end space-x-2">
               <button
                 type="button"
-                onClick={() => setCreateModalOpen(false)}
+                onClick={handleClose}
                 className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
               >
                 Cancel
@@ -257,9 +273,9 @@ export default function CreateUserModal() {
               <button
                 type="submit"
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                disabled={createUserMutation.isPending}
+                disabled={updateUserMutation.isPending}
               >
-                {createUserMutation.isPending ? "Creating..." : "Create"}
+                {updateUserMutation.isPending ? "Updating..." : "Update"}
               </button>
             </div>
           </form>

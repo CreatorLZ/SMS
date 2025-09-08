@@ -234,7 +234,7 @@ export default function AdminDashboard() {
                 className="w-full p-2 border rounded"
               >
                 <option value="">All Users</option>
-                {users?.map((user) => (
+                {users?.data?.map((user) => (
                   <option key={user._id} value={user._id}>
                     {user.name} ({user.email})
                   </option>

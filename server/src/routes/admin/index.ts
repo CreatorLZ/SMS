@@ -3,6 +3,9 @@ import { protect, authorize } from "../../middleware/auth";
 import {
   registerUser,
   getUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
   getStudents,
   createStudent,
   updateStudent,
@@ -33,6 +36,11 @@ router.use(authorize("admin", "superadmin"));
 
 // User routes
 router.route("/users").post(registerUser).get(getUsers);
+router
+  .route("/users/:id")
+  .get(getUserById)
+  .patch(updateUser)
+  .delete(deleteUser);
 
 // Student routes
 router.route("/students").get(getStudents).post(createStudent);

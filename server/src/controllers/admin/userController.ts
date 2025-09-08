@@ -15,12 +15,36 @@ import {
 // @access  Private/Admin
 export const registerUser = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, role } = req.body;
+    const {
+      name,
+      email,
+      password,
+      role,
+      studentId,
+      currentClass,
+      linkedStudentIds,
+      subjectSpecialization,
+      assignedClassId,
+    } = req.body;
 
     // Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
+    }
+
+    // For students, check if studentId is provided and available
+    if (role === "student") {
+      if (!studentId || !currentClass) {
+        return res.status(400).json({
+          message: "Student ID and current class are required for students",
+        });
+      }
+
+      const existingStudent = await Student.findOne({ studentId });
+      if (existingStudent) {
+        return res.status(400).json({ message: "Student ID already exists" });
+      }
     }
 
     // Create user
@@ -29,7 +53,24 @@ export const registerUser = async (req: Request, res: Response) => {
       email,
       password,
       role,
+      linkedStudentIds: role === "parent" ? linkedStudentIds : undefined,
+      subjectSpecialization:
+        role === "teacher" ? subjectSpecialization : undefined,
+      assignedClassId: role === "teacher" ? assignedClassId : undefined,
     });
+
+    // Create Student record if role is student
+    let studentRecord = null;
+    if (role === "student") {
+      studentRecord = await Student.create({
+        fullName: name,
+        studentId,
+        currentClass,
+        termFees: [],
+        attendance: [],
+        results: [],
+      });
+    }
 
     // Create audit log
     await AuditLog.create({
@@ -40,28 +81,80 @@ export const registerUser = async (req: Request, res: Response) => {
     });
 
     res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
+      success: true,
+      message: `${role} created successfully`,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        ...(studentRecord && { studentId: studentRecord.studentId }),
+      },
     });
   } catch (error) {
     res.status(500).json({
+      success: false,
       message: "Server error",
       error: error instanceof Error ? error.message : String(error),
     });
   }
 };
 
-// @desc    Get all users
+// @desc    Get all users with filtering
 // @route   GET /api/admin/users
 // @access  Private/Admin
 export const getUsers = async (req: Request, res: Response) => {
   try {
-    const users = await User.find().select("-password");
-    res.json(users);
+    const { role, status, search, page = 1, limit = 10 } = req.query;
+
+    let query: any = {};
+
+    // Add role filter
+    if (role && role !== "all") {
+      query.role = role;
+    }
+
+    // Add status filter
+    if (status && status !== "all") {
+      query.status = status;
+    }
+
+    // Add search filter
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    const users = await User.find(query)
+      .select("-password -refreshTokens")
+      .populate("linkedStudentIds", "fullName studentId")
+      .populate("assignedClassId", "name")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
+
+    const total = await User.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: users,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum),
+      },
+    });
   } catch (error) {
     res.status(500).json({
+      success: false,
       message: "Server error",
       error: error instanceof Error ? error.message : String(error),
     });
@@ -515,6 +608,200 @@ export const deleteTeacher = async (req: Request, res: Response) => {
     res.json({ message: "Teacher deleted successfully" });
   } catch (error) {
     res.status(500).json({
+      message: "Server error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+// @desc    Get user by ID
+// @route   GET /api/admin/users/:id
+// @access  Private/Admin
+export const getUserById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id)
+      .select("-password -refreshTokens")
+      .populate("linkedStudentIds", "fullName studentId")
+      .populate("assignedClassId", "name");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+// @desc    Update user details
+// @route   PATCH /api/admin/users/:id
+// @access  Private/Admin
+export const updateUser = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      email,
+      role,
+      status,
+      linkedStudentIds,
+      subjectSpecialization,
+      assignedClassId,
+    } = req.body;
+
+    // Check if user exists
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (email !== user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+    }
+
+    // Handle classroom reassignment for teachers
+    if (
+      role === "teacher" &&
+      assignedClassId !== user.assignedClassId?.toString()
+    ) {
+      // Remove teacher from old classroom
+      if (user.assignedClassId) {
+        await Classroom.findByIdAndUpdate(user.assignedClassId, {
+          teacherId: null,
+        });
+      }
+
+      // Check if new classroom exists and is not already assigned
+      if (assignedClassId) {
+        const classroom = await Classroom.findById(assignedClassId);
+        if (!classroom) {
+          return res.status(400).json({
+            success: false,
+            message: "Classroom not found",
+          });
+        }
+        if (classroom.teacherId && classroom.teacherId.toString() !== id) {
+          return res.status(400).json({
+            success: false,
+            message: "Classroom already has a teacher assigned",
+          });
+        }
+      }
+    }
+
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      {
+        name,
+        email,
+        role,
+        status,
+        linkedStudentIds: role === "parent" ? linkedStudentIds : undefined,
+        subjectSpecialization:
+          role === "teacher" ? subjectSpecialization : undefined,
+        assignedClassId: role === "teacher" ? assignedClassId : undefined,
+      },
+      { new: true }
+    ).select("-password -refreshTokens");
+
+    // Update classroom's teacherId if assigned
+    if (role === "teacher" && assignedClassId) {
+      await Classroom.findByIdAndUpdate(assignedClassId, { teacherId: id });
+    }
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user?._id,
+      actionType: "USER_UPDATE",
+      description: `Updated user ${name} (${email})`,
+      targetId: id,
+    });
+
+    res.json({
+      success: true,
+      message: "User updated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+// @desc    Delete/deactivate user
+// @route   DELETE /api/admin/users/:id
+// @access  Private/Admin
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user exists
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Prevent deletion of superadmin users
+    if (user.role === "superadmin") {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete superadmin users",
+      });
+    }
+
+    // Soft delete by setting status to inactive
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { status: "inactive" },
+      { new: true }
+    ).select("-password -refreshTokens");
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user?._id,
+      actionType: "USER_DELETE",
+      description: `Deactivated user ${user.name} (${user.email})`,
+      targetId: id,
+    });
+
+    res.json({
+      success: true,
+      message: "User deactivated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
       message: "Server error",
       error: error instanceof Error ? error.message : String(error),
     });

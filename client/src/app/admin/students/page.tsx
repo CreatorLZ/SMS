@@ -7,7 +7,7 @@ import CreateStudentModal from "../../../components/ui/CreateStudentModal";
 import EditStudentModal from "../../../components/ui/EditStudentModal";
 import { useStudentManagementStore } from "../../../store/studentManagementStore";
 import { useStudentsQuery } from "../../../hooks/useStudentsQuery";
-import { useClassroomsQuery } from "../../../hooks/useClassroomsQuery";
+import { STUDENT_CLASSES } from "../../../constants/classes";
 
 export default function AdminStudentsPage() {
   const {
@@ -25,7 +25,6 @@ export default function AdminStudentsPage() {
     classFilter,
     currentPage
   );
-  const { data: classrooms } = useClassroomsQuery();
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -70,9 +69,9 @@ export default function AdminStudentsPage() {
               className="w-full p-2 border rounded"
             >
               <option value="">All Classes</option>
-              {classrooms?.map((classroom) => (
-                <option key={classroom._id} value={classroom.name}>
-                  {classroom.name}
+              {STUDENT_CLASSES.map((classOption) => (
+                <option key={classOption.value} value={classOption.value}>
+                  {classOption.label}
                 </option>
               ))}
             </select>

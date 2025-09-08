@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { useUpdateStudentMutation } from "@/hooks/useUpdateStudentMutation";
 import { useStudentsQuery, Student } from "@/hooks/useStudentsQuery";
-import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useUsersQuery } from "@/hooks/useUsersQuery";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
 import { Toast } from "./toast";
+import {
+  STUDENT_CLASSES,
+  STUDENT_CLASS_VALUES,
+  isValidStudentClass,
+} from "@/constants/classes";
 
 export default function EditStudentModal() {
   const { isEditModalOpen, selectedStudentId, setEditModalOpen } =
     useStudentManagementStore();
   const updateStudentMutation = useUpdateStudentMutation();
-  const { data: classrooms } = useClassroomsQuery();
   const { data: users } = useUsersQuery();
 
   // Get all students to find the selected one
@@ -41,9 +44,10 @@ export default function EditStudentModal() {
   // Find parent of selected student by checking linkedStudentIds
   const findParentId = (studentId: string) => {
     return (
-      users?.find(
+      users?.data?.find(
         (user) =>
-          user.role === "parent" && user.linkedStudentIds?.includes(studentId)
+          user.role === "parent" &&
+          user.linkedStudentIds?.some((student) => student._id === studentId)
       )?._id || ""
     );
   };
@@ -81,7 +85,8 @@ export default function EditStudentModal() {
   };
 
   // Filter only parent users
-  const parentUsers = users?.filter((user) => user.role === "parent") || [];
+  const parentUsers =
+    users?.data?.filter((user) => user.role === "parent") || [];
 
   if (!isEditModalOpen || !selectedStudent) return null;
 
@@ -125,9 +130,9 @@ export default function EditStudentModal() {
               required
             >
               <option value="">Select a class</option>
-              {classrooms?.map((classroom) => (
-                <option key={classroom._id} value={classroom.name}>
-                  {classroom.name}
+              {STUDENT_CLASSES.map((classOption) => (
+                <option key={classOption.value} value={classOption.value}>
+                  {classOption.label}
                 </option>
               ))}
             </select>
