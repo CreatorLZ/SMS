@@ -27,34 +27,62 @@ export default function ClassroomCards({
     const loadRates = async () => {
       if (classrooms.length === 0) return;
       setLoadingRates(true);
+      const batchSize = 5; // Limit concurrency to 5 requests at a time
+      const rates: { [classroomId: string]: number } = {};
+
       try {
-        const promises = classrooms.map(async (classroom) => {
-          const data = await fetchAttendance({ classroomId: classroom._id });
-          let totalPresent = 0;
-          let totalPossible = 0;
-          data.attendance.forEach((att) => {
-            att.records.forEach((record) => {
-              totalPossible++;
-              if (record.status === "present" || record.status === "late")
-                totalPresent++;
-            });
+        // Split classrooms into batches
+        const batches = [];
+        for (let i = 0; i < classrooms.length; i += batchSize) {
+          batches.push(classrooms.slice(i, i + batchSize));
+        }
+
+        // Process each batch sequentially
+        for (const batch of batches) {
+          const promises = batch.map(async (classroom) => {
+            try {
+              const data = await fetchAttendance({
+                classroomId: classroom._id,
+              });
+              let totalPresent = 0;
+              let totalPossible = 0;
+              data.attendance.forEach((att) => {
+                att.records.forEach((record) => {
+                  totalPossible++;
+                  if (record.status === "present" || record.status === "late")
+                    totalPresent++;
+                });
+              });
+              const rate =
+                totalPossible > 0
+                  ? Math.round((totalPresent / totalPossible) * 100)
+                  : 0;
+              return { classroomId: classroom._id, rate };
+            } catch (error) {
+              console.error(
+                `Error fetching attendance for classroom ${classroom._id}:`,
+                error
+              );
+              return { classroomId: classroom._id, rate: 0 };
+            }
           });
-          const rate =
-            totalPossible > 0
-              ? Math.round((totalPresent / totalPossible) * 100)
-              : 0;
-          return { classroomId: classroom._id, rate };
-        });
-        const results = await Promise.all(promises);
-        const rates: { [classroomId: string]: number } = {};
-        results.forEach(({ classroomId, rate }) => {
-          rates[classroomId] = rate;
-        });
+
+          // Wait for current batch to complete
+          const batchResults = await Promise.all(promises);
+          batchResults.forEach(({ classroomId, rate }) => {
+            rates[classroomId] = rate;
+          });
+        }
+
         setAttendanceRates(rates);
       } catch (error) {
-        console.error("Error fetching attendance rates:", error);
-        const rates: { [classroomId: string]: number } = {};
-        classrooms.forEach((c) => (rates[c._id] = 0));
+        console.error("Error in batch processing:", error);
+        // Fallback: set all remaining classrooms to 0
+        classrooms.forEach((c) => {
+          if (!(c._id in rates)) {
+            rates[c._id] = 0;
+          }
+        });
         setAttendanceRates(rates);
       } finally {
         setLoadingRates(false);
