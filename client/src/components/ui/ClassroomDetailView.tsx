@@ -10,12 +10,18 @@ import StudentProfile from "./StudentProfile";
 import ConfirmDialog from "./ConfirmDialog";
 import {
   useMarkAttendance,
+  useUpdateAttendance,
+  useGetClassAttendance,
   useGetAttendanceHistory,
 } from "../../hooks/useAttendance";
 import { useSaveTimetable } from "../../hooks/useTimetable";
 import { useRemoveStudentFromClassroom } from "../../hooks/useRemoveStudentFromClassroom";
+import { useSchoolDays } from "../../hooks/useSchoolDays";
+import { useAttendanceComparison } from "../../hooks/useAttendanceComparison";
+import { useRecentActivity } from "../../hooks/useRecentActivity";
 import { useToast } from "./use-toast";
 import { useStudentManagementStore } from "../../store/studentManagementStore";
+import api from "../../lib/api";
 
 import {
   Users,
@@ -59,39 +65,44 @@ export default function ClassroomDetailView({
 
   const { toast } = useToast();
   const markAttendance = useMarkAttendance();
+  const updateAttendance = useUpdateAttendance();
   const saveTimetable = useSaveTimetable();
   const removeStudentFromClassroom = useRemoveStudentFromClassroom();
-  const fetchAttendance = useGetAttendanceHistory();
+  const attendanceHistory = useGetAttendanceHistory({
+    classroomId: classroom._id,
+  });
+
+  // New hooks for dynamic data
+  const { data: schoolDaysData, isLoading: schoolDaysLoading } = useSchoolDays(
+    classroom._id
+  );
+  const { data: attendanceComparison, isLoading: comparisonLoading } =
+    useAttendanceComparison(classroom._id);
+  const { data: recentActivity, isLoading: activityLoading } =
+    useRecentActivity(classroom._id);
 
   const [attendanceRate, setAttendanceRate] = useState(0);
   const [loadingRate, setLoadingRate] = useState(true);
 
   useEffect(() => {
-    const loadRate = async () => {
-      try {
-        const data = await fetchAttendance({ classroomId: classroom._id });
-        let totalPresent = 0;
-        let totalPossible = 0;
-        data.attendance.forEach((att) => {
-          att.records.forEach((record) => {
-            totalPossible++;
-            if (record.status === "present" || record.status === "late")
-              totalPresent++;
-          });
+    if (attendanceHistory.data) {
+      let totalPresent = 0;
+      let totalPossible = 0;
+      attendanceHistory.data.attendance.forEach((att: any) => {
+        att.records.forEach((record: any) => {
+          totalPossible++;
+          if (record.status === "present" || record.status === "late")
+            totalPresent++;
         });
-        const rate =
-          totalPossible > 0
-            ? Math.round((totalPresent / totalPossible) * 100)
-            : 0;
-        setAttendanceRate(rate);
-      } catch (error) {
-        setAttendanceRate(0);
-      } finally {
-        setLoadingRate(false);
-      }
-    };
-    loadRate();
-  }, [classroom._id, fetchAttendance]);
+      });
+      const rate =
+        totalPossible > 0
+          ? Math.round((totalPresent / totalPossible) * 100)
+          : 0;
+      setAttendanceRate(rate);
+      setLoadingRate(false);
+    }
+  }, [attendanceHistory.data]);
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
@@ -104,6 +115,7 @@ export default function ClassroomDetailView({
     if (!selectedDate) return;
 
     try {
+      const dateString = selectedDate.toISOString().split("T")[0];
       const records = Object.entries(attendanceData).map(
         ([studentId, status]) => ({
           studentId,
@@ -111,15 +123,61 @@ export default function ClassroomDetailView({
         })
       );
 
-      await markAttendance.mutateAsync({
-        classroomId: classroom._id,
-        date: selectedDate.toISOString().split("T")[0],
-        records,
+      // Check if attendance already exists for this date
+      let existingAttendance: { _id: string } | null = null;
+      try {
+        const response = await api.get(
+          `/admin/attendance/class/${classroom._id}/${dateString}`
+        );
+        existingAttendance = response.data as { _id: string };
+      } catch (error: any) {
+        // If 404, attendance doesn't exist, which is fine
+        if (error.response?.status !== 404) {
+          throw error;
+        }
+      }
+
+      if (existingAttendance && existingAttendance._id) {
+        // Update existing attendance
+        await updateAttendance.mutateAsync({
+          attendanceId: existingAttendance._id,
+          records,
+        });
+      } else {
+        // Create new attendance
+        await markAttendance.mutateAsync({
+          classroomId: classroom._id,
+          date: dateString,
+          records,
+        });
+      }
+
+      toast({
+        title: "Success",
+        description: "Attendance saved successfully",
       });
+
       setShowAttendanceMarker(false);
       setSelectedDate(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving attendance:", error);
+
+      // Handle specific error cases
+      if (error.response?.status === 400) {
+        toast({
+          title: "Error",
+          description:
+            error.response?.data?.message || "Failed to save attendance",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save attendance",
+          variant: "destructive",
+        });
+      }
+
       throw error;
     }
   };
@@ -320,8 +378,19 @@ export default function ClassroomDetailView({
             <div className="flex items-center space-x-3">
               <Calendar className="h-8 w-8 text-purple-600" />
               <div>
-                <p className="text-2xl font-bold text-gray-900">24</p>
-                <p className="text-sm text-gray-600">School Days</p>
+                {schoolDaysLoading ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-gray-200 rounded w-12 mb-1"></div>
+                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {schoolDaysData?.schoolDays || 0}
+                    </p>
+                    <p className="text-sm text-gray-600">School Days</p>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>
@@ -332,10 +401,25 @@ export default function ClassroomDetailView({
             <div className="flex items-center space-x-3">
               <TrendingUp className="h-8 w-8 text-orange-600" />
               <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  +{attendanceRate}%
-                </p>
-                <p className="text-sm text-gray-600">vs Last Month</p>
+                {comparisonLoading ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-gray-200 rounded w-16 mb-1"></div>
+                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {(attendanceComparison?.comparison?.change ?? 0) >= 0
+                        ? "+"
+                        : ""}
+                      {attendanceComparison?.comparison?.change ?? 0}%
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      vs Last Month (
+                      {attendanceComparison?.comparison?.trend || "stable"})
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>
@@ -431,29 +515,64 @@ export default function ClassroomDetailView({
                 <CardTitle>Recent Activity</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <p className="text-sm">Attendance marked for today</p>
-                    <span className="text-xs text-gray-500 ml-auto">
-                      2 hours ago
-                    </span>
+                {activityLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                          <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+                          <div className="h-3 bg-gray-300 rounded w-16 ml-auto"></div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <p className="text-sm">New student added to class</p>
-                    <span className="text-xs text-gray-500 ml-auto">
-                      1 day ago
-                    </span>
+                ) : recentActivity?.activities?.length ? (
+                  <div className="space-y-3">
+                    {recentActivity.activities.map((activity, index) => {
+                      const colors = [
+                        "bg-green-50",
+                        "bg-blue-50",
+                        "bg-purple-50",
+                        "bg-yellow-50",
+                        "bg-red-50",
+                      ];
+                      const dotColors = [
+                        "bg-green-500",
+                        "bg-blue-500",
+                        "bg-purple-500",
+                        "bg-yellow-500",
+                        "bg-red-500",
+                      ];
+
+                      return (
+                        <div
+                          key={activity.id}
+                          className={`flex items-center space-x-3 p-3 ${
+                            colors[index % colors.length]
+                          } rounded-lg`}
+                        >
+                          <div
+                            className={`w-2 h-2 ${
+                              dotColors[index % dotColors.length]
+                            } rounded-full`}
+                          ></div>
+                          <p className="text-sm flex-1">
+                            {activity.description}
+                          </p>
+                          <span className="text-xs text-gray-500">
+                            {new Date(activity.timestamp).toLocaleDateString()}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                    <p className="text-sm">Timetable updated</p>
-                    <span className="text-xs text-gray-500 ml-auto">
-                      3 days ago
-                    </span>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Clock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p>No recent activity found</p>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>

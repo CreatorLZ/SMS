@@ -1,13 +1,28 @@
 "use client";
+import { useState } from "react";
 import DashboardLayout from "../../components/ui/dashboard-layout";
 import RoleGuard from "../../components/ui/role-guard";
 import { useAuditLogsQuery } from "../../hooks/useAuditLogs";
 import AuditLogTable from "../../components/ui/audit-log-table";
 import { useAuditLogsStore } from "../../store/auditLogsStore";
 import { useUsersQuery } from "../../hooks/useUsersQuery";
+import { useClassroomsQuery } from "../../hooks/useClassroomsQuery";
+import { useGetClassAttendance } from "../../hooks/useAttendance";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
 import Link from "next/link";
 
 export default function AdminDashboard() {
+  const [selectedClassroom, setSelectedClassroom] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
+
   const {
     searchQuery,
     userId,
@@ -30,7 +45,7 @@ export default function AdminDashboard() {
     error,
   } = useAuditLogsQuery(
     searchQuery,
-    userId,
+    typeof userId === "object" ? userId._id : userId,
     actionType,
     startDate,
     endDate,
@@ -38,6 +53,9 @@ export default function AdminDashboard() {
   );
 
   const { data: users } = useUsersQuery();
+  const { data: classrooms } = useClassroomsQuery();
+  const { data: attendanceData, isLoading: attendanceLoading } =
+    useGetClassAttendance(selectedClassroom, selectedDate);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -229,7 +247,7 @@ export default function AdminDashboard() {
             <div>
               <label className="block text-sm font-medium mb-1">User</label>
               <select
-                value={userId}
+                value={typeof userId === "object" ? userId._id : userId}
                 onChange={handleUserChange}
                 className="w-full p-2 border rounded"
               >
@@ -309,7 +327,145 @@ export default function AdminDashboard() {
             />
           )}
         </section>
-        {/* Add more admin features here */}
+
+        {/* Attendance Viewing Section */}
+        <section className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">View Attendance</h2>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Check Class Attendance</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Classroom
+                  </label>
+                  <select
+                    value={selectedClassroom}
+                    onChange={(e) => setSelectedClassroom(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a classroom</option>
+                    {classrooms?.map((classroom: any) => (
+                      <option key={classroom._id} value={classroom._id}>
+                        {classroom.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Date</label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Attendance Display */}
+          {selectedClassroom && selectedDate && (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>
+                  Attendance for{" "}
+                  {
+                    classrooms?.find((c: any) => c._id === selectedClassroom)
+                      ?.name
+                  }{" "}
+                  - {new Date(selectedDate).toLocaleDateString()}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {attendanceLoading ? (
+                  <div className="text-center py-4">Loading attendance...</div>
+                ) : attendanceData ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                        <h3 className="text-sm font-medium text-green-800">
+                          Present
+                        </h3>
+                        <p className="text-2xl font-bold text-green-900">
+                          {
+                            attendanceData.records.filter(
+                              (r) => r.status === "present"
+                            ).length
+                          }
+                        </p>
+                      </div>
+                      <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                        <h3 className="text-sm font-medium text-yellow-800">
+                          Late
+                        </h3>
+                        <p className="text-2xl font-bold text-yellow-900">
+                          {
+                            attendanceData.records.filter(
+                              (r) => r.status === "late"
+                            ).length
+                          }
+                        </p>
+                      </div>
+                      <div className="bg-red-50 p-4 rounded-lg border border-red-100">
+                        <h3 className="text-sm font-medium text-red-800">
+                          Absent
+                        </h3>
+                        <p className="text-2xl font-bold text-red-900">
+                          {
+                            attendanceData.records.filter(
+                              (r) => r.status === "absent"
+                            ).length
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="table w-full">
+                        <thead>
+                          <tr>
+                            <th>Student Name</th>
+                            <th>Student ID</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {attendanceData.records.map((record, index) => (
+                            <tr key={index}>
+                              <td>{record.studentId.fullName}</td>
+                              <td>{record.studentId.studentId}</td>
+                              <td
+                                className={`font-medium ${
+                                  record.status === "present"
+                                    ? "text-green-600"
+                                    : record.status === "late"
+                                    ? "text-yellow-600"
+                                    : "text-red-600"
+                                }`}
+                              >
+                                {record.status.charAt(0).toUpperCase() +
+                                  record.status.slice(1)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-600">
+                    No attendance data found for this date
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </section>
       </DashboardLayout>
     </RoleGuard>
   );

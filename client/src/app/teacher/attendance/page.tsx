@@ -4,7 +4,7 @@ import { useAuthStore } from "../../../store/authStore";
 import { useClassroomsQuery } from "../../../hooks/useClassroomsQuery";
 import {
   useMarkAttendance,
-  useGetAttendance,
+  useGetClassAttendance,
   AttendanceResponse,
 } from "../../../hooks/useAttendance";
 
@@ -56,40 +56,23 @@ export default function TeacherAttendancePage() {
     classrooms?.filter((c: any) => c.teacherId === user?._id) || [];
 
   const markAttendance = useMarkAttendance();
-  const fetchAttendance = useGetAttendance();
+  const { data: existingAttendance, isLoading: attendanceLoading } =
+    useGetClassAttendance(selectedClassroom, selectedDate);
 
-  // Load existing attendance when classroom or date changes
+  // Load existing attendance when data changes
   useEffect(() => {
-    if (selectedClassroom && selectedDate) {
-      loadExistingAttendance();
-    }
-  }, [selectedClassroom, selectedDate]);
-
-  const loadExistingAttendance = async () => {
-    try {
-      setIsLoading(true);
-      const response: AttendanceResponse = await fetchAttendance({
-        classroomId: selectedClassroom,
-        date: selectedDate,
+    if (existingAttendance && existingAttendance.records) {
+      const attendanceMap: { [key: string]: "present" | "absent" | "late" } =
+        {};
+      existingAttendance.records.forEach((record) => {
+        attendanceMap[record.studentId._id] = record.status;
       });
-      if (response && response.records) {
-        const attendanceMap: { [key: string]: "present" | "absent" | "late" } =
-          {};
-        response.records.forEach((record) => {
-          attendanceMap[record.studentId._id] = record.status;
-        });
-        setAttendanceData(attendanceMap);
-      } else {
-        // No existing attendance, initialize with empty
-        setAttendanceData({});
-      }
-    } catch (error) {
-      console.error("Error loading attendance:", error);
+      setAttendanceData(attendanceMap);
+    } else if (!attendanceLoading) {
+      // No existing attendance, initialize with empty
       setAttendanceData({});
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [existingAttendance, attendanceLoading]);
 
   const handleStatusChange = (
     studentId: string,

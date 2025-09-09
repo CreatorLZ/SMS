@@ -19,7 +19,7 @@ export function useAttendanceCalendar(
     queryKey: ["attendance-calendar", classroomId, month, year],
     queryFn: async () => {
       const response = await api.get(
-        `/api/admin/attendance/calendar/${classroomId}?month=${month}&year=${year}`
+        `/admin/attendance/calendar/${classroomId}?month=${month}&year=${year}`
       );
       return response.data as CalendarAttendanceData;
     },

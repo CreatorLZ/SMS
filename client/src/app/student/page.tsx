@@ -2,23 +2,53 @@
 import DashboardLayout from "../../components/ui/dashboard-layout";
 import RoleGuard from "../../components/ui/role-guard";
 import { useStudentStore } from "../../store/studentStore";
+import { useAuthStore } from "../../store/authStore";
+import { useGetStudentAttendance } from "../../hooks/useAttendance";
 import TimetableTable from "../../components/ui/timetable-table";
 import AttendanceHistory from "../../components/ui/attendance-history";
 import ResultTable from "../../components/ui/result-table";
 import FeeLock from "../../components/ui/fee-lock";
 import ResultPdfExport from "../../components/ui/result-pdf-export";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 
 export default function StudentDashboard() {
   const profile = useStudentStore((s) => s.profile);
-  // Timetable is not part of student profile, so skip timetable for now or fetch via classroom if needed
+  const user = useAuthStore((s) => s.user);
+
+  // Get student attendance using the new API
+  const { data: attendanceData, isLoading: attendanceLoading } =
+    useGetStudentAttendance(user?._id || "", { limit: 20 });
+
   return (
     <RoleGuard allowed={["student"]}>
       <DashboardLayout>
         <h1 className="text-2xl font-bold mb-4">Student Dashboard</h1>
+
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-2">Attendance</h2>
-          <AttendanceHistory attendance={profile?.attendance || []} />
+          <h2 className="text-xl font-semibold mb-2">Attendance History</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle>My Attendance Records</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {attendanceLoading ? (
+                <div className="text-center py-4">Loading attendance...</div>
+              ) : attendanceData?.attendance ? (
+                <AttendanceHistory attendance={attendanceData.attendance} />
+              ) : (
+                <div className="text-center py-4 text-gray-600">
+                  No attendance records found
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </section>
+
         <section>
           <h2 className="text-xl font-semibold mb-2">Results</h2>
           <FeeLock>

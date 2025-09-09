@@ -3,6 +3,8 @@ import { Classroom, ALLOWED_CLASSROOMS } from "../../models/Classroom";
 import { User } from "../../models/User";
 import { Student } from "../../models/Student";
 import { AuditLog } from "../../models/AuditLog";
+import { Term } from "../../models/Term";
+import { Attendance } from "../../models/Attendance";
 
 // @desc    Create a new classroom
 // @route   POST /api/admin/classrooms
@@ -209,5 +211,266 @@ export const getClassrooms = async (req: Request, res: Response) => {
     res.json(classrooms);
   } catch (error: any) {
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Get school days count for a classroom
+// @route   GET /api/admin/classrooms/:id/school-days
+// @access  Private/Admin/Teacher
+export const getSchoolDays = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Check if classroom exists
+    const classroom = await Classroom.findById(id);
+    if (!classroom) {
+      return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    // Check permissions
+    if (
+      !["admin", "superadmin"].includes(req.user.role) &&
+      classroom.teacherId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message: "Not authorized to view classroom data",
+      });
+    }
+
+    // Get current active term
+    const currentTerm = await Term.findOne({ isActive: true });
+    if (!currentTerm) {
+      return res.status(404).json({ message: "No active term found" });
+    }
+
+    // Calculate working days (Monday to Friday)
+    const startDate = new Date(currentTerm.startDate);
+    const endDate = new Date(currentTerm.endDate);
+    let schoolDays = 0;
+
+    // Count weekdays excluding holidays
+    for (
+      let date = new Date(startDate);
+      date <= endDate;
+      date.setDate(date.getDate() + 1)
+    ) {
+      const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+
+      // Count weekdays (Monday = 1, Friday = 5)
+      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+        // Check if this date falls within any holiday
+        const isHoliday = currentTerm.holidays.some((holiday) => {
+          const holidayStart = new Date(holiday.startDate);
+          const holidayEnd = new Date(holiday.endDate);
+          return date >= holidayStart && date <= holidayEnd;
+        });
+
+        if (!isHoliday) {
+          schoolDays++;
+        }
+      }
+    }
+
+    res.json({
+      classroomId: id,
+      term: {
+        name: currentTerm.name,
+        year: currentTerm.year,
+        startDate: currentTerm.startDate,
+        endDate: currentTerm.endDate,
+      },
+      schoolDays,
+      totalTermDays: Math.ceil(
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+      ),
+    });
+  } catch (error: any) {
+    console.error("Error calculating school days:", error);
+    res.status(500).json({
+      message: "Failed to calculate school days",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get attendance comparison for a classroom
+// @route   GET /api/admin/classrooms/:id/attendance-comparison
+// @access  Private/Admin/Teacher
+export const getAttendanceComparison = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Check if classroom exists
+    const classroom = await Classroom.findById(id);
+    if (!classroom) {
+      return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    // Check permissions
+    if (
+      !["admin", "superadmin"].includes(req.user.role) &&
+      classroom.teacherId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message: "Not authorized to view classroom data",
+      });
+    }
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Calculate current month date range
+    const currentMonthStart = new Date(currentYear, currentMonth, 1);
+    const currentMonthEnd = new Date(
+      currentYear,
+      currentMonth + 1,
+      0,
+      23,
+      59,
+      59
+    );
+
+    // Calculate previous month date range
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const prevMonthStart = new Date(prevYear, prevMonth, 1);
+    const prevMonthEnd = new Date(prevYear, prevMonth + 1, 0, 23, 59, 59);
+
+    // Get attendance records for both months
+    const [currentMonthAttendance, prevMonthAttendance] = await Promise.all([
+      Attendance.find({
+        classroomId: id,
+        date: { $gte: currentMonthStart, $lte: currentMonthEnd },
+      }),
+      Attendance.find({
+        classroomId: id,
+        date: { $gte: prevMonthStart, $lte: prevMonthEnd },
+      }),
+    ]);
+
+    // Calculate attendance rates
+    const calculateAttendanceRate = (records: any[]) => {
+      if (records.length === 0) return 0;
+
+      let totalPresent = 0;
+      let totalStudents = 0;
+
+      records.forEach((record) => {
+        totalStudents += record.records.length;
+        totalPresent += record.records.filter(
+          (r: any) => r.status === "present" || r.status === "late"
+        ).length;
+      });
+
+      return totalStudents > 0 ? (totalPresent / totalStudents) * 100 : 0;
+    };
+
+    const currentRate = calculateAttendanceRate(currentMonthAttendance);
+    const previousRate = calculateAttendanceRate(prevMonthAttendance);
+    const change = currentRate - previousRate;
+
+    res.json({
+      classroomId: id,
+      currentMonth: {
+        month: currentMonth + 1,
+        year: currentYear,
+        attendanceRate: Math.round(currentRate * 100) / 100,
+        totalDays: currentMonthAttendance.length,
+      },
+      previousMonth: {
+        month: prevMonth + 1,
+        year: prevYear,
+        attendanceRate: Math.round(previousRate * 100) / 100,
+        totalDays: prevMonthAttendance.length,
+      },
+      comparison: {
+        change: Math.round(change * 100) / 100,
+        changePercent:
+          previousRate > 0
+            ? Math.round((change / previousRate) * 100 * 100) / 100
+            : 0,
+        trend: change > 0 ? "up" : change < 0 ? "down" : "stable",
+      },
+    });
+  } catch (error: any) {
+    console.error("Error calculating attendance comparison:", error);
+    res.status(500).json({
+      message: "Failed to calculate attendance comparison",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get recent activity for a classroom
+// @route   GET /api/admin/classrooms/:id/recent-activity
+// @access  Private/Admin/Teacher
+export const getRecentActivity = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { limit = 10 } = req.query;
+
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Check if classroom exists
+    const classroom = await Classroom.findById(id);
+    if (!classroom) {
+      return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    // Check permissions
+    if (
+      !["admin", "superadmin"].includes(req.user.role) &&
+      classroom.teacherId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message: "Not authorized to view classroom data",
+      });
+    }
+
+    // Get recent audit logs for this classroom
+    const recentActivity = await AuditLog.find({
+      targetId: id,
+    })
+      .populate("userId", "name email")
+      .sort({ timestamp: -1 })
+      .limit(parseInt(limit as string))
+      .select("actionType description timestamp userId");
+
+    // Transform the data for frontend consumption
+    const activities = recentActivity.map((log) => ({
+      id: log._id,
+      type: log.actionType,
+      description: log.description,
+      timestamp: log.timestamp,
+      user: log.userId
+        ? {
+            name: (log.userId as any).name,
+            email: (log.userId as any).email,
+          }
+        : null,
+    }));
+
+    res.json({
+      classroomId: id,
+      activities,
+      total: activities.length,
+    });
+  } catch (error: any) {
+    console.error("Error fetching recent activity:", error);
+    res.status(500).json({
+      message: "Failed to fetch recent activity",
+      error: error.message,
+    });
   }
 };

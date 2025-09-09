@@ -31,6 +31,8 @@ const auditLogSchema = new Schema({
       "RESULT_CREATE",
       "RESULT_UPDATE",
       "ATTENDANCE_MARKED",
+      "ATTENDANCE_UPDATED",
+      "ATTENDANCE_DELETED",
       "FEES_UPDATE",
       "CLASS_ASSIGN",
       "PIN_GENERATE",

@@ -1,7 +1,10 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Classroom } from "../../hooks/useClassroomsQuery";
 import { useClassroomManagementStore } from "../../store/classroomManagementStore";
-import { useGetAttendanceHistory } from "../../hooks/useAttendance";
+import { useQueries } from "@tanstack/react-query";
+import api from "../../lib/api";
+import { AttendanceHistoryResponse } from "../../hooks/useAttendance";
+import { useAuthStore } from "../../store/authStore";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Button } from "./button";
 import { Users, UserCheck, Calendar, TrendingUp } from "lucide-react";
@@ -16,7 +19,15 @@ export default function ClassroomCards({
   onViewDetails,
 }: ClassroomCardsProps) {
   const { setAssignModalOpen } = useClassroomManagementStore();
-  const fetchAttendance = useGetAttendanceHistory();
+  const { user, loading: authLoading } = useAuthStore();
+
+  // Since this component is used within RoleGuard(["admin", "superadmin"]),
+  // we can assume the user has admin/superadmin role if they're here
+  // But we still check for safety and wait for auth to initialize
+  const canViewAttendance =
+    !authLoading &&
+    !!user &&
+    (user.role === "admin" || user.role === "superadmin");
 
   const [attendanceRates, setAttendanceRates] = useState<{
     [classroomId: string]: number;
@@ -25,7 +36,12 @@ export default function ClassroomCards({
 
   useEffect(() => {
     const loadRates = async () => {
-      if (classrooms.length === 0) return;
+      // Only fetch attendance data if user has permission
+      if (classrooms.length === 0 || !canViewAttendance) {
+        setLoadingRates(false);
+        return;
+      }
+
       setLoadingRates(true);
       const batchSize = 5; // Limit concurrency to 5 requests at a time
       const rates: { [classroomId: string]: number } = {};
@@ -41,13 +57,15 @@ export default function ClassroomCards({
         for (const batch of batches) {
           const promises = batch.map(async (classroom) => {
             try {
-              const data = await fetchAttendance({
-                classroomId: classroom._id,
+              // Use the general attendance history endpoint for statistics
+              const response = await api.get("/admin/attendance", {
+                params: { classroomId: classroom._id, limit: 100 },
               });
+              const data = response.data as AttendanceHistoryResponse;
               let totalPresent = 0;
               let totalPossible = 0;
-              data.attendance.forEach((att) => {
-                att.records.forEach((record) => {
+              data.attendance.forEach((att: any) => {
+                att.records.forEach((record: any) => {
                   totalPossible++;
                   if (record.status === "present" || record.status === "late")
                     totalPresent++;
@@ -89,14 +107,16 @@ export default function ClassroomCards({
       }
     };
     loadRates();
-  }, [classrooms, fetchAttendance]);
+  }, [classrooms, canViewAttendance, authLoading]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {classrooms.map((classroom) => {
-        const attendanceRate = loadingRates
-          ? 0
-          : attendanceRates[classroom._id] ?? 0;
+        const attendanceRate = canViewAttendance
+          ? loadingRates
+            ? 0
+            : attendanceRates[classroom._id] ?? 0
+          : null;
 
         return (
           <Card
@@ -110,14 +130,16 @@ export default function ClassroomCards({
                 </CardTitle>
                 <div
                   className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    attendanceRate >= 90
+                    !canViewAttendance
+                      ? "bg-gray-100 text-gray-600"
+                      : attendanceRate! >= 90
                       ? "bg-green-100 text-green-800"
-                      : attendanceRate >= 80
+                      : attendanceRate! >= 80
                       ? "bg-yellow-100 text-yellow-800"
                       : "bg-red-100 text-red-800"
                   }`}
                 >
-                  {attendanceRate}% Attendance
+                  {!canViewAttendance ? "N/A" : `${attendanceRate}% Attendance`}
                 </div>
               </div>
             </CardHeader>

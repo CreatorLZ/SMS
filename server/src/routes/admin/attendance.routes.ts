@@ -2,8 +2,10 @@ import { Router } from "express";
 import { protect as authenticate, authorize } from "../../middleware/auth";
 import {
   markAttendance,
-  getAttendance,
+  getClassAttendance,
+  getStudentAttendance,
   getAttendanceHistory,
+  getCalendarAttendance,
   updateAttendance,
   deleteAttendance,
 } from "../../controllers/admin/attendanceController";
@@ -15,28 +17,28 @@ router.use(authenticate);
 
 // Mark attendance for a classroom
 router.post(
-  "/:classroomId",
+  "/mark",
   authorize("admin", "superadmin", "teacher"),
   markAttendance
 );
 
-// Get attendance for a specific date
+// Get attendance for a specific class and date
 router.get(
-  "/:classroomId",
+  "/class/:classroomId/:date",
   authorize("admin", "superadmin", "teacher"),
-  getAttendance
+  getClassAttendance
 );
 
-// Get attendance history with filters
+// Get attendance history for a student
 router.get(
-  "/",
-  authorize("admin", "superadmin", "teacher"),
-  getAttendanceHistory
+  "/student/:studentId",
+  authorize("admin", "superadmin", "teacher", "student", "parent"),
+  getStudentAttendance
 );
 
 // Update attendance record
 router.put(
-  "/:classroomId/:date",
+  "/update/:attendanceId",
   authorize("admin", "superadmin", "teacher"),
   updateAttendance
 );
@@ -46,6 +48,20 @@ router.delete(
   "/:classroomId/:date",
   authorize("admin", "superadmin"),
   deleteAttendance
+);
+
+// Calendar attendance endpoint
+router.get(
+  "/calendar/:classroomId",
+  authorize("admin", "superadmin", "teacher"),
+  getCalendarAttendance
+);
+
+// General attendance history endpoint (for backward compatibility and statistics)
+router.get(
+  "/",
+  authorize("admin", "superadmin", "teacher"),
+  getAttendanceHistory
 );
 
 export default router;

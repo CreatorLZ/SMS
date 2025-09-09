@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { Attendance } from "../../models/Attendance";
 import { Classroom } from "../../models/Classroom";
 import { AuditLog } from "../../models/AuditLog";
@@ -11,8 +12,11 @@ interface AttendanceRecord {
 // Mark attendance for a classroom
 export const markAttendance = async (req: Request, res: Response) => {
   try {
-    const { classroomId } = req.params;
-    const { date, records }: { date: string; records: AttendanceRecord[] } =
+    const {
+      classroomId,
+      date,
+      records,
+    }: { classroomId: string; date: string; records: AttendanceRecord[] } =
       req.body;
 
     if (!req.user) {
@@ -27,7 +31,7 @@ export const markAttendance = async (req: Request, res: Response) => {
 
     // Check if user is the assigned teacher or an admin
     if (
-      req.user.role !== "admin" &&
+      !["admin", "superadmin"].includes(req.user.role) &&
       classroom.teacherId.toString() !== req.user._id.toString()
     ) {
       return res.status(403).json({
@@ -61,14 +65,9 @@ export const markAttendance = async (req: Request, res: Response) => {
     // Create audit log
     await AuditLog.create({
       userId: req.user._id,
-      action: "ATTENDANCE_MARKED",
-      details: {
-        classroomId,
-        date,
-        recordCount: records.length,
-      },
-      ipAddress: req.ip,
-      userAgent: req.get("User-Agent"),
+      actionType: "ATTENDANCE_MARKED",
+      description: `Marked attendance for classroom on ${date}`,
+      targetId: attendance._id,
     });
 
     res.status(201).json({
@@ -84,11 +83,10 @@ export const markAttendance = async (req: Request, res: Response) => {
   }
 };
 
-// Get attendance for a specific date
-export const getAttendance = async (req: Request, res: Response) => {
+// Get attendance for a specific class and date
+export const getClassAttendance = async (req: Request, res: Response) => {
   try {
-    const { classroomId } = req.params;
-    const { date } = req.query;
+    const { classroomId, date } = req.params;
 
     if (!req.user) {
       return res.status(401).json({ message: "User not authenticated" });
@@ -102,7 +100,7 @@ export const getAttendance = async (req: Request, res: Response) => {
 
     // Check permissions
     if (
-      req.user.role !== "admin" &&
+      !["admin", "superadmin"].includes(req.user.role) &&
       classroom.teacherId.toString() !== req.user._id.toString()
     ) {
       return res.status(403).json({
@@ -112,7 +110,7 @@ export const getAttendance = async (req: Request, res: Response) => {
 
     const attendance = await Attendance.findOne({
       classroomId,
-      date: date ? new Date(date as string) : new Date(),
+      date: new Date(date),
     }).populate("records.studentId", "fullName studentId");
 
     if (!attendance) {
@@ -126,6 +124,93 @@ export const getAttendance = async (req: Request, res: Response) => {
     console.error("Error fetching attendance:", error);
     res.status(500).json({
       message: "Failed to fetch attendance",
+      error: error.message,
+    });
+  }
+};
+
+// Get attendance history for a specific student
+export const getStudentAttendance = async (req: Request, res: Response) => {
+  try {
+    const { studentId } = req.params;
+    const { page = 1, limit = 10, startDate, endDate } = req.query;
+
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Build query
+    const query: any = {
+      "records.studentId": studentId,
+    };
+
+    // Add date filters if provided
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = new Date(startDate as string);
+      if (endDate) query.date.$lte = new Date(endDate as string);
+    }
+
+    // Check permissions - students and parents can only view their own attendance
+    if (req.user.role === "student" && req.user._id.toString() !== studentId) {
+      return res.status(403).json({
+        message: "Students can only view their own attendance",
+      });
+    }
+
+    // For parents, check if the student is their child
+    if (req.user.role === "parent") {
+      // This would need to be implemented based on your parent-student relationship model
+      // For now, we'll allow parents to view any student's attendance
+    }
+
+    // For teachers and admins, check classroom access
+    if (!["admin", "superadmin"].includes(req.user.role)) {
+      const userClassrooms = await Classroom.find({ teacherId: req.user._id });
+      query.classroomId = { $in: userClassrooms.map((c) => c._id) };
+    }
+
+    const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+
+    const attendance = await Attendance.find(query)
+      .populate("classroomId", "name")
+      .populate("records.studentId", "fullName studentId")
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(parseInt(limit as string));
+
+    const total = await Attendance.countDocuments(query);
+
+    // Extract student's records from attendance
+    const studentRecords = attendance.map((att) => {
+      const studentRecord = att.records.find(
+        (record) => record.studentId.toString() === studentId
+      );
+      return {
+        _id: att._id,
+        classroomId: att.classroomId,
+        classroomName: (att.classroomId as any).name,
+        date: att.date,
+        status: studentRecord?.status,
+        markedBy: att.markedBy,
+        createdAt: (att as any).createdAt,
+        updatedAt: (att as any).updatedAt,
+      };
+    });
+
+    res.json({
+      attendance: studentRecords,
+      pagination: {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        total,
+        pages: Math.ceil(total / parseInt(limit as string)),
+      },
+    });
+  } catch (error: any) {
+    console.error("Error fetching student attendance:", error);
+    res.status(500).json({
+      message: "Failed to fetch student attendance",
       error: error.message,
     });
   }
@@ -159,7 +244,7 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
       }
 
       if (
-        req.user.role !== "admin" &&
+        !["admin", "superadmin"].includes(req.user.role) &&
         classroom.teacherId.toString() !== req.user._id.toString()
       ) {
         return res.status(403).json({
@@ -168,7 +253,7 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
       }
 
       query.classroomId = classroomId;
-    } else if (req.user.role !== "admin") {
+    } else if (!["admin", "superadmin"].includes(req.user.role)) {
       // Non-admin users can only see attendance for their classrooms
       const userClassrooms = await Classroom.find({ teacherId: req.user._id });
       query.classroomId = { $in: userClassrooms.map((c) => c._id) };
@@ -238,22 +323,28 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
 // Update attendance record
 export const updateAttendance = async (req: Request, res: Response) => {
   try {
-    const { classroomId, date } = req.params;
+    const { attendanceId } = req.params;
     const { records }: { records: AttendanceRecord[] } = req.body;
 
     if (!req.user) {
       return res.status(401).json({ message: "User not authenticated" });
     }
 
+    // Find the attendance record
+    const attendance = await Attendance.findById(attendanceId);
+    if (!attendance) {
+      return res.status(404).json({ message: "Attendance record not found" });
+    }
+
     // Verify classroom exists and user has access
-    const classroom = await Classroom.findById(classroomId);
+    const classroom = await Classroom.findById(attendance.classroomId);
     if (!classroom) {
       return res.status(404).json({ message: "Classroom not found" });
     }
 
     // Check permissions
     if (
-      req.user.role !== "admin" &&
+      !["admin", "superadmin"].includes(req.user.role) &&
       classroom.teacherId.toString() !== req.user._id.toString()
     ) {
       return res.status(403).json({
@@ -261,34 +352,21 @@ export const updateAttendance = async (req: Request, res: Response) => {
       });
     }
 
-    const attendance = await Attendance.findOneAndUpdate(
-      {
-        classroomId,
-        date: new Date(date),
-      },
-      {
-        records,
-        markedBy: req.user._id,
-        updatedAt: new Date(),
-      },
-      { new: true }
-    );
-
-    if (!attendance) {
-      return res.status(404).json({ message: "Attendance record not found" });
-    }
+    // Update the attendance record
+    attendance.records = records.map((record) => ({
+      studentId: record.studentId as any,
+      status: record.status,
+    }));
+    attendance.markedBy = req.user._id as any;
+    (attendance as any).updatedAt = new Date();
+    await attendance.save();
 
     // Create audit log
     await AuditLog.create({
       userId: req.user._id,
-      action: "ATTENDANCE_UPDATED",
-      details: {
-        classroomId,
-        date,
-        recordCount: records.length,
-      },
-      ipAddress: req.ip,
-      userAgent: req.get("User-Agent"),
+      actionType: "ATTENDANCE_UPDATED",
+      description: `Updated attendance for classroom on ${attendance.date.toDateString()}`,
+      targetId: attendanceId,
     });
 
     res.json({
@@ -304,6 +382,94 @@ export const updateAttendance = async (req: Request, res: Response) => {
   }
 };
 
+// Get calendar attendance data for a classroom
+export const getCalendarAttendance = async (req: Request, res: Response) => {
+  try {
+    const { classroomId } = req.params;
+    const { month, year } = req.query;
+
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Verify classroom exists and user has access
+    const classroom = await Classroom.findById(classroomId);
+    if (!classroom) {
+      return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    // Check permissions
+    if (
+      !["admin", "superadmin"].includes(req.user.role) &&
+      classroom.teacherId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message: "Not authorized to view attendance for this classroom",
+      });
+    }
+
+    // Calculate date range for the month
+    const startDate = new Date(
+      parseInt(year as string),
+      parseInt(month as string) - 1,
+      1
+    );
+    const endDate = new Date(
+      parseInt(year as string),
+      parseInt(month as string),
+      0,
+      23,
+      59,
+      59
+    );
+
+    // Get all attendance records for this classroom in the specified month
+    const attendanceRecords = await Attendance.find({
+      classroomId,
+      date: {
+        $gte: startDate,
+        $lte: endDate,
+      },
+    });
+
+    // Format data for calendar display
+    const calendarData: {
+      [date: string]: {
+        present: number;
+        absent: number;
+        late: number;
+        total: number;
+      };
+    } = {};
+
+    attendanceRecords.forEach((record) => {
+      const dateKey = record.date.toISOString().split("T")[0]; // YYYY-MM-DD format
+      const stats = {
+        present: 0,
+        absent: 0,
+        late: 0,
+        total: record.records.length,
+      };
+
+      record.records.forEach((studentRecord: any) => {
+        if (studentRecord.status === "present") stats.present++;
+        else if (studentRecord.status === "absent") stats.absent++;
+        else if (studentRecord.status === "late") stats.late++;
+      });
+
+      calendarData[dateKey] = stats;
+    });
+
+    res.json(calendarData);
+  } catch (error: any) {
+    console.error("Error fetching calendar attendance:", error);
+    res.status(500).json({
+      message: "Failed to fetch calendar attendance",
+      error: error.message,
+    });
+  }
+};
+
 // Delete attendance record
 export const deleteAttendance = async (req: Request, res: Response) => {
   try {
@@ -314,7 +480,7 @@ export const deleteAttendance = async (req: Request, res: Response) => {
     }
 
     // Only admins can delete attendance records
-    if (req.user.role !== "admin") {
+    if (!["admin", "superadmin"].includes(req.user.role)) {
       return res
         .status(403)
         .json({ message: "Only administrators can delete attendance records" });
@@ -332,14 +498,9 @@ export const deleteAttendance = async (req: Request, res: Response) => {
     // Create audit log
     await AuditLog.create({
       userId: req.user._id,
-      action: "ATTENDANCE_DELETED",
-      details: {
-        classroomId,
-        date,
-        recordCount: attendance.records.length,
-      },
-      ipAddress: req.ip,
-      userAgent: req.get("User-Agent"),
+      actionType: "ATTENDANCE_DELETED",
+      description: `Deleted attendance record for classroom on ${date}`,
+      targetId: attendance._id,
     });
 
     res.json({

@@ -33,6 +33,27 @@ export interface AttendanceHistoryResponse {
   };
 }
 
+export interface StudentAttendanceRecord {
+  _id: string;
+  classroomId: string;
+  classroomName?: string;
+  date: string;
+  status: "present" | "absent" | "late";
+  markedBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudentAttendanceResponse {
+  attendance: StudentAttendanceRecord[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
 export function useMarkAttendance() {
   const queryClient = useQueryClient();
 
@@ -46,7 +67,8 @@ export function useMarkAttendance() {
       date: string;
       records: AttendanceRecord[];
     }) => {
-      const response = await api.post(`/admin/attendance/${classroomId}`, {
+      const response = await api.post(`/admin/attendance/mark`, {
+        classroomId,
         date,
         records,
       });
@@ -61,47 +83,82 @@ export function useMarkAttendance() {
   });
 }
 
-export function useGetAttendance() {
-  const queryClient = useQueryClient();
-
-  return async ({
-    classroomId,
-    date,
-  }: {
-    classroomId: string;
-    date: string;
-  }): Promise<AttendanceResponse> => {
-    return queryClient.fetchQuery({
-      queryKey: ["attendance", classroomId, date],
-      queryFn: async (): Promise<AttendanceResponse> => {
-        const response = await api.get(`/admin/attendance/${classroomId}`, {
-          params: { date },
-        });
-        return response.data as AttendanceResponse;
-      },
-    });
-  };
+export function useGetClassAttendance(classroomId: string, date: string) {
+  return useQuery({
+    queryKey: ["attendance", "class", classroomId, date],
+    queryFn: async (): Promise<AttendanceResponse> => {
+      const response = await api.get(
+        `/admin/attendance/class/${classroomId}/${date}`
+      );
+      return response.data as AttendanceResponse;
+    },
+    enabled: !!classroomId && !!date,
+  });
 }
 
-export function useGetAttendanceHistory() {
-  const queryClient = useQueryClient();
-
-  return async (filters: {
-    classroomId?: string;
-    studentId?: string;
-    startDate?: string;
-    endDate?: string;
+export function useGetStudentAttendance(
+  studentId: string,
+  filters?: {
     page?: number;
     limit?: number;
-  }): Promise<AttendanceHistoryResponse> => {
-    return queryClient.fetchQuery({
-      queryKey: ["attendance-history", filters],
-      queryFn: async (): Promise<AttendanceHistoryResponse> => {
-        const response = await api.get("/admin/attendance", {
-          params: filters,
-        });
-        return response.data as AttendanceHistoryResponse;
-      },
-    });
-  };
+    startDate?: string;
+    endDate?: string;
+  }
+) {
+  return useQuery({
+    queryKey: ["attendance", "student", studentId, filters],
+    queryFn: async (): Promise<StudentAttendanceResponse> => {
+      const response = await api.get(`/admin/attendance/student/${studentId}`, {
+        params: filters,
+      });
+      return response.data as StudentAttendanceResponse;
+    },
+    enabled: !!studentId,
+  });
+}
+
+export function useUpdateAttendance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      attendanceId,
+      records,
+    }: {
+      attendanceId: string;
+      records: AttendanceRecord[];
+    }) => {
+      const response = await api.put(
+        `/admin/attendance/update/${attendanceId}`,
+        {
+          records,
+        }
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate attendance data
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
+    },
+  });
+}
+
+export function useGetAttendanceHistory(filters?: {
+  classroomId?: string;
+  studentId?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: ["attendance-history", filters],
+    queryFn: async (): Promise<AttendanceHistoryResponse> => {
+      const response = await api.get("/admin/attendance", {
+        params: filters,
+      });
+      return response.data as AttendanceHistoryResponse;
+    },
+    enabled: !!filters?.classroomId, // Only run query if classroomId is provided
+  });
 }

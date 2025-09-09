@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Button } from "./button";
 import { useToast } from "./use-toast";
+import { useTeachersBySubject } from "../../hooks/useTeachersBySubject";
 import {
   Calendar,
   Clock,
@@ -66,18 +67,9 @@ export default function TimetableManager({
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Mock teachers data - in real implementation, this would come from API
-  const mockTeachers = [
-    { _id: "1", name: "Mr. Johnson", subjects: ["Mathematics", "Physics"] },
-    { _id: "2", name: "Ms. Smith", subjects: ["English", "Literature"] },
-    { _id: "3", name: "Dr. Brown", subjects: ["Science", "Chemistry"] },
-    { _id: "4", name: "Mrs. Davis", subjects: ["History", "Social Studies"] },
-    {
-      _id: "5",
-      name: "Mr. Wilson",
-      subjects: ["Computer Science", "Mathematics"],
-    },
-  ];
+  // Real teachers data from API
+  const { data: teachers = [], isLoading: teachersLoading } =
+    useTeachersBySubject();
 
   const getTimetableForDay = (dayIndex: number) => {
     return timetable
@@ -148,7 +140,7 @@ export default function TimetableManager({
       return;
     }
 
-    const teacher = mockTeachers.find((t) => t._id === editingEntry.teacherId);
+    const teacher = teachers.find((t) => t._id === editingEntry.teacherId);
     const updatedEntry = {
       ...editingEntry,
       teacherName: teacher?.name || "",
@@ -199,8 +191,11 @@ export default function TimetableManager({
   };
 
   const getAvailableTeachers = (subject: string) => {
-    return mockTeachers.filter(
-      (teacher) => teacher.subjects.includes(subject) || subject === ""
+    if (!subject || subject === "") return teachers;
+    return teachers.filter((teacher) =>
+      teacher.subjectSpecialization
+        ?.toLowerCase()
+        .includes(subject.toLowerCase())
     );
   };
 
@@ -320,7 +315,7 @@ export default function TimetableManager({
                 <select
                   value={editingEntry.teacherId}
                   onChange={(e) => {
-                    const teacher = mockTeachers.find(
+                    const teacher = teachers.find(
                       (t) => t._id === e.target.value
                     );
                     setEditingEntry({
