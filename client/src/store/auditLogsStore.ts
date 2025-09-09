@@ -8,13 +8,13 @@ interface User {
 
 interface AuditLogsState {
   searchQuery: string;
-  userId: User | string;
+  userId: string | null;
   actionType: string;
   startDate: string;
   endDate: string;
   currentPage: number;
   setSearchQuery: (query: string) => void;
-  setUserId: (userId: User | string) => void;
+  setUserId: (userId: string | null) => void;
   setActionType: (actionType: string) => void;
   setStartDate: (startDate: string) => void;
   setEndDate: (endDate: string) => void;
@@ -24,13 +24,14 @@ interface AuditLogsState {
 
 export const useAuditLogsStore = create<AuditLogsState>((set) => ({
   searchQuery: "",
-  userId: "",
+  userId: null,
   actionType: "",
   startDate: "",
   endDate: "",
   currentPage: 1,
   setSearchQuery: (query) => set({ searchQuery: query, currentPage: 1 }),
-  setUserId: (userId) => set({ userId, currentPage: 1 }),
+  setUserId: (userId) =>
+    set({ userId: userId === "" ? null : userId, currentPage: 1 }),
   setActionType: (actionType) => set({ actionType, currentPage: 1 }),
   setStartDate: (startDate) => set({ startDate, currentPage: 1 }),
   setEndDate: (endDate) => set({ endDate, currentPage: 1 }),
@@ -38,7 +39,7 @@ export const useAuditLogsStore = create<AuditLogsState>((set) => ({
   clearFilters: () =>
     set({
       searchQuery: "",
-      userId: "",
+      userId: null,
       actionType: "",
       startDate: "",
       endDate: "",

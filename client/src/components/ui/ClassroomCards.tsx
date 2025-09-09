@@ -118,6 +118,9 @@ export default function ClassroomCards({
             : attendanceRates[classroom._id] ?? 0
           : null;
 
+        const safeRate =
+          typeof attendanceRate === "number" ? attendanceRate : 0;
+
         return (
           <Card
             key={classroom._id}
@@ -132,14 +135,14 @@ export default function ClassroomCards({
                   className={`px-2 py-1 rounded-full text-xs font-medium ${
                     !canViewAttendance
                       ? "bg-gray-100 text-gray-600"
-                      : attendanceRate! >= 90
+                      : safeRate >= 90
                       ? "bg-green-100 text-green-800"
-                      : attendanceRate! >= 80
+                      : safeRate >= 80
                       ? "bg-yellow-100 text-yellow-800"
                       : "bg-red-100 text-red-800"
                   }`}
                 >
-                  {!canViewAttendance ? "N/A" : `${attendanceRate}% Attendance`}
+                  {!canViewAttendance ? "N/A" : `${safeRate}% Attendance`}
                 </div>
               </div>
             </CardHeader>

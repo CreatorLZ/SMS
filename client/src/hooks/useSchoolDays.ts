@@ -5,7 +5,7 @@ interface SchoolDaysData {
   classroomId: string;
   term: {
     name: string;
-    year: number;
+    year: string;
     startDate: string;
     endDate: string;
   };

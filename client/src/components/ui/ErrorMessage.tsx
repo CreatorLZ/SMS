@@ -18,6 +18,7 @@ interface ErrorMessageProps {
   showRetry?: boolean;
   type?: "network" | "server" | "auth" | "generic";
   className?: string;
+  showDetails?: boolean;
 }
 
 export function ErrorMessage({
@@ -28,6 +29,7 @@ export function ErrorMessage({
   showRetry = true,
   type = "generic",
   className = "",
+  showDetails = false,
 }: ErrorMessageProps) {
   const getErrorConfig = () => {
     switch (type) {
@@ -79,6 +81,14 @@ export function ErrorMessage({
       : error.message
     : null;
 
+  // Log full error for debugging in non-production
+  if (error && process.env.NODE_ENV !== "production") {
+    console.debug("Error details:", error);
+  }
+
+  const shouldShowDetails =
+    showDetails || process.env.NODE_ENV === "development";
+
   return (
     <Card className={`${config.bgColor} ${config.borderColor} ${className}`}>
       <CardHeader>
@@ -90,7 +100,7 @@ export function ErrorMessage({
       <CardContent className="space-y-4">
         <p className="text-gray-700">{config.message}</p>
 
-        {errorMessage && (
+        {errorMessage && shouldShowDetails && (
           <details className="text-sm">
             <summary className="cursor-pointer font-medium text-gray-600">
               Error Details
@@ -160,13 +170,25 @@ export function AuthErrorMessage() {
 export function InlineErrorMessage({
   error,
   className = "",
+  showDetails = false,
 }: {
   error?: string | Error;
   className?: string;
+  showDetails?: boolean;
 }) {
   if (!error) return null;
 
-  const message = typeof error === "string" ? error : error.message;
+  const fullMessage = typeof error === "string" ? error : error.message;
+  const shouldShowDetails =
+    showDetails || process.env.NODE_ENV === "development";
+  const message = shouldShowDetails
+    ? fullMessage
+    : "An error occurred. Please try again.";
+
+  // Log full error for debugging in non-production
+  if (error && process.env.NODE_ENV !== "production") {
+    console.debug("Inline error details:", error);
+  }
 
   return (
     <div

@@ -24,8 +24,8 @@ export function useTeachersBySubject(subject?: string) {
       // Filter teachers by subject if specified
       if (subject && subject !== "") {
         return teachers.filter((teacher) =>
-          teacher.subjectSpecialization
-            ?.toLowerCase()
+          (teacher.subjectSpecialization || "")
+            .toLowerCase()
             .includes(subject.toLowerCase())
         );
       }

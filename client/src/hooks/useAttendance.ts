@@ -154,10 +154,20 @@ export function useGetAttendanceHistory(filters?: {
   return useQuery({
     queryKey: ["attendance-history", filters],
     queryFn: async (): Promise<AttendanceHistoryResponse> => {
-      const response = await api.get("/admin/attendance", {
-        params: filters,
-      });
-      return response.data as AttendanceHistoryResponse;
+      try {
+        const response = await api.get("/admin/attendance", {
+          params: filters,
+        });
+        return response.data as AttendanceHistoryResponse;
+      } catch (error) {
+        console.error("Error fetching attendance history:", {
+          filters,
+          error,
+        });
+        const normalizedError =
+          error instanceof Error ? error : new Error(String(error));
+        throw normalizedError;
+      }
     },
     enabled: !!filters?.classroomId, // Only run query if classroomId is provided
   });

@@ -20,9 +20,10 @@ export default function StudentDashboard() {
   const profile = useStudentStore((s) => s.profile);
   const user = useAuthStore((s) => s.user);
 
-  // Get student attendance using the new API
-  const { data: attendanceData, isLoading: attendanceLoading } =
-    useGetStudentAttendance(user?._id || "", { limit: 20 });
+  // Only call the hook if user._id is truthy
+  const { data: attendanceData, isLoading: attendanceLoading } = user?._id
+    ? useGetStudentAttendance(user._id, { limit: 20 })
+    : { data: null, isLoading: false };
 
   return (
     <RoleGuard allowed={["student"]}>

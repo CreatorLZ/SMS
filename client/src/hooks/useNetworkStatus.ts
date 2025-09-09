@@ -20,13 +20,14 @@ export function useNetworkStatus(): NetworkStatus {
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
+    // Capture the connection object once
+    const connection =
+      (navigator as any).connection ||
+      (navigator as any).mozConnection ||
+      (navigator as any).webkitConnection;
+
     // Check connection quality if available
     const updateConnectionInfo = () => {
-      const connection =
-        (navigator as any).connection ||
-        (navigator as any).mozConnection ||
-        (navigator as any).webkitConnection;
-
       if (connection) {
         setConnectionType(connection.type || null);
         setEffectiveType(connection.effectiveType || null);
@@ -42,8 +43,7 @@ export function useNetworkStatus(): NetworkStatus {
 
     updateConnectionInfo();
 
-    // Listen for connection changes
-    const connection = (navigator as any).connection;
+    // Listen for connection changes using the same connection reference
     if (connection) {
       connection.addEventListener("change", updateConnectionInfo);
     }

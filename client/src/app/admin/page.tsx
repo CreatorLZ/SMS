@@ -16,6 +16,7 @@ import {
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import Link from "next/link";
+import { Classroom } from "../../types/classroom";
 
 export default function AdminDashboard() {
   const [selectedClassroom, setSelectedClassroom] = useState<string>("");
@@ -45,7 +46,7 @@ export default function AdminDashboard() {
     error,
   } = useAuditLogsQuery(
     searchQuery,
-    typeof userId === "object" ? userId._id : userId,
+    userId || "",
     actionType,
     startDate,
     endDate,
@@ -62,7 +63,7 @@ export default function AdminDashboard() {
   };
 
   const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setUserId(e.target.value);
+    setUserId(e.target.value === "" ? null : e.target.value);
   };
 
   const handleActionTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -247,7 +248,7 @@ export default function AdminDashboard() {
             <div>
               <label className="block text-sm font-medium mb-1">User</label>
               <select
-                value={typeof userId === "object" ? userId._id : userId}
+                value={userId || ""}
                 onChange={handleUserChange}
                 className="w-full p-2 border rounded"
               >
@@ -348,11 +349,13 @@ export default function AdminDashboard() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select a classroom</option>
-                    {classrooms?.map((classroom: any) => (
-                      <option key={classroom._id} value={classroom._id}>
-                        {classroom.name}
-                      </option>
-                    ))}
+                    {(classrooms as Classroom[] | undefined)?.map(
+                      (classroom: Classroom) => (
+                        <option key={classroom._id} value={classroom._id}>
+                          {classroom.name}
+                        </option>
+                      )
+                    )}
                   </select>
                 </div>
                 <div>
@@ -375,8 +378,9 @@ export default function AdminDashboard() {
                 <CardTitle>
                   Attendance for{" "}
                   {
-                    classrooms?.find((c: any) => c._id === selectedClassroom)
-                      ?.name
+                    (classrooms as Classroom[] | undefined)?.find(
+                      (c: Classroom) => c._id === selectedClassroom
+                    )?.name
                   }{" "}
                   - {new Date(selectedDate).toLocaleDateString()}
                 </CardTitle>

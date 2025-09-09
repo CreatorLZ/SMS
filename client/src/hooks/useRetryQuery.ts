@@ -22,7 +22,12 @@ export function useRetryQuery<T>(
   return useQuery({
     queryKey,
     queryFn,
-    retry: maxRetries,
+    retry: (failureCount, error) => {
+      if (onRetry) {
+        onRetry(failureCount, error);
+      }
+      return failureCount < maxRetries;
+    },
     retryDelay:
       retryDelay ||
       ((attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)),

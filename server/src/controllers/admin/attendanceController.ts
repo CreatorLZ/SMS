@@ -92,6 +92,19 @@ export const getClassAttendance = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "User not authenticated" });
     }
 
+    // Validate date format
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid date format. Use YYYY-MM-DD" });
+    }
+
+    // Parse date as UTC to avoid timezone issues
+    const parsedDate = new Date(date + "T00:00:00.000Z");
+    if (isNaN(parsedDate.getTime())) {
+      return res.status(400).json({ message: "Invalid date" });
+    }
+
     // Verify classroom exists and user has access
     const classroom = await Classroom.findById(classroomId);
     if (!classroom) {
@@ -110,7 +123,7 @@ export const getClassAttendance = async (req: Request, res: Response) => {
 
     const attendance = await Attendance.findOne({
       classroomId,
-      date: new Date(date),
+      date: parsedDate,
     }).populate("records.studentId", "fullName studentId");
 
     if (!attendance) {
@@ -160,8 +173,16 @@ export const getStudentAttendance = async (req: Request, res: Response) => {
 
     // For parents, check if the student is their child
     if (req.user.role === "parent") {
-      // This would need to be implemented based on your parent-student relationship model
-      // For now, we'll allow parents to view any student's attendance
+      // TODO: Implement parent-student relationship check
+      // Assuming a ParentStudent model exists
+      // const isAssociated = await ParentStudent.findOne({ parentId: req.user._id, studentId });
+      // if (!isAssociated) {
+      //   return res.status(403).json({ message: "Not authorized to view this student's attendance" });
+      // }
+      // For now, deny access
+      return res.status(403).json({
+        message: "Parent access to student attendance is not implemented yet",
+      });
     }
 
     // For teachers and admins, check classroom access
@@ -182,21 +203,24 @@ export const getStudentAttendance = async (req: Request, res: Response) => {
     const total = await Attendance.countDocuments(query);
 
     // Extract student's records from attendance
-    const studentRecords = attendance.map((att) => {
-      const studentRecord = att.records.find(
-        (record) => record.studentId.toString() === studentId
-      );
-      return {
-        _id: att._id,
-        classroomId: att.classroomId,
-        classroomName: (att.classroomId as any).name,
-        date: att.date,
-        status: studentRecord?.status,
-        markedBy: att.markedBy,
-        createdAt: (att as any).createdAt,
-        updatedAt: (att as any).updatedAt,
-      };
-    });
+    const studentRecords = attendance
+      .map((att) => {
+        const studentRecord = att.records.find(
+          (record) => record.studentId.toString() === studentId
+        );
+        if (!studentRecord) return null;
+        return {
+          _id: att._id,
+          classroomId: att.classroomId,
+          classroomName: (att.classroomId as any).name,
+          date: att.date,
+          status: studentRecord.status,
+          markedBy: att.markedBy,
+          createdAt: (att as any).createdAt,
+          updatedAt: (att as any).updatedAt,
+        };
+      })
+      .filter((record) => record !== null);
 
     res.json({
       attendance: studentRecords,
@@ -354,10 +378,10 @@ export const updateAttendance = async (req: Request, res: Response) => {
 
     // Update the attendance record
     attendance.records = records.map((record) => ({
-      studentId: record.studentId as any,
+      studentId: new mongoose.Schema.Types.ObjectId(record.studentId),
       status: record.status,
     }));
-    attendance.markedBy = req.user._id as any;
+    attendance.markedBy = req.user._id;
     (attendance as any).updatedAt = new Date();
     await attendance.save();
 
@@ -443,7 +467,10 @@ export const getCalendarAttendance = async (req: Request, res: Response) => {
     } = {};
 
     attendanceRecords.forEach((record) => {
-      const dateKey = record.date.toISOString().split("T")[0]; // YYYY-MM-DD format
+      // Use local date to avoid UTC timezone shifts
+      const dateKey = `${record.date.getFullYear()}-${String(
+        record.date.getMonth() + 1
+      ).padStart(2, "0")}-${String(record.date.getDate()).padStart(2, "0")}`;
       const stats = {
         present: 0,
         absent: 0,
