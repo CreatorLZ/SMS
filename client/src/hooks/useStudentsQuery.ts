@@ -6,7 +6,7 @@ export interface Student {
   fullName: string;
   studentId: string;
   currentClass: string;
-  status: "active" | "inactive";
+  status: "active" | "inactive" | "graduated" | "transferred";
   createdAt: string;
   gender?: "Male" | "Female" | "Other";
   dateOfBirth?: Date | string;
@@ -14,8 +14,10 @@ export interface Student {
   location?: string;
   parentName?: string;
   parentPhone?: string;
+  parentEmail?: string;
   relationshipToStudent?: "Father" | "Mother" | "Guardian";
   admissionDate?: Date | string;
+  photo?: string;
   email?: string;
   phoneNumber?: string;
   emergencyContact?: {

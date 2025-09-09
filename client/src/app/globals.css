@@ -142,3 +142,21 @@
 .animate-marquee {
   animation: marquee 20s linear infinite;
 }
+
+/* Scale animations for buttons and dialogs */
+.scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Button press animation is already handled by active:scale-[0.96] in the button component */

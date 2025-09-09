@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import DashboardLayout from "../../components/ui/dashboard-layout";
 import RoleGuard from "../../components/ui/role-guard";
 import { useAuditLogsQuery } from "../../hooks/useAuditLogs";
@@ -15,8 +15,19 @@ import {
   CardTitle,
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 import Link from "next/link";
 import { Classroom } from "../../types/classroom";
+import {
+  FileText,
+  Users,
+  Activity,
+  Download,
+  Search,
+  Filter,
+  Calendar,
+  GraduationCap,
+} from "lucide-react";
 
 export default function AdminDashboard() {
   const [selectedClassroom, setSelectedClassroom] = useState<string>("");
@@ -157,196 +168,267 @@ export default function AdminDashboard() {
     URL.revokeObjectURL(url);
   };
 
+  // Calculate statistics
+  const stats = useMemo(() => {
+    if (!logsResponse)
+      return { total: 0, page: 0, pages: 0, users: 0, actions: 0 };
+
+    return {
+      total: logsResponse.pagination.total,
+      page: logsResponse.pagination.page,
+      pages: logsResponse.pagination.pages,
+      users: logsResponse.logs
+        ? new Set(
+            logsResponse.logs.map((log) =>
+              typeof log.userId === "object" ? log.userId._id : log.userId
+            )
+          ).size
+        : 0,
+      actions: actionTypes.length,
+    };
+  }, [logsResponse, actionTypes]);
+
   return (
     <RoleGuard allowed={["admin", "superadmin"]}>
       <DashboardLayout>
-        <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
-
-        <section className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Audit Logs</h2>
-            <div className="flex gap-2">
-              <button
+        <div className="space-y-4 max-w-full overflow-hidden">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">
+                Admin Dashboard
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Monitor system activity, audit logs, and attendance data.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                variant="outline"
+                size="sm"
               >
+                <Download className="mr-2 h-4 w-4" />
                 Export PDF
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   const csv = generateCSV(logsResponse?.logs || []);
                   downloadCSV(csv, "audit-logs.csv");
                 }}
-                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                size="sm"
               >
+                <Download className="mr-2 h-4 w-4" />
                 Export CSV
-              </button>
+              </Button>
             </div>
           </div>
 
-          {/* Summary Statistics */}
+          {/* Statistics Cards */}
           {logsResponse && (
-            <div className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
-                <h3 className="text-sm font-medium text-emerald-800">
-                  Total Logs
-                </h3>
-                <p className="text-2xl font-bold text-emerald-900">
-                  {logsResponse.pagination.total}
-                </p>
-              </div>
-              <div className="bg-teal-50 p-4 rounded-lg border border-teal-100">
-                <h3 className="text-sm font-medium text-teal-800">
-                  Current Page
-                </h3>
-                <p className="text-2xl font-bold text-teal-900">
-                  {logsResponse.pagination.page} /{" "}
-                  {logsResponse.pagination.pages}
-                </p>
-              </div>
-              <div className="bg-cyan-50 p-4 rounded-lg border border-cyan-100">
-                <h3 className="text-sm font-medium text-cyan-800">
-                  Unique Users
-                </h3>
-                <p className="text-2xl font-bold text-cyan-900">
-                  {logsResponse.logs
-                    ? new Set(
-                        logsResponse.logs.map((log) =>
-                          typeof log.userId === "object"
-                            ? log.userId._id
-                            : log.userId
-                        )
-                      ).size
-                    : 0}
-                </p>
-              </div>
-              <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-                <h3 className="text-sm font-medium text-green-800">
-                  Action Types
-                </h3>
-                <p className="text-2xl font-bold text-green-900">
-                  {actionTypes.length}
-                </p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Logs
+                  </CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent className="pt-2">
+                  <div className="text-xl font-bold">{stats.total}</div>
+                  <p className="text-xs text-muted-foreground">entries</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Current Page
+                  </CardTitle>
+                  <Activity className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent className="pt-2">
+                  <div className="text-xl font-bold text-blue-600">
+                    {stats.page}/{stats.pages}
+                  </div>
+                  <p className="text-xs text-muted-foreground">pages</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Active Users
+                  </CardTitle>
+                  <Users className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent className="pt-2">
+                  <div className="text-xl font-bold text-green-600">
+                    {stats.users}
+                  </div>
+                  <p className="text-xs text-muted-foreground">users</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Action Types
+                  </CardTitle>
+                  <Filter className="h-4 w-4 text-purple-600" />
+                </CardHeader>
+                <CardContent className="pt-2">
+                  <div className="text-xl font-bold text-purple-600">
+                    {stats.actions}
+                  </div>
+                  <p className="text-xs text-muted-foreground">actions</p>
+                </CardContent>
+              </Card>
             </div>
           )}
 
-          {/* Search */}
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="Search audit logs..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="w-full max-w-md p-2 border rounded"
-            />
-          </div>
-
-          {/* Advanced Filters */}
-          <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* User Filter */}
-            <div>
-              <label className="block text-sm font-medium mb-1">User</label>
-              <select
-                value={userId || ""}
-                onChange={handleUserChange}
-                className="w-full p-2 border rounded"
-              >
-                <option value="">All Users</option>
-                {users?.data?.map((user) => (
-                  <option key={user._id} value={user._id}>
-                    {user.name} ({user.email})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Action Type Filter */}
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Action Type
-              </label>
-              <select
-                value={actionType}
-                onChange={handleActionTypeChange}
-                className="w-full p-2 border rounded"
-              >
-                <option value="">All Actions</option>
-                {actionTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Start Date Filter */}
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                From Date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={handleStartDateChange}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-
-            {/* End Date Filter */}
-            <div>
-              <label className="block text-sm font-medium mb-1">To Date</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={handleEndDateChange}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-
-            {/* Clear Filters Button */}
-            <div className="flex items-end">
-              <button
-                onClick={clearFilters}
-                className="w-full px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-              >
-                Clear Filters
-              </button>
-            </div>
-          </div>
-
-          {/* Loading and Error States */}
-          {isLoading && <div>Loading audit logs...</div>}
-          {error && <div>Error loading audit logs.</div>}
-
-          {/* Audit Log Table */}
-          {!isLoading && !error && (
-            <AuditLogTable
-              logsResponse={logsResponse}
-              onPageChange={handlePageChange}
-              currentPage={currentPage}
-            />
-          )}
-        </section>
-
-        {/* Attendance Viewing Section */}
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">View Attendance</h2>
-
+          {/* Audit Logs Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Check Class Attendance</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Audit Logs
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search audit logs..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  className="pl-10 max-w-md"
+                />
+              </div>
+
+              {/* Advanced Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {/* User Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    User
+                  </label>
+                  <select
+                    value={userId || ""}
+                    onChange={handleUserChange}
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">All Users</option>
+                    {users?.data?.map((user) => (
+                      <option key={user._id} value={user._id}>
+                        {user.name} ({user.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Action Type Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Action Type
+                  </label>
+                  <select
+                    value={actionType}
+                    onChange={handleActionTypeChange}
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">All Actions</option>
+                    {actionTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Start Date Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    From Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={handleStartDateChange}
+                  />
+                </div>
+
+                {/* End Date Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    To Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={endDate}
+                    onChange={handleEndDateChange}
+                  />
+                </div>
+
+                {/* Clear Filters Button */}
+                <div className="flex items-end">
+                  <Button
+                    onClick={clearFilters}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
+              </div>
+
+              {/* Loading and Error States */}
+              {isLoading && (
+                <div className="text-center py-8">
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+                  </div>
+                </div>
+              )}
+              {error && (
+                <div className="text-center py-8 text-red-600">
+                  Error loading audit logs. Please try again.
+                </div>
+              )}
+
+              {/* Audit Log Table */}
+              {!isLoading && !error && (
+                <AuditLogTable
+                  logsResponse={logsResponse}
+                  onPageChange={handlePageChange}
+                  currentPage={currentPage}
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Attendance Viewing Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Attendance Viewer
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Selection Form */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                     Classroom
                   </label>
                   <select
                     value={selectedClassroom}
                     onChange={(e) => setSelectedClassroom(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <option value="">Select a classroom</option>
                     {(classrooms as Classroom[] | undefined)?.map(
@@ -358,118 +440,163 @@ export default function AdminDashboard() {
                     )}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Date</label>
-                  <input
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Date
+                  </label>
+                  <Input
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
+
+              {/* Attendance Display */}
+              {selectedClassroom && selectedDate && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">
+                      Attendance for{" "}
+                      {
+                        (classrooms as Classroom[] | undefined)?.find(
+                          (c: Classroom) => c._id === selectedClassroom
+                        )?.name
+                      }{" "}
+                      - {new Date(selectedDate).toLocaleDateString()}
+                    </h3>
+                  </div>
+
+                  {attendanceLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-pulse">
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-4"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+                      </div>
+                    </div>
+                  ) : attendanceData ? (
+                    <div className="space-y-4">
+                      {/* Attendance Statistics */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                              Present
+                            </CardTitle>
+                            <Users className="h-4 w-4 text-green-600" />
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold text-green-600">
+                              {
+                                attendanceData.records.filter(
+                                  (r) => r.status === "present"
+                                ).length
+                              }
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Students present
+                            </p>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                              Late
+                            </CardTitle>
+                            <Activity className="h-4 w-4 text-yellow-600" />
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold text-yellow-600">
+                              {
+                                attendanceData.records.filter(
+                                  (r) => r.status === "late"
+                                ).length
+                              }
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Students late
+                            </p>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                              Absent
+                            </CardTitle>
+                            <Users className="h-4 w-4 text-red-600" />
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold text-red-600">
+                              {
+                                attendanceData.records.filter(
+                                  (r) => r.status === "absent"
+                                ).length
+                              }
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Students absent
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Attendance Table */}
+                      <div className="rounded-md border">
+                        <table className="w-full">
+                          <thead className="bg-muted/50">
+                            <tr>
+                              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                                Student Name
+                              </th>
+                              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                                Student ID
+                              </th>
+                              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                                Status
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {attendanceData.records.map((record, index) => (
+                              <tr key={index} className="border-t">
+                                <td className="p-4 align-middle font-medium">
+                                  {record.studentId.fullName}
+                                </td>
+                                <td className="p-4 align-middle text-muted-foreground">
+                                  {record.studentId.studentId}
+                                </td>
+                                <td className="p-4 align-middle">
+                                  <span
+                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      record.status === "present"
+                                        ? "bg-green-100 text-green-800"
+                                        : record.status === "late"
+                                        ? "bg-yellow-100 text-yellow-800"
+                                        : "bg-red-100 text-red-800"
+                                    }`}
+                                  >
+                                    {record.status.charAt(0).toUpperCase() +
+                                      record.status.slice(1)}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No attendance data found for this date
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
-
-          {/* Attendance Display */}
-          {selectedClassroom && selectedDate && (
-            <Card className="mt-4">
-              <CardHeader>
-                <CardTitle>
-                  Attendance for{" "}
-                  {
-                    (classrooms as Classroom[] | undefined)?.find(
-                      (c: Classroom) => c._id === selectedClassroom
-                    )?.name
-                  }{" "}
-                  - {new Date(selectedDate).toLocaleDateString()}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {attendanceLoading ? (
-                  <div className="text-center py-4">Loading attendance...</div>
-                ) : attendanceData ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-                        <h3 className="text-sm font-medium text-green-800">
-                          Present
-                        </h3>
-                        <p className="text-2xl font-bold text-green-900">
-                          {
-                            attendanceData.records.filter(
-                              (r) => r.status === "present"
-                            ).length
-                          }
-                        </p>
-                      </div>
-                      <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
-                        <h3 className="text-sm font-medium text-yellow-800">
-                          Late
-                        </h3>
-                        <p className="text-2xl font-bold text-yellow-900">
-                          {
-                            attendanceData.records.filter(
-                              (r) => r.status === "late"
-                            ).length
-                          }
-                        </p>
-                      </div>
-                      <div className="bg-red-50 p-4 rounded-lg border border-red-100">
-                        <h3 className="text-sm font-medium text-red-800">
-                          Absent
-                        </h3>
-                        <p className="text-2xl font-bold text-red-900">
-                          {
-                            attendanceData.records.filter(
-                              (r) => r.status === "absent"
-                            ).length
-                          }
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="table w-full">
-                        <thead>
-                          <tr>
-                            <th>Student Name</th>
-                            <th>Student ID</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {attendanceData.records.map((record, index) => (
-                            <tr key={index}>
-                              <td>{record.studentId.fullName}</td>
-                              <td>{record.studentId.studentId}</td>
-                              <td
-                                className={`font-medium ${
-                                  record.status === "present"
-                                    ? "text-green-600"
-                                    : record.status === "late"
-                                    ? "text-yellow-600"
-                                    : "text-red-600"
-                                }`}
-                              >
-                                {record.status.charAt(0).toUpperCase() +
-                                  record.status.slice(1)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-gray-600">
-                    No attendance data found for this date
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </section>
+        </div>
       </DashboardLayout>
     </RoleGuard>
   );

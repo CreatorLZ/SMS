@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import DashboardLayout from "../../../components/ui/dashboard-layout";
 import RoleGuard from "../../../components/ui/role-guard";
 import ClassroomCards from "../../../components/ui/ClassroomCards";
@@ -11,8 +11,17 @@ import {
   Classroom,
 } from "../../../hooks/useClassroomsQuery";
 import { useClassroomManagementStore } from "../../../store/classroomManagementStore";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "../../../components/ui/button";
-import { Plus, Grid, List } from "lucide-react";
+import {
+  Plus,
+  Grid,
+  List,
+  Users,
+  UserCheck,
+  GraduationCap,
+  BookOpen,
+} from "lucide-react";
 
 export default function AdminClassroomsPage() {
   const { setCreateModalOpen, viewMode, selectedClassroomForDetail } =
@@ -33,6 +42,29 @@ export default function AdminClassroomsPage() {
   const selectedClassroom = classrooms?.find(
     (c: Classroom) => c._id === selectedClassroomForDetail
   );
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    if (!classrooms) return { total: 0, teachers: 0, students: 0, avgSize: 0 };
+
+    const teachers = new Set(classrooms.map((c: Classroom) => c.teacherId._id))
+      .size;
+
+    const students = classrooms.reduce(
+      (total: number, c: Classroom) => total + c.students.length,
+      0
+    );
+
+    const avgSize =
+      classrooms.length > 0 ? Math.round(students / classrooms.length) : 0;
+
+    return {
+      total: classrooms.length,
+      teachers,
+      students,
+      avgSize,
+    };
+  }, [classrooms]);
 
   if (isLoading) {
     return (
@@ -67,134 +99,115 @@ export default function AdminClassroomsPage() {
             onBack={handleBackToList}
           />
         ) : (
-          <>
+          <div className="space-y-6 max-w-full overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-3xl font-bold tracking-tight">
                   Classroom Management
                 </h1>
-                <p className="text-gray-600 mt-1">
+                <p className="text-muted-foreground">
                   Manage classrooms, teachers, and student assignments
                 </p>
               </div>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center gap-3">
                 {/* View Toggle */}
-                <div className="flex items-center bg-gray-100 rounded-lg p-1">
-                  <button
+                <div className="flex items-center bg-muted rounded-lg p-1">
+                  <Button
+                    variant={viewType === "cards" ? "default" : "ghost"}
+                    size="sm"
                     onClick={() => setViewType("cards")}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                      viewType === "cards"
-                        ? "bg-white text-gray-900 shadow-sm"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
+                    className="h-8"
                   >
-                    <Grid className="h-4 w-4 inline mr-1" />
+                    <Grid className="h-4 w-4 mr-1" />
                     Cards
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant={viewType === "table" ? "default" : "ghost"}
+                    size="sm"
                     onClick={() => setViewType("table")}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                      viewType === "table"
-                        ? "bg-white text-gray-900 shadow-sm"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
+                    className="h-8"
                   >
-                    <List className="h-4 w-4 inline mr-1" />
+                    <List className="h-4 w-4 mr-1" />
                     Table
-                  </button>
+                  </Button>
                 </div>
 
                 {/* Create Button */}
-                <Button
-                  onClick={() => setCreateModalOpen(true)}
-                  className="flex items-center space-x-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Create Classroom</span>
+                <Button onClick={() => setCreateModalOpen(true)} size="lg">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Classroom
                 </Button>
               </div>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Grid className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600">
-                      Total Classrooms
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {classrooms?.length || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Classrooms
+                  </CardTitle>
+                  <BookOpen className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.total}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Active classrooms
+                  </p>
+                </CardContent>
+              </Card>
 
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <Plus className="h-6 w-6 text-green-600" />
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Active Teachers
+                  </CardTitle>
+                  <UserCheck className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    {stats.teachers}
                   </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600">
-                      Active Teachers
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {new Set(
-                        classrooms?.map((c: Classroom) => c.teacherId._id)
-                      ).size || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                  <p className="text-xs text-muted-foreground">
+                    Assigned to classes
+                  </p>
+                </CardContent>
+              </Card>
 
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <List className="h-6 w-6 text-purple-600" />
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Students
+                  </CardTitle>
+                  <Users className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {stats.students}
                   </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600">
-                      Total Students
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {classrooms?.reduce(
-                        (total: number, c: Classroom) =>
-                          total + c.students.length,
-                        0
-                      ) || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                  <p className="text-xs text-muted-foreground">
+                    Enrolled students
+                  </p>
+                </CardContent>
+              </Card>
 
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <Grid className="h-6 w-6 text-orange-600" />
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Avg Class Size
+                  </CardTitle>
+                  <GraduationCap className="h-4 w-4 text-purple-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {stats.avgSize}
                   </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600">
-                      Avg Class Size
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {classrooms && classrooms.length > 0
-                        ? Math.round(
-                            classrooms.reduce(
-                              (total: number, c: Classroom) =>
-                                total + c.students.length,
-                              0
-                            ) / classrooms.length
-                          )
-                        : 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                  <p className="text-xs text-muted-foreground">
+                    Students per class
+                  </p>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Content */}
@@ -216,7 +229,7 @@ export default function AdminClassroomsPage() {
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {/* Modals */}

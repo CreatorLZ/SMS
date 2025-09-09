@@ -1,5 +1,10 @@
 import { useState } from "react";
 import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
+import { Button } from "./button";
+import { Input } from "./input";
+import { Card, CardContent, CardHeader, CardTitle } from "./card";
+import { Separator } from "./separator";
+import { User, Mail, Lock, BookOpen, GraduationCap, X } from "lucide-react";
 
 interface CreateTeacherModalProps {
   isOpen: boolean;
@@ -47,97 +52,182 @@ export default function CreateTeacherModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg w-96 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">Create New Teacher</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              className="w-full p-2 border rounded"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              className="w-full p-2 border rounded"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              className="w-full p-2 border rounded"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">
-              Subject Specialization
-            </label>
-            <input
-              type="text"
-              value={formData.subjectSpecialization}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  subjectSpecialization: e.target.value,
-                })
-              }
-              className="w-full p-2 border rounded"
-              placeholder="e.g., Mathematics, English, Science"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">
-              Assign to Class (Optional)
-            </label>
-            <select
-              value={formData.assignedClassId}
-              onChange={(e) =>
-                setFormData({ ...formData, assignedClassId: e.target.value })
-              }
-              className="w-full p-2 border rounded"
-            >
-              <option value="">No class assignment</option>
-              {classrooms?.map((classroom) => (
-                <option key={classroom._id} value={classroom._id}>
-                  {classroom.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex justify-end">
-            <button
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <User className="w-6 h-6" />
+            Create New Teacher
+          </h2>
+          <button
+            onClick={() => onClose()}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Basic Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="name"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Full Name *
+                  </label>
+                  <Input
+                    id="name"
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    placeholder="Enter teacher's full name"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="email"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Email Address *
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    placeholder="Enter email address"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="password"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Password *
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  placeholder="Enter password"
+                  required
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Teaching Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
+                Teaching Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="subjectSpecialization"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Subject Specialization
+                  </label>
+                  <Input
+                    id="subjectSpecialization"
+                    type="text"
+                    value={formData.subjectSpecialization}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        subjectSpecialization: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., Mathematics, English, Science"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="assignedClassId"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Assign to Class (Optional)
+                  </label>
+                  <select
+                    id="assignedClassId"
+                    value={formData.assignedClassId}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        assignedClassId: e.target.value,
+                      })
+                    }
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">No class assignment</option>
+                    {classrooms?.map((classroom) => (
+                      <option key={classroom._id} value={classroom._id}>
+                        {classroom.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Separator />
+
+          {/* Form Actions */}
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <Button
               type="button"
-              onClick={onClose}
-              className="mr-2 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+              variant="outline"
+              onClick={() => onClose()}
+              className="w-full sm:w-auto"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               disabled={isLoading}
+              className="w-full sm:w-auto"
             >
-              {isLoading ? "Creating..." : "Create Teacher"}
-            </button>
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Creating Teacher...
+                </>
+              ) : (
+                <>
+                  <User className="w-4 h-4 mr-2" />
+                  Create Teacher
+                </>
+              )}
+            </Button>
           </div>
         </form>
       </div>

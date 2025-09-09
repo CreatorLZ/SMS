@@ -53,8 +53,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <SidebarInset>
         <DashboardHeader />
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-hidden">
-          <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min p-4 overflow-x-auto overflow-y-auto">
-            <div className="w-full">{children}</div>
+          <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min p-4 overflow-y-auto">
+            <div className="w-full max-w-none">{children}</div>
           </div>
         </div>
       </SidebarInset>

@@ -15,7 +15,7 @@ import {
   useGetAttendanceHistory,
 } from "../../hooks/useAttendance";
 import { useSaveTimetable } from "../../hooks/useTimetable";
-import { useRemoveStudentFromClassroom } from "../../hooks/useRemoveStudentFromClassroom";
+import { useRemoveStudentsMutation } from "../../hooks/useRemoveStudentsMutation";
 import { useSchoolDays } from "../../hooks/useSchoolDays";
 import { useAttendanceComparison } from "../../hooks/useAttendanceComparison";
 import { useRecentActivity } from "../../hooks/useRecentActivity";
@@ -67,7 +67,7 @@ export default function ClassroomDetailView({
   const markAttendance = useMarkAttendance();
   const updateAttendance = useUpdateAttendance();
   const saveTimetable = useSaveTimetable();
-  const removeStudentFromClassroom = useRemoveStudentFromClassroom();
+  const removeStudentsMutation = useRemoveStudentsMutation();
   const attendanceHistory = useGetAttendanceHistory({
     classroomId: classroom._id,
   });
@@ -225,33 +225,20 @@ export default function ClassroomDetailView({
         .split(",")
         .filter((id) => id.trim());
 
-      if (studentIds.length > 1) {
-        // Bulk removal - remove each student individually
-        const removePromises = studentIds.map((studentId) =>
-          removeStudentFromClassroom.mutateAsync({
-            classroomId: classroom._id,
-            studentId: studentId.trim(),
-          })
-        );
+      // Use bulk removal API for both single and multiple students
+      await removeStudentsMutation.mutateAsync({
+        classroomId: classroom._id,
+        data: { studentIds: studentIds },
+      });
 
-        await Promise.all(removePromises);
-
-        toast({
-          title: "Success",
-          description: `${studentIds.length} students have been removed from the class`,
-        });
-      } else {
-        // Single removal
-        await removeStudentFromClassroom.mutateAsync({
-          classroomId: classroom._id,
-          studentId: studentToRemove.id,
-        });
-
-        toast({
-          title: "Success",
-          description: `${studentToRemove.name} has been removed from the class`,
-        });
-      }
+      toast({
+        title: "Success",
+        description: `${studentIds.length} student${
+          studentIds.length > 1 ? "s" : ""
+        } ${
+          studentIds.length > 1 ? "have" : "has"
+        } been removed from the class`,
+      });
 
       // Clear selections and close dialog
       setSelectedStudents(new Set());
@@ -356,85 +343,85 @@ export default function ClassroomDetailView({
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <Users className="h-8 w-8 text-blue-600" />
-              <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {classroom.students.length}
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Students
+            </CardTitle>
+            <Users className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {classroom.students.length}
+            </div>
+            <p className="text-xs text-muted-foreground">Enrolled students</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Present Today</CardTitle>
+            <UserCheck className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {todayAttendance?.records?.filter(
+                (record) =>
+                  record.status === "present" || record.status === "late"
+              ).length || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">Students present</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">School Days</CardTitle>
+            <Calendar className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            {schoolDaysLoading ? (
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-200 rounded w-12 mb-1"></div>
+                <div className="h-4 bg-gray-200 rounded w-20"></div>
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-purple-600">
+                  {schoolDaysData?.schoolDays || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">Academic days</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Attendance Trend
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            {comparisonLoading ? (
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-200 rounded w-16 mb-1"></div>
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-orange-600">
+                  {(attendanceComparison?.comparison?.change ?? 0) >= 0
+                    ? "+"
+                    : ""}
+                  {attendanceComparison?.comparison?.change ?? 0}%
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  vs Last Month (
+                  {attendanceComparison?.comparison?.trend || "stable"})
                 </p>
-                <p className="text-sm text-gray-600">Total Students</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <UserCheck className="h-8 w-8 text-green-600" />
-              <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {todayAttendance?.records?.filter(
-                    (record) =>
-                      record.status === "present" || record.status === "late"
-                  ).length || 0}
-                </p>
-                <p className="text-sm text-gray-600">Present Today</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <Calendar className="h-8 w-8 text-purple-600" />
-              <div>
-                {schoolDaysLoading ? (
-                  <div className="animate-pulse">
-                    <div className="h-8 bg-gray-200 rounded w-12 mb-1"></div>
-                    <div className="h-4 bg-gray-200 rounded w-20"></div>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {schoolDaysData?.schoolDays || 0}
-                    </p>
-                    <p className="text-sm text-gray-600">School Days</p>
-                  </>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <TrendingUp className="h-8 w-8 text-orange-600" />
-              <div>
-                {comparisonLoading ? (
-                  <div className="animate-pulse">
-                    <div className="h-8 bg-gray-200 rounded w-16 mb-1"></div>
-                    <div className="h-4 bg-gray-200 rounded w-24"></div>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {(attendanceComparison?.comparison?.change ?? 0) >= 0
-                        ? "+"
-                        : ""}
-                      {attendanceComparison?.comparison?.change ?? 0}%
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      vs Last Month (
-                      {attendanceComparison?.comparison?.trend || "stable"})
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -754,7 +741,7 @@ export default function ClassroomDetailView({
           confirmText="Remove Student"
           onConfirm={handleConfirmRemove}
           onCancel={handleCancelRemove}
-          isLoading={removeStudentFromClassroom.isPending}
+          isLoading={removeStudentsMutation.isPending}
         />
       )}
     </div>

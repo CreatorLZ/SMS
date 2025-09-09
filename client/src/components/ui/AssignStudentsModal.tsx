@@ -76,9 +76,10 @@ export default function AssignStudentsModal() {
     }
 
     try {
-      await addStudentsMutation.mutateAsync({
+      // Use assignStudentsMutation (same as "Update All") to avoid authorization issues
+      await assignStudentsMutation.mutateAsync({
         classroomId: selectedClassroomId,
-        data: { studentIds: newStudentIds },
+        data: { studentIds: selectedStudentIds }, // Send all selected students
       });
       showToastMessage(
         `${newStudentIds.length} students added successfully!`,
@@ -281,10 +282,10 @@ export default function AssignStudentsModal() {
             {toAdd > 0 && (
               <Button
                 onClick={handleAddSelectedStudents}
-                disabled={addStudentsMutation.isPending}
+                disabled={assignStudentsMutation.isPending}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                {addStudentsMutation.isPending ? (
+                {assignStudentsMutation.isPending ? (
                   "Adding..."
                 ) : (
                   <>

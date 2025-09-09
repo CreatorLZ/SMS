@@ -15,7 +15,7 @@ export interface IStudent extends Document {
   relationshipToStudent: "Father" | "Mother" | "Guardian";
 
   currentClass: string;
-  classroomId: Schema.Types.ObjectId;
+  classroomId?: Schema.Types.ObjectId;
   userId?: Schema.Types.ObjectId;
   parentId?: Schema.Types.ObjectId;
   status: "active" | "inactive" | "graduated" | "transferred";
@@ -101,7 +101,7 @@ const studentSchema = new Schema(
     classroomId: {
       type: Schema.Types.ObjectId,
       ref: "Classroom",
-      required: [true, "Classroom is required"],
+      required: false,
     },
     userId: {
       type: Schema.Types.ObjectId,

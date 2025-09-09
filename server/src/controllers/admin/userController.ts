@@ -274,7 +274,25 @@ export const getStudentById = async (req: Request, res: Response) => {
       }
     }
 
-    res.json(student);
+    // Format student data to match frontend expectations
+    const formattedStudent = {
+      ...student.toObject(),
+      // Map database fields to frontend expectations
+      phoneNumber: student.parentPhone,
+      email: student.parentEmail,
+      enrollmentDate: student.admissionDate,
+      // Add emergency contact information
+      emergencyContact: {
+        name: student.parentName || "",
+        relationship: student.relationshipToStudent || "",
+        phoneNumber: student.parentPhone || "",
+      },
+      // Handle populated relationships
+      classroom: student.classroomId,
+      parent: student.parentId,
+    };
+
+    res.json(formattedStudent);
   } catch (error: any) {
     console.error("Error fetching student:", error);
     res.status(500).json({
@@ -293,6 +311,7 @@ export const createStudent = async (req: Request, res: Response) => {
       fullName,
       studentId: providedStudentId,
       currentClass,
+      classroomId,
       parentId,
       gender,
       dateOfBirth,
@@ -342,8 +361,8 @@ export const createStudent = async (req: Request, res: Response) => {
       }
     }
 
-    // Create student
-    const student = await Student.create({
+    // Create student - only include classroomId if it's a valid ObjectId
+    const studentData: any = {
       fullName,
       studentId,
       currentClass,
@@ -357,7 +376,14 @@ export const createStudent = async (req: Request, res: Response) => {
       admissionDate: admissionDate ? new Date(admissionDate) : new Date(),
       termFees: [],
       results: [],
-    });
+    };
+
+    // Only include classroomId if it's provided and not empty
+    if (classroomId && classroomId.trim() !== "") {
+      studentData.classroomId = classroomId;
+    }
+
+    const student = await Student.create(studentData);
 
     // If parent is provided, update parent's linked students
     if (parentId) {
@@ -451,24 +477,27 @@ export const updateStudent = async (req: Request, res: Response) => {
       }
     }
 
-    // Update student
-    const updatedStudent = await Student.findByIdAndUpdate(
-      id,
-      {
-        fullName,
-        studentId,
-        currentClass,
-        gender,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-        address,
-        location,
-        parentName,
-        parentPhone,
-        relationshipToStudent,
-        admissionDate: admissionDate ? new Date(admissionDate) : undefined,
-      },
-      { new: true }
-    );
+    // Update student - handle field mappings from frontend to database
+    const updateData: any = {
+      fullName,
+      studentId,
+      currentClass,
+      gender,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      address,
+      location,
+      admissionDate: admissionDate ? new Date(admissionDate) : undefined,
+    };
+
+    // Handle parent information (map from frontend fields to database fields)
+    if (parentName !== undefined) updateData.parentName = parentName;
+    if (parentPhone !== undefined) updateData.parentPhone = parentPhone;
+    if (relationshipToStudent !== undefined)
+      updateData.relationshipToStudent = relationshipToStudent;
+
+    const updatedStudent = await Student.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
 
     // Handle parent relationship
     if (parentId) {

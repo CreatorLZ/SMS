@@ -41,6 +41,7 @@ const auditLogSchema = new Schema({
       "CLASSROOM_UPDATE",
       "CLASSROOM_DELETE",
       "STUDENTS_ASSIGN",
+      "STUDENTS_REMOVED_FROM_CLASSROOM",
       "TERM_CREATE",
       "TERM_ACTIVATE",
     ],

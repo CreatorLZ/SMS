@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import DashboardLayout from "../../../components/ui/dashboard-layout";
 import RoleGuard from "../../../components/ui/role-guard";
 import { useTeachersQuery } from "../../../hooks/useTeachersQuery";
@@ -12,6 +12,9 @@ import CreateTeacherModal from "@/components/ui/CreateTeacherModal";
 import EditTeacherModal from "@/components/ui/EditTeacherModal";
 import DeleteConfirmationModal from "@/components/ui/DeleteConfirmationModal";
 import { useTeacherManagementStore } from "@/store/teacherManagementStore";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Users, UserCheck, GraduationCap, BookOpen, Plus } from "lucide-react";
 
 export default function TeacherManagement() {
   const { data: teachers, isLoading, refetch } = useTeachersQuery();
@@ -107,29 +110,123 @@ export default function TeacherManagement() {
     setEditModalOpen(true);
   };
 
+  // Calculate statistics
+  const stats = useMemo(() => {
+    if (!teachers) return { total: 0, assigned: 0, unassigned: 0, subjects: 0 };
+
+    const assigned = teachers.filter((t) => t.assignedClassId).length;
+    const unassigned = teachers.length - assigned;
+    const subjects = new Set(
+      teachers
+        .map((t) => t.subjectSpecialization)
+        .filter((s) => s && s.trim() !== "")
+    ).size;
+
+    return {
+      total: teachers.length,
+      assigned,
+      unassigned,
+      subjects,
+    };
+  }, [teachers]);
+
   return (
     <RoleGuard allowed={["admin", "superadmin"]}>
       <DashboardLayout>
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Teacher Management</h1>
-            <button
+        <div className="space-y-6 max-w-full overflow-hidden">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">
+                Teacher Management
+              </h1>
+              <p className="text-muted-foreground">
+                Manage teaching staff, subject assignments, and classroom
+                allocations.
+              </p>
+            </div>
+            <Button
               onClick={() => setCreateModalOpen(true)}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="w-full sm:w-auto"
+              size="lg"
             >
+              <Plus className="mr-2 h-4 w-4" />
               Add Teacher
-            </button>
+            </Button>
           </div>
 
-          {isLoading ? (
-            <div className="text-center py-8">Loading teachers...</div>
-          ) : (
-            <TeacherTable
-              teachers={teachers || []}
-              onEdit={handleEditTeacher}
-              onDelete={handleDeleteTeacher}
-            />
-          )}
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Teachers
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.total}</div>
+                <p className="text-xs text-muted-foreground">Teaching staff</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Assigned Teachers
+                </CardTitle>
+                <UserCheck className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {stats.assigned}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  With class assignments
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Unassigned Teachers
+                </CardTitle>
+                <GraduationCap className="h-4 w-4 text-orange-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">
+                  {stats.unassigned}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Available for assignment
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Subject Areas
+                </CardTitle>
+                <BookOpen className="h-4 w-4 text-purple-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-purple-600">
+                  {stats.subjects}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Different specializations
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <TeacherTable
+            teachers={teachers || []}
+            onEdit={handleEditTeacher}
+            onDelete={handleDeleteTeacher}
+          />
 
           <CreateTeacherModal
             isOpen={isCreateModalOpen}
