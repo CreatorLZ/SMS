@@ -69,13 +69,13 @@ export const createClassroom = async (req: Request, res: Response) => {
   }
 };
 
-// @desc    Assign students to classroom
+// @desc    Assign students to classroom (complete replacement)
 // @route   POST /api/admin/classrooms/:id/students
 // @access  Private/Admin
 export const assignStudents = async (req: Request, res: Response) => {
   try {
     const { studentIds } = req.body;
-    const classroomId = req.params.id;
+    const classroomId: string = req.params.id;
 
     // Check if classroom exists
     const classroom = await Classroom.findById(classroomId);
@@ -91,25 +91,219 @@ export const assignStudents = async (req: Request, res: Response) => {
         .json({ message: "One or more students not found" });
     }
 
+    // Check if any students are already assigned to other classrooms
+    const studentsWithOtherAssignments = await Student.find({
+      _id: { $in: studentIds },
+      $and: [
+        { classroomId: { $exists: true } },
+        { classroomId: { $ne: null } },
+        { classroomId: { $ne: classroomId } },
+      ],
+    });
+
+    if (studentsWithOtherAssignments.length > 0) {
+      const studentNames = studentsWithOtherAssignments
+        .map((s) => s.fullName)
+        .join(", ");
+      return res.status(400).json({
+        message: `Students already assigned to other classrooms: ${studentNames}. Please remove them from their current classrooms first.`,
+      });
+    }
+
+    // Get previously assigned students for audit log
+    const previousStudentIds = classroom.students.map((id) => id.toString());
+
     // Update classroom students
     classroom.students = studentIds;
     await classroom.save();
 
-    // Update each student's current class
+    // Update each student's current class and classroomId
     await Student.updateMany(
       { _id: { $in: studentIds } },
-      { currentClass: classroom.name }
+      {
+        currentClass: classroom.name,
+        classroomId: classroomId,
+      }
+    );
+
+    // Clear currentClass and classroomId for students no longer in this classroom
+    const removedStudentIds = previousStudentIds.filter(
+      (id) => !studentIds.includes(id)
+    );
+    if (removedStudentIds.length > 0) {
+      await Student.updateMany(
+        { _id: { $in: removedStudentIds } },
+        {
+          currentClass: "",
+          classroomId: null,
+        }
+      );
+    }
+
+    // Create audit log
+    const addedCount = studentIds.filter(
+      (id: string) => !previousStudentIds.includes(id)
+    ).length;
+    const removedCount = removedStudentIds.length;
+
+    let description = `Updated classroom ${classroom.name} student assignments`;
+    if (addedCount > 0) description += ` - Added ${addedCount} students`;
+    if (removedCount > 0) description += ` - Removed ${removedCount} students`;
+
+    await AuditLog.create({
+      userId: req.user?._id,
+      actionType: "STUDENTS_ASSIGN",
+      description,
+      targetId: classroom._id,
+    });
+
+    res.json(classroom);
+  } catch (error: any) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Add students to classroom (individual add operation)
+// @route   POST /api/admin/classrooms/:id/students/add
+// @access  Private/Admin
+export const addStudentsToClassroom = async (req: Request, res: Response) => {
+  try {
+    const { studentIds } = req.body;
+    const classroomId: string = req.params.id;
+
+    // Check if classroom exists
+    const classroom = await Classroom.findById(classroomId);
+    if (!classroom) {
+      return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    // Verify all students exist
+    const students = await Student.find({ _id: { $in: studentIds } });
+    if (students.length !== studentIds.length) {
+      return res
+        .status(400)
+        .json({ message: "One or more students not found" });
+    }
+
+    // Check if any students are already assigned to other classrooms
+    const studentsWithOtherAssignments = await Student.find({
+      _id: { $in: studentIds },
+      $and: [
+        { classroomId: { $exists: true } },
+        { classroomId: { $ne: null } },
+        { classroomId: { $ne: classroomId } },
+      ],
+    });
+
+    if (studentsWithOtherAssignments.length > 0) {
+      const studentNames = studentsWithOtherAssignments
+        .map((s) => s.fullName)
+        .join(", ");
+      return res.status(400).json({
+        message: `Students already assigned to other classrooms: ${studentNames}. Please remove them from their current classrooms first.`,
+      });
+    }
+
+    // Filter out students who are already in this classroom
+    const currentStudentIds = classroom.students.map((id) => id.toString());
+    const newStudentIds = studentIds.filter(
+      (id: string) => !currentStudentIds.includes(id)
+    );
+
+    if (newStudentIds.length === 0) {
+      return res.status(400).json({
+        message: "All selected students are already in this classroom",
+      });
+    }
+
+    // Add new students to classroom
+    classroom.students = [...classroom.students, ...newStudentIds];
+    await classroom.save();
+
+    // Update each new student's current class and classroomId
+    await Student.updateMany(
+      { _id: { $in: newStudentIds } },
+      {
+        currentClass: classroom.name,
+        classroomId: classroomId,
+      }
     );
 
     // Create audit log
     await AuditLog.create({
       userId: req.user?._id,
-      actionType: "STUDENTS_ASSIGN",
-      description: `Assigned ${students.length} students to classroom ${classroom.name}`,
+      actionType: "STUDENTS_ADDED_TO_CLASSROOM",
+      description: `Added ${newStudentIds.length} students to classroom ${classroom.name}`,
       targetId: classroom._id,
     });
 
-    res.json(classroom);
+    res.json({
+      message: `${newStudentIds.length} students added to classroom successfully`,
+      classroom,
+      addedStudents: newStudentIds.length,
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Remove students from classroom (bulk remove operation)
+// @route   POST /api/admin/classrooms/:id/students/remove
+// @access  Private/Admin
+export const removeStudentsFromClassroom = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { studentIds } = req.body;
+    const classroomId: string = req.params.id;
+
+    // Check if classroom exists
+    const classroom = await Classroom.findById(classroomId);
+    if (!classroom) {
+      return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    // Check if students exist and are in this classroom
+    const currentStudentIds = classroom.students.map((id) => id.toString());
+    const validStudentIds = studentIds.filter((id: string) =>
+      currentStudentIds.includes(id)
+    );
+
+    if (validStudentIds.length === 0) {
+      return res.status(400).json({
+        message: "None of the selected students are in this classroom",
+      });
+    }
+
+    // Remove students from classroom
+    classroom.students = classroom.students.filter(
+      (id) => !validStudentIds.includes(id.toString())
+    );
+    await classroom.save();
+
+    // Update students' current class and classroomId to empty
+    await Student.updateMany(
+      { _id: { $in: validStudentIds } },
+      {
+        currentClass: "",
+        classroomId: null,
+      }
+    );
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user?._id,
+      actionType: "STUDENTS_REMOVED_FROM_CLASSROOM",
+      description: `Removed ${validStudentIds.length} students from classroom ${classroom.name}`,
+      targetId: classroom._id,
+    });
+
+    res.json({
+      message: `${validStudentIds.length} students removed from classroom successfully`,
+      classroom,
+      removedStudents: validStudentIds.length,
+    });
   } catch (error: any) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -123,7 +317,8 @@ export const removeStudentFromClassroom = async (
   res: Response
 ) => {
   try {
-    const { classroomId, studentId } = req.params;
+    const classroomId: string = req.params.classroomId;
+    const studentId: string = req.params.studentId;
 
     // Check if classroom exists
     const classroom = await Classroom.findById(classroomId);
@@ -150,8 +345,11 @@ export const removeStudentFromClassroom = async (
     );
     await classroom.save();
 
-    // Update student's current class to empty (or you could set it to null)
-    await Student.findByIdAndUpdate(studentId, { currentClass: "" });
+    // Update student's current class and classroomId to empty
+    await Student.findByIdAndUpdate(studentId, {
+      currentClass: "",
+      classroomId: null,
+    });
 
     // Create audit log
     await AuditLog.create({

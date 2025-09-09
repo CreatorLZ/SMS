@@ -199,7 +199,7 @@ export default function ClassroomCards({
                   size="sm"
                   className="flex-1"
                 >
-                  Manage Students
+                  Assign Students
                 </Button>
               </div>
             </CardContent>

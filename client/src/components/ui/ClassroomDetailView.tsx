@@ -20,7 +20,7 @@ import { useSchoolDays } from "../../hooks/useSchoolDays";
 import { useAttendanceComparison } from "../../hooks/useAttendanceComparison";
 import { useRecentActivity } from "../../hooks/useRecentActivity";
 import { useToast } from "./use-toast";
-import { useStudentManagementStore } from "../../store/studentManagementStore";
+import { useClassroomManagementStore } from "../../store/classroomManagementStore";
 import api from "../../lib/api";
 
 import {
@@ -199,10 +199,11 @@ export default function ClassroomDetailView({
   };
 
   // Student management handlers
+  const { setAssignModalOpen } = useClassroomManagementStore();
+
   const handleAddStudent = () => {
-    // Use the existing modal system through the store
-    const { setCreateModalOpen } = useStudentManagementStore.getState();
-    setCreateModalOpen(true);
+    // Open the assign students modal with the current classroom
+    setAssignModalOpen(true, classroom._id);
   };
 
   const handleViewProfile = (studentId: string) => {

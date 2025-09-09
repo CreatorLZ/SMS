@@ -1,19 +1,34 @@
 import { useState, useEffect } from "react";
 import { useStudentsQuery, Student } from "@/hooks/useStudentsQuery";
 import { useAssignStudentsMutation } from "@/hooks/useAssignStudentsMutation";
+import { useAddStudentsMutation } from "@/hooks/useAddStudentsMutation";
+import { useRemoveStudentsMutation } from "@/hooks/useRemoveStudentsMutation";
 import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useClassroomManagementStore } from "@/store/classroomManagementStore";
+import { useStudentManagementStore } from "@/store/studentManagementStore";
 import { Toast } from "./Toast";
+import { Button } from "./button";
+import { Plus, UserMinus, Users, CheckCircle, XCircle } from "lucide-react";
 
 export default function AssignStudentsModal() {
   const { isAssignModalOpen, selectedClassroomId, setAssignModalOpen } =
     useClassroomManagementStore();
+  const { setCreateModalOpen, closeAllModals } = useStudentManagementStore();
+
   const { data: studentsResponse } = useStudentsQuery();
-  const students = studentsResponse?.students || [];
+  // Filter only active students
+  const students =
+    studentsResponse?.students?.filter(
+      (student) => student.status === "active"
+    ) || [];
   const { data: classrooms } = useClassroomsQuery();
+
   const assignStudentsMutation = useAssignStudentsMutation();
+  const addStudentsMutation = useAddStudentsMutation();
+  const removeStudentsMutation = useRemoveStudentsMutation();
 
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [originalStudentIds, setOriginalStudentIds] = useState<string[]>([]);
 
   const [toastProps, setToastProps] = useState<{
     message: string;
@@ -34,7 +49,9 @@ export default function AssignStudentsModal() {
   useEffect(() => {
     if (currentClassroom && isAssignModalOpen) {
       // Pre-select currently assigned students
-      setSelectedStudentIds(currentClassroom.students.map((s) => s._id));
+      const currentIds = currentClassroom.students.map((s) => s._id);
+      setSelectedStudentIds(currentIds);
+      setOriginalStudentIds(currentIds);
     }
   }, [currentClassroom, isAssignModalOpen]);
 
@@ -46,8 +63,69 @@ export default function AssignStudentsModal() {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddSelectedStudents = async () => {
+    if (!selectedClassroomId) return;
+
+    const newStudentIds = selectedStudentIds.filter(
+      (id) => !originalStudentIds.includes(id)
+    );
+
+    if (newStudentIds.length === 0) {
+      showToastMessage("No new students selected to add", "error");
+      return;
+    }
+
+    try {
+      await addStudentsMutation.mutateAsync({
+        classroomId: selectedClassroomId,
+        data: { studentIds: newStudentIds },
+      });
+      showToastMessage(
+        `${newStudentIds.length} students added successfully!`,
+        "success"
+      );
+      setOriginalStudentIds(selectedStudentIds);
+    } catch (error: any) {
+      console.error("Error adding students:", error);
+      showToastMessage(
+        error?.response?.data?.message || "Failed to add students",
+        "error"
+      );
+    }
+  };
+
+  const handleRemoveSelectedStudents = async () => {
+    if (!selectedClassroomId) return;
+
+    const studentsToRemove = originalStudentIds.filter(
+      (id) => !selectedStudentIds.includes(id)
+    );
+
+    if (studentsToRemove.length === 0) {
+      showToastMessage("No students selected to remove", "error");
+      return;
+    }
+
+    try {
+      await removeStudentsMutation.mutateAsync({
+        classroomId: selectedClassroomId,
+        data: { studentIds: studentsToRemove },
+      });
+      showToastMessage(
+        `${studentsToRemove.length} students removed successfully!`,
+        "success"
+      );
+      setOriginalStudentIds(selectedStudentIds);
+    } catch (error: any) {
+      console.error("Error removing students:", error);
+      showToastMessage(
+        error?.response?.data?.message || "Failed to remove students",
+        "error"
+      );
+    }
+  };
+
+  const handleBulkUpdate = async () => {
     if (!selectedClassroomId) return;
 
     try {
@@ -55,64 +133,203 @@ export default function AssignStudentsModal() {
         classroomId: selectedClassroomId,
         data: { studentIds: selectedStudentIds },
       });
-      showToastMessage("Students assigned successfully!", "success");
-      setAssignModalOpen(false);
+      showToastMessage("Students updated successfully!", "success");
+      setOriginalStudentIds(selectedStudentIds);
     } catch (error: any) {
-      console.error("Error assigning students:", error);
+      console.error("Error updating students:", error);
       showToastMessage(
-        error?.response?.data?.message || "Failed to assign students",
+        error?.response?.data?.message || "Failed to update students",
         "error"
       );
     }
   };
 
+  const getStudentStatus = (studentId: string) => {
+    const isOriginallyAssigned = originalStudentIds.includes(studentId);
+    const isCurrentlySelected = selectedStudentIds.includes(studentId);
+
+    if (isOriginallyAssigned && isCurrentlySelected) return "assigned";
+    if (!isOriginallyAssigned && isCurrentlySelected) return "to-add";
+    if (isOriginallyAssigned && !isCurrentlySelected) return "to-remove";
+    return "unassigned";
+  };
+
+  const getStatusCounts = () => {
+    let assigned = 0;
+    let toAdd = 0;
+    let toRemove = 0;
+
+    students.forEach((student) => {
+      const status = getStudentStatus(student._id);
+      if (status === "assigned") assigned++;
+      else if (status === "to-add") toAdd++;
+      else if (status === "to-remove") toRemove++;
+    });
+
+    return { assigned, toAdd, toRemove };
+  };
+
+  const { assigned, toAdd, toRemove } = getStatusCounts();
+  const hasChanges = toAdd > 0 || toRemove > 0;
+
   if (!isAssignModalOpen || !currentClassroom) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg w-96 max-h-96 overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">
-          Manage Students - {currentClassroom.name}
-        </h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">
-              Select Students ({selectedStudentIds.length} selected)
-            </label>
-            <div className="max-h-48 overflow-y-auto border rounded p-2">
-              {students?.map((student: Student) => (
-                <div key={student._id} className="flex items-center mb-2">
-                  <input
-                    type="checkbox"
-                    id={student._id}
-                    checked={selectedStudentIds.includes(student._id)}
-                    onChange={() => handleStudentToggle(student._id)}
-                    className="mr-2"
-                  />
-                  <label htmlFor={student._id} className="text-sm">
-                    {student.fullName} ({student.studentId})
-                  </label>
-                </div>
-              ))}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">
+            Manage Students - {currentClassroom.name}
+          </h2>
+        </div>
+
+        {/* Status Summary */}
+        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center space-x-4">
+              <span className="flex items-center space-x-1">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <span>{assigned} Assigned</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <Plus className="h-4 w-4 text-blue-600" />
+                <span>{toAdd} To Add</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <XCircle className="h-4 w-4 text-red-600" />
+                <span>{toRemove} To Remove</span>
+              </span>
             </div>
           </div>
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => setAssignModalOpen(false)}
-              className="mr-2 px-4 py-2 bg-gray-300 rounded"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded"
-              disabled={assignStudentsMutation.isPending}
-            >
-              {assignStudentsMutation.isPending ? "Saving..." : "Save"}
-            </button>
+        </div>
+
+        {/* Students List */}
+        <div className="mb-6">
+          <div className="max-h-96 overflow-y-auto border rounded-lg">
+            <div className="p-4 space-y-3">
+              {students?.map((student: Student) => {
+                const status = getStudentStatus(student._id);
+                return (
+                  <div
+                    key={student._id}
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                      status === "assigned"
+                        ? "bg-green-50 border-green-200"
+                        : status === "to-add"
+                        ? "bg-blue-50 border-blue-200"
+                        : status === "to-remove"
+                        ? "bg-red-50 border-red-200"
+                        : "bg-gray-50 border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id={student._id}
+                        checked={selectedStudentIds.includes(student._id)}
+                        onChange={() => handleStudentToggle(student._id)}
+                        className="rounded border-gray-300"
+                      />
+                      <div>
+                        <label
+                          htmlFor={student._id}
+                          className="font-medium text-gray-900 cursor-pointer"
+                        >
+                          {student.fullName}
+                        </label>
+                        <p className="text-sm text-gray-600">
+                          ID: {student.studentId} | Class:{" "}
+                          {student.currentClass}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {status === "assigned" && (
+                        <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                          Assigned
+                        </span>
+                      )}
+                      {status === "to-add" && (
+                        <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                          To Add
+                        </span>
+                      )}
+                      {status === "to-remove" && (
+                        <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
+                          To Remove
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </form>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-between">
+          <Button
+            type="button"
+            onClick={() => setAssignModalOpen(false)}
+            variant="outline"
+          >
+            Cancel
+          </Button>
+
+          <div className="flex space-x-2">
+            {toAdd > 0 && (
+              <Button
+                onClick={handleAddSelectedStudents}
+                disabled={addStudentsMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {addStudentsMutation.isPending ? (
+                  "Adding..."
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add {toAdd} Students
+                  </>
+                )}
+              </Button>
+            )}
+
+            {toRemove > 0 && (
+              <Button
+                onClick={handleRemoveSelectedStudents}
+                disabled={removeStudentsMutation.isPending}
+                variant="destructive"
+              >
+                {removeStudentsMutation.isPending ? (
+                  "Removing..."
+                ) : (
+                  <>
+                    <UserMinus className="h-4 w-4 mr-2" />
+                    Remove {toRemove} Students
+                  </>
+                )}
+              </Button>
+            )}
+
+            {hasChanges && (
+              <Button
+                onClick={handleBulkUpdate}
+                disabled={assignStudentsMutation.isPending}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {assignStudentsMutation.isPending ? (
+                  "Updating..."
+                ) : (
+                  <>
+                    <Users className="h-4 w-4 mr-2" />
+                    Update All
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
       {showToast && toastProps && (

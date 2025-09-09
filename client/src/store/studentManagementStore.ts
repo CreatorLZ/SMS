@@ -7,11 +7,20 @@ interface StudentManagementState {
   searchQuery: string;
   classFilter: string;
   currentPage: number;
+  classroomId?: string;
+  classroomName?: string;
+  onStudentCreated?: () => void;
   setCreateModalOpen: (open: boolean) => void;
   setEditModalOpen: (open: boolean, studentId?: string | null) => void;
   setSearchQuery: (query: string) => void;
   setClassFilter: (classId: string) => void;
   setCurrentPage: (page: number) => void;
+  setCreateModalContext: (
+    classroomId?: string,
+    classroomName?: string,
+    onStudentCreated?: () => void
+  ) => void;
+  closeAllModals: () => void;
 }
 
 export const useStudentManagementStore = create<StudentManagementState>(
@@ -31,5 +40,17 @@ export const useStudentManagementStore = create<StudentManagementState>(
     setSearchQuery: (query) => set({ searchQuery: query, currentPage: 1 }),
     setClassFilter: (classId) => set({ classFilter: classId, currentPage: 1 }),
     setCurrentPage: (page) => set({ currentPage: page }),
+    setCreateModalContext: (classroomId, classroomName, onStudentCreated) =>
+      set({
+        classroomId,
+        classroomName,
+        onStudentCreated,
+      }),
+    closeAllModals: () =>
+      set({
+        isCreateModalOpen: false,
+        isEditModalOpen: false,
+        selectedStudentId: null,
+      }),
   })
 );

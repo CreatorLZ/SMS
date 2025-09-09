@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useCreateStudentMutation } from "@/hooks/useCreateStudentMutation";
 import { useUsersQuery } from "@/hooks/useUsersQuery";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
+import { useAddStudentsMutation } from "@/hooks/useAddStudentsMutation";
+import { Student } from "@/hooks/useStudentsQuery";
 import { Toast } from "./Toast";
 import {
   STUDENT_CLASSES,
@@ -9,15 +11,37 @@ import {
   isValidStudentClass,
 } from "@/constants/classes";
 
-export default function CreateStudentModal() {
-  const { isCreateModalOpen, setCreateModalOpen } = useStudentManagementStore();
+interface CreateStudentModalProps {
+  classroomId?: string;
+  classroomName?: string;
+  onStudentCreated?: () => void;
+}
+
+export default function CreateStudentModal({
+  classroomId,
+  classroomName,
+  onStudentCreated,
+}: CreateStudentModalProps = {}) {
+  const {
+    isCreateModalOpen,
+    setCreateModalOpen,
+    classroomId: storeClassroomId,
+    classroomName: storeClassroomName,
+    onStudentCreated: storeOnStudentCreated,
+  } = useStudentManagementStore();
   const createStudentMutation = useCreateStudentMutation();
+  const addStudentsMutation = useAddStudentsMutation();
   const { data: users } = useUsersQuery();
+
+  // Use props if provided, otherwise use store values
+  const currentClassroomId = classroomId || storeClassroomId;
+  const currentClassroomName = classroomName || storeClassroomName;
+  const currentOnStudentCreated = onStudentCreated || storeOnStudentCreated;
 
   const [formData, setFormData] = useState({
     fullName: "",
     studentId: "",
-    currentClass: "",
+    currentClass: currentClassroomName || "",
     parentId: "",
     gender: "",
     dateOfBirth: "",
@@ -59,13 +83,46 @@ export default function CreateStudentModal() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createStudentMutation.mutateAsync(formData);
-      showToastMessage("Student created successfully!", "success");
+      // Create the student
+      const createdStudent = (await createStudentMutation.mutateAsync(
+        formData
+      )) as Student;
+
+      // If classroomId is provided, automatically assign the student to the classroom
+      if (currentClassroomId && createdStudent) {
+        try {
+          await addStudentsMutation.mutateAsync({
+            classroomId: currentClassroomId,
+            data: { studentIds: [createdStudent._id] },
+          });
+          showToastMessage(
+            "Student created and added to class successfully!",
+            "success"
+          );
+        } catch (assignmentError: any) {
+          console.error(
+            "Error assigning student to classroom:",
+            assignmentError
+          );
+          showToastMessage(
+            "Student created but failed to assign to class. Please assign manually.",
+            "error"
+          );
+        }
+      } else {
+        showToastMessage("Student created successfully!", "success");
+      }
+
+      // Call the callback to refresh classroom data
+      if (currentOnStudentCreated) {
+        currentOnStudentCreated();
+      }
+
       setCreateModalOpen(false);
       setFormData({
         fullName: "",
         studentId: "",
-        currentClass: "",
+        currentClass: currentClassroomName || "",
         parentId: "",
         gender: "",
         dateOfBirth: "",

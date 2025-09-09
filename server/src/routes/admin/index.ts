@@ -26,6 +26,8 @@ import {
 import {
   createClassroom,
   assignStudents,
+  addStudentsToClassroom,
+  removeStudentsFromClassroom,
   removeStudentFromClassroom,
   getClassroomStudents,
   getClassrooms,
@@ -94,6 +96,18 @@ router.post(
   "/classrooms/:id/students",
   authorize("admin", "superadmin"),
   assignStudents
+);
+
+router.post(
+  "/classrooms/:id/students/add",
+  authorize("admin", "superadmin"),
+  addStudentsToClassroom
+);
+
+router.post(
+  "/classrooms/:id/students/remove",
+  authorize("admin", "superadmin"),
+  removeStudentsFromClassroom
 );
 
 router.get("/classrooms/:id/students", getClassroomStudents);
