@@ -8,6 +8,7 @@ interface UserManagementState {
   roleFilter: string;
   statusFilter: string;
   searchQuery: string;
+  currentPage: number;
   setCreateModalOpen: (open: boolean) => void;
   setEditModalOpen: (open: boolean, userId?: string | null) => void;
   setDeleteModalOpen: (open: boolean, userId?: string | null) => void;
@@ -15,6 +16,7 @@ interface UserManagementState {
   setRoleFilter: (role: string) => void;
   setStatusFilter: (status: string) => void;
   setSearchQuery: (query: string) => void;
+  setCurrentPage: (page: number) => void;
 }
 
 export const useUserManagementStore = create<UserManagementState>((set) => ({
@@ -25,6 +27,7 @@ export const useUserManagementStore = create<UserManagementState>((set) => ({
   roleFilter: "all",
   statusFilter: "all",
   searchQuery: "",
+  currentPage: 1,
   setCreateModalOpen: (open) => set({ isCreateModalOpen: open }),
   setEditModalOpen: (open, userId = null) =>
     set({
@@ -39,5 +42,6 @@ export const useUserManagementStore = create<UserManagementState>((set) => ({
   setSelectedUserId: (userId) => set({ selectedUserId: userId }),
   setRoleFilter: (role) => set({ roleFilter: role }),
   setStatusFilter: (status) => set({ statusFilter: status }),
-  setSearchQuery: (query) => set({ searchQuery: query }),
+  setSearchQuery: (query) => set({ searchQuery: query, currentPage: 1 }),
+  setCurrentPage: (page) => set({ currentPage: page }),
 }));

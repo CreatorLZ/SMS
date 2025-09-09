@@ -47,6 +47,14 @@ const userSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Classroom",
     },
+    subjectSpecializations: [
+      {
+        type: String,
+        required: false,
+        trim: true,
+      },
+    ],
+    // Keep for backward compatibility
     subjectSpecialization: {
       type: String,
       required: false,

@@ -4,7 +4,8 @@ import api from "@/lib/api";
 interface UpdateTeacherData {
   name: string;
   email: string;
-  subjectSpecialization?: string;
+  subjectSpecializations?: string[];
+  subjectSpecialization?: string; // Keep for backward compatibility
   assignedClassId?: string;
 }
 

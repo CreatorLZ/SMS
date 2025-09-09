@@ -5,7 +5,8 @@ interface CreateTeacherData {
   name: string;
   email: string;
   password: string;
-  subjectSpecialization?: string;
+  subjectSpecializations?: string[];
+  subjectSpecialization?: string; // Keep for backward compatibility
   assignedClassId?: string;
 }
 

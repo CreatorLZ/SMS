@@ -28,9 +28,8 @@ export default function UserTable() {
     roleFilter,
     statusFilter,
     searchQuery,
-    setRoleFilter,
-    setStatusFilter,
-    setSearchQuery,
+    currentPage,
+    setCurrentPage,
     setEditModalOpen,
     setDeleteModalOpen,
   } = useUserManagementStore();
@@ -51,6 +50,9 @@ export default function UserTable() {
   }
   if (statusFilter && statusFilter !== "all") {
     queryParams.status = statusFilter;
+  }
+  if (currentPage > 1) {
+    queryParams.page = currentPage;
   }
 
   const { data, isLoading, error } = useUsersQuery(queryParams);
@@ -172,101 +174,6 @@ export default function UserTable() {
 
   return (
     <div className="space-y-4">
-      {/* Filters and Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search by name or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="flex h-10 w-full sm:w-48 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzM4NSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+')] bg-no-repeat bg-right-3 bg-center"
-            >
-              <option value="all">All Roles</option>
-              <option value="superadmin">Super Admin</option>
-              <option value="admin">Admin</option>
-              <option value="teacher">Teacher</option>
-              <option value="student">Student</option>
-              <option value="parent">Parent</option>
-            </select>
-
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="flex h-10 w-full sm:w-32 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzM4NSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+')] bg-no-repeat bg-right-3 bg-center"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-
-            {(searchQuery ||
-              roleFilter !== "all" ||
-              statusFilter !== "all") && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchQuery("");
-                  setRoleFilter("all");
-                  setStatusFilter("all");
-                }}
-                className="w-full sm:w-auto"
-              >
-                Clear Filters
-              </Button>
-            )}
-          </div>
-
-          {/* Active Filters Display */}
-          {(searchQuery || roleFilter !== "all" || statusFilter !== "all") && (
-            <div className="flex flex-wrap gap-2 mt-4">
-              {searchQuery && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Search: {searchQuery}
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              )}
-              {roleFilter !== "all" && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Role: {roleFilter}
-                  <button
-                    onClick={() => setRoleFilter("all")}
-                    className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              )}
-              {statusFilter !== "all" && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Status: {statusFilter}
-                  <button
-                    onClick={() => setStatusFilter("all")}
-                    className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Desktop Table View */}
       <div className="hidden md:block">
         <Card>
@@ -550,10 +457,8 @@ export default function UserTable() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    // TODO: Implement pagination
-                  }}
-                  disabled={pagination.page <= 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage <= 1}
                 >
                   Previous
                 </Button>
@@ -567,24 +472,22 @@ export default function UserTable() {
                       let pageNum;
                       if (pagination.pages <= 5) {
                         pageNum = i + 1;
-                      } else if (pagination.page <= 3) {
+                      } else if (currentPage <= 3) {
                         pageNum = i + 1;
-                      } else if (pagination.page >= pagination.pages - 2) {
+                      } else if (currentPage >= pagination.pages - 2) {
                         pageNum = pagination.pages - 4 + i;
                       } else {
-                        pageNum = pagination.page - 2 + i;
+                        pageNum = currentPage - 2 + i;
                       }
 
                       return (
                         <Button
                           key={pageNum}
                           variant={
-                            pageNum === pagination.page ? "default" : "outline"
+                            pageNum === currentPage ? "default" : "outline"
                           }
                           size="sm"
-                          onClick={() => {
-                            // TODO: Implement pagination
-                          }}
+                          onClick={() => setCurrentPage(pageNum)}
                         >
                           {pageNum}
                         </Button>
@@ -596,10 +499,8 @@ export default function UserTable() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    // TODO: Implement pagination
-                  }}
-                  disabled={pagination.page >= pagination.pages}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage >= pagination.pages}
                 >
                   Next
                 </Button>

@@ -12,6 +12,9 @@ import { useUsersQuery } from "../../../hooks/useUsersQuery";
 import { Toast } from "../../../components/ui/Toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   Users,
   UserCheck,
@@ -20,11 +23,20 @@ import {
   Shield,
   BookOpen,
   Plus,
+  Search,
 } from "lucide-react";
 
 export default function AdminUsersPage() {
   const {
+    searchQuery,
+    roleFilter,
+    statusFilter,
+    currentPage,
     setCreateModalOpen,
+    setSearchQuery,
+    setRoleFilter,
+    setStatusFilter,
+    setCurrentPage,
     isDeleteModalOpen,
     selectedUserId,
     setDeleteModalOpen,
@@ -186,6 +198,122 @@ export default function AdminUsersPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Filters and Search */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">User Directory</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search by name or email..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className={cn(
+                    "flex h-10 w-full sm:w-48 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                    "appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzM4NSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+')] bg-no-repeat bg-right-3 bg-center"
+                  )}
+                >
+                  <option value="all">All Roles</option>
+                  <option value="superadmin">Super Admin</option>
+                  <option value="admin">Admin</option>
+                  <option value="teacher">Teacher</option>
+                  <option value="student">Student</option>
+                  <option value="parent">Parent</option>
+                </select>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className={cn(
+                    "flex h-10 w-full sm:w-32 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                    "appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzM4NSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+')] bg-no-repeat bg-right-3 bg-center"
+                  )}
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+
+                {(searchQuery ||
+                  roleFilter !== "all" ||
+                  statusFilter !== "all") && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setRoleFilter("all");
+                      setStatusFilter("all");
+                      setCurrentPage(1);
+                    }}
+                    className="w-full sm:w-auto"
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+
+              {/* Active Filters Display */}
+              {(searchQuery ||
+                roleFilter !== "all" ||
+                statusFilter !== "all") && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {searchQuery && (
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      Search: {searchQuery}
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  )}
+                  {roleFilter !== "all" && (
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      Role: {roleFilter}
+                      <button
+                        onClick={() => setRoleFilter("all")}
+                        className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  )}
+                  {statusFilter !== "all" && (
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      Status: {statusFilter}
+                      <button
+                        onClick={() => setStatusFilter("all")}
+                        className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <UserTable />
 

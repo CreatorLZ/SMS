@@ -18,7 +18,8 @@ interface Teacher {
   name: string;
   email: string;
   role: string;
-  subjectSpecialization?: string;
+  subjectSpecializations?: string[];
+  subjectSpecialization?: string; // Keep for backward compatibility
   assignedClassId?: {
     _id: string;
     name: string;
@@ -48,6 +49,61 @@ export default function TeacherTable({
   const showToastMessage = (message: string, type: "success" | "error") => {
     setToastProps({ message, type });
     setShowToast(true);
+  };
+
+  // Helper function to get subjects (support both old and new format)
+  const getSubjects = (teacher: Teacher): string[] => {
+    if (
+      teacher.subjectSpecializations &&
+      teacher.subjectSpecializations.length > 0
+    ) {
+      return teacher.subjectSpecializations;
+    }
+    if (teacher.subjectSpecialization) {
+      return [teacher.subjectSpecialization];
+    }
+    return [];
+  };
+
+  // Helper function to render subject badges
+  const renderSubjectBadges = (subjects: string[], maxVisible: number = 2) => {
+    if (subjects.length === 0) {
+      return (
+        <Badge
+          variant="outline"
+          className="bg-gray-100 text-gray-600 hover:bg-gray-100"
+        >
+          <BookOpen className="w-3 h-3 mr-1" />
+          Not specified
+        </Badge>
+      );
+    }
+
+    const visibleSubjects = subjects.slice(0, maxVisible);
+    const remainingCount = subjects.length - maxVisible;
+
+    return (
+      <div className="flex flex-wrap gap-1">
+        {visibleSubjects.map((subject, index) => (
+          <Badge
+            key={index}
+            variant="outline"
+            className="bg-purple-100 text-purple-800 hover:bg-purple-100 text-xs"
+          >
+            <BookOpen className="w-2.5 h-2.5 mr-1" />
+            {subject}
+          </Badge>
+        ))}
+        {remainingCount > 0 && (
+          <Badge
+            variant="outline"
+            className="bg-purple-50 text-purple-600 hover:bg-purple-50 text-xs"
+          >
+            +{remainingCount} more
+          </Badge>
+        )}
+      </div>
+    );
   };
 
   const handleDelete = async (teacher: Teacher) => {
@@ -136,13 +192,7 @@ export default function TeacherTable({
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <Badge
-                        variant="outline"
-                        className="bg-purple-100 text-purple-800 hover:bg-purple-100"
-                      >
-                        <BookOpen className="w-3 h-3 mr-1" />
-                        {teacher.subjectSpecialization || "Not specified"}
-                      </Badge>
+                      {renderSubjectBadges(getSubjects(teacher), 2)}
                     </td>
                     <td className="px-6 py-4">
                       {teacher.assignedClassId ? (
@@ -214,18 +264,14 @@ export default function TeacherTable({
                     <p className="text-sm text-muted-foreground">
                       {teacher.email}
                     </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge
-                        variant="outline"
-                        className="text-xs bg-purple-100 text-purple-800"
-                      >
-                        <BookOpen className="w-3 h-3 mr-1" />
-                        {teacher.subjectSpecialization || "Not specified"}
-                      </Badge>
+                    <div className="flex flex-col gap-2 mt-1">
+                      <div className="flex flex-wrap gap-1">
+                        {renderSubjectBadges(getSubjects(teacher), 3)}
+                      </div>
                       {teacher.assignedClassId ? (
                         <Badge
                           variant="outline"
-                          className="text-xs bg-green-100 text-green-800"
+                          className="text-xs bg-green-100 text-green-800 w-fit"
                         >
                           <GraduationCap className="w-3 h-3 mr-1" />
                           {teacher.assignedClassId.name}
@@ -233,7 +279,7 @@ export default function TeacherTable({
                       ) : (
                         <Badge
                           variant="outline"
-                          className="text-xs bg-orange-100 text-orange-800"
+                          className="text-xs bg-orange-100 text-orange-800 w-fit"
                         >
                           Not assigned
                         </Badge>

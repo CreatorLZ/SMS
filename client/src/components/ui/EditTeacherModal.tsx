@@ -4,6 +4,7 @@ import { Button } from "./button";
 import { Input } from "./input";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Separator } from "./separator";
+import SubjectTagsInput from "./SubjectTagsInput";
 import { User, Mail, BookOpen, GraduationCap, Edit, X } from "lucide-react";
 
 interface Teacher {
@@ -11,7 +12,8 @@ interface Teacher {
   name: string;
   email: string;
   role: string;
-  subjectSpecialization?: string;
+  subjectSpecializations?: string[];
+  subjectSpecialization?: string; // Keep for backward compatibility
   assignedClassId?: {
     _id: string;
     name: string;
@@ -37,16 +39,25 @@ export default function EditTeacherModal({
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    subjectSpecialization: "",
+    subjectSpecializations: [] as string[],
     assignedClassId: "",
   });
 
   useEffect(() => {
     if (teacher) {
+      // Handle both old and new subject format
+      const subjects =
+        teacher.subjectSpecializations &&
+        teacher.subjectSpecializations.length > 0
+          ? teacher.subjectSpecializations
+          : teacher.subjectSpecialization
+          ? [teacher.subjectSpecialization]
+          : [];
+
       setFormData({
         name: teacher.name,
         email: teacher.email,
-        subjectSpecialization: teacher.subjectSpecialization || "",
+        subjectSpecializations: subjects,
         assignedClassId: teacher.assignedClassId?._id || "",
       });
     }
@@ -58,7 +69,10 @@ export default function EditTeacherModal({
       const submitData = {
         ...formData,
         assignedClassId: formData.assignedClassId || undefined,
-        subjectSpecialization: formData.subjectSpecialization || undefined,
+        subjectSpecializations:
+          formData.subjectSpecializations.length > 0
+            ? formData.subjectSpecializations
+            : undefined,
       };
       await onSubmit(submitData);
     } catch (error) {
@@ -145,25 +159,20 @@ export default function EditTeacherModal({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <label
-                    htmlFor="subjectSpecialization"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Subject Specialization
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Subject Specializations
                   </label>
-                  <Input
-                    id="subjectSpecialization"
-                    type="text"
-                    value={formData.subjectSpecialization}
-                    onChange={(e) =>
+                  <SubjectTagsInput
+                    subjects={formData.subjectSpecializations}
+                    onChange={(subjects) =>
                       setFormData({
                         ...formData,
-                        subjectSpecialization: e.target.value,
+                        subjectSpecializations: subjects,
                       })
                     }
-                    placeholder="e.g., Mathematics, English, Science"
+                    placeholder="Add a subject specialization..."
                   />
                 </div>
 

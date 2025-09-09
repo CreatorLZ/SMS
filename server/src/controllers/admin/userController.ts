@@ -586,8 +586,14 @@ export const toggleStudentStatus = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const createTeacher = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, subjectSpecialization, assignedClassId } =
-      req.body;
+    const {
+      name,
+      email,
+      password,
+      subjectSpecializations,
+      subjectSpecialization,
+      assignedClassId,
+    } = req.body;
 
     // Check if user already exists
     const userExists = await User.findOne({ email });
@@ -608,15 +614,26 @@ export const createTeacher = async (req: Request, res: Response) => {
       }
     }
 
-    // Create teacher
-    const teacher = await User.create({
+    // Prepare teacher data - handle subject specializations
+    const teacherData: any = {
       name,
       email,
       password,
       role: "teacher",
-      subjectSpecialization,
       assignedClassId,
-    });
+    };
+
+    // Handle subject specializations - prefer array format but support both
+    if (subjectSpecializations && Array.isArray(subjectSpecializations)) {
+      // New array format
+      teacherData.subjectSpecializations = subjectSpecializations;
+    } else if (subjectSpecialization) {
+      // Fallback to old string format
+      teacherData.subjectSpecialization = subjectSpecialization;
+    }
+
+    // Create teacher
+    const teacher = await User.create(teacherData);
 
     // Update classroom's teacherId if assigned
     if (assignedClassId) {
@@ -697,7 +714,13 @@ export const getTeacherById = async (req: Request, res: Response) => {
 export const updateTeacher = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, email, subjectSpecialization, assignedClassId } = req.body;
+    const {
+      name,
+      email,
+      subjectSpecializations,
+      subjectSpecialization,
+      assignedClassId,
+    } = req.body;
 
     // Check if teacher exists
     const teacher = await User.findOne({ _id: id, role: "teacher" });
@@ -736,12 +759,30 @@ export const updateTeacher = async (req: Request, res: Response) => {
       }
     }
 
+    // Prepare update data - handle subject specializations
+    const updateData: any = {
+      name,
+      email,
+      assignedClassId,
+    };
+
+    // Handle subject specializations - prefer array format but support both
+    if (subjectSpecializations && Array.isArray(subjectSpecializations)) {
+      // New array format
+      updateData.subjectSpecializations = subjectSpecializations;
+      // Clear old format for consistency
+      updateData.subjectSpecialization = undefined;
+    } else if (subjectSpecialization) {
+      // Fallback to old string format
+      updateData.subjectSpecialization = subjectSpecialization;
+      // Clear array format
+      updateData.subjectSpecializations = undefined;
+    }
+
     // Update teacher
-    const updatedTeacher = await User.findByIdAndUpdate(
-      id,
-      { name, email, subjectSpecialization, assignedClassId },
-      { new: true }
-    ).select("-password -refreshTokens");
+    const updatedTeacher = await User.findByIdAndUpdate(id, updateData, {
+      new: true,
+    }).select("-password -refreshTokens");
 
     // Update classroom's teacherId if assigned
     if (assignedClassId) {

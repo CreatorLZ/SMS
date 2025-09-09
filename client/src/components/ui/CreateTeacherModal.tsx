@@ -4,6 +4,7 @@ import { Button } from "./button";
 import { Input } from "./input";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Separator } from "./separator";
+import SubjectTagsInput from "./SubjectTagsInput";
 import { User, Mail, Lock, BookOpen, GraduationCap, X } from "lucide-react";
 
 interface CreateTeacherModalProps {
@@ -24,7 +25,7 @@ export default function CreateTeacherModal({
     name: "",
     email: "",
     password: "",
-    subjectSpecialization: "",
+    subjectSpecializations: [] as string[],
     assignedClassId: "",
   });
 
@@ -34,14 +35,17 @@ export default function CreateTeacherModal({
       const submitData = {
         ...formData,
         assignedClassId: formData.assignedClassId || undefined,
-        subjectSpecialization: formData.subjectSpecialization || undefined,
+        subjectSpecializations:
+          formData.subjectSpecializations.length > 0
+            ? formData.subjectSpecializations
+            : undefined,
       };
       await onSubmit(submitData);
       setFormData({
         name: "",
         email: "",
         password: "",
-        subjectSpecialization: "",
+        subjectSpecializations: [],
         assignedClassId: "",
       });
     } catch (error) {
@@ -147,25 +151,20 @@ export default function CreateTeacherModal({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <label
-                    htmlFor="subjectSpecialization"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Subject Specialization
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Subject Specializations
                   </label>
-                  <Input
-                    id="subjectSpecialization"
-                    type="text"
-                    value={formData.subjectSpecialization}
-                    onChange={(e) =>
+                  <SubjectTagsInput
+                    subjects={formData.subjectSpecializations}
+                    onChange={(subjects) =>
                       setFormData({
                         ...formData,
-                        subjectSpecialization: e.target.value,
+                        subjectSpecializations: subjects,
                       })
                     }
-                    placeholder="e.g., Mathematics, English, Science"
+                    placeholder="Add a subject specialization..."
                   />
                 </div>
 

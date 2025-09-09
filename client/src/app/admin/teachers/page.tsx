@@ -110,23 +110,56 @@ export default function TeacherManagement() {
     setEditModalOpen(true);
   };
 
+  // Define Teacher interface for statistics calculation
+  interface Teacher {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+    subjectSpecializations?: string[];
+    subjectSpecialization?: string; // Keep for backward compatibility
+    assignedClassId?: {
+      _id: string;
+      name: string;
+    };
+    createdAt: string;
+  }
+
   // Calculate statistics
   const stats = useMemo(() => {
     if (!teachers) return { total: 0, assigned: 0, unassigned: 0, subjects: 0 };
 
     const assigned = teachers.filter((t) => t.assignedClassId).length;
     const unassigned = teachers.length - assigned;
-    const subjects = new Set(
-      teachers
-        .map((t) => t.subjectSpecialization)
-        .filter((s) => s && s.trim() !== "")
-    ).size;
+
+    // Collect all unique subjects from all teachers
+    const allSubjects = new Set<string>();
+    (teachers as Teacher[]).forEach((teacher) => {
+      // Check new format first
+      if (
+        teacher.subjectSpecializations &&
+        teacher.subjectSpecializations.length > 0
+      ) {
+        teacher.subjectSpecializations.forEach((subject: string) => {
+          if (subject && subject.trim() !== "") {
+            allSubjects.add(subject.trim());
+          }
+        });
+      }
+      // Fallback to old format for backward compatibility
+      else if (
+        teacher.subjectSpecialization &&
+        teacher.subjectSpecialization.trim() !== ""
+      ) {
+        allSubjects.add(teacher.subjectSpecialization.trim());
+      }
+    });
 
     return {
       total: teachers.length,
       assigned,
       unassigned,
-      subjects,
+      subjects: allSubjects.size,
     };
   }, [teachers]);
 

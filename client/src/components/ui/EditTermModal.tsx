@@ -1,14 +1,16 @@
-import { useState } from "react";
-import { useCreateTermMutation } from "@/hooks/useCreateTermMutation";
+import { useState, useEffect } from "react";
+import { useUpdateTermMutation } from "@/hooks/useUpdateTermMutation";
 import { useTermManagementStore } from "@/store/termManagementStore";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Calendar, X } from "lucide-react";
 
-export default function CreateTermModal() {
-  const { isCreateModalOpen, setCreateModalOpen } = useTermManagementStore();
-  const createTermMutation = useCreateTermMutation();
+export default function EditTermModal() {
+  const { isEditModalOpen, selectedTerm, setEditModalOpen, setSelectedTerm } =
+    useTermManagementStore();
+  const updateTermMutation = useUpdateTermMutation();
+
   const [formData, setFormData] = useState({
     name: "1st" as "1st" | "2nd" | "3rd",
     year: new Date().getFullYear(),
@@ -16,8 +18,22 @@ export default function CreateTermModal() {
     endDate: "",
   });
 
+  // Update form data when selectedTerm changes
+  useEffect(() => {
+    if (selectedTerm) {
+      setFormData({
+        name: selectedTerm.name,
+        year: selectedTerm.year,
+        startDate: selectedTerm.startDate.split("T")[0], // Convert to YYYY-MM-DD format
+        endDate: selectedTerm.endDate.split("T")[0],
+      });
+    }
+  }, [selectedTerm]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!selectedTerm) return;
 
     // Client-side validation
     if (!formData.year) {
@@ -36,24 +52,27 @@ export default function CreateTermModal() {
     }
 
     try {
-      await createTermMutation.mutateAsync(formData);
-      alert("Term created successfully!");
-      setCreateModalOpen(false);
-      setFormData({
-        name: "1st",
-        year: new Date().getFullYear(),
-        startDate: "",
-        endDate: "",
+      await updateTermMutation.mutateAsync({
+        id: selectedTerm._id,
+        data: formData,
       });
+      alert("Term updated successfully!");
+      setEditModalOpen(false);
+      setSelectedTerm(null);
     } catch (error: any) {
-      console.error("Error creating term:", error);
+      console.error("Error updating term:", error);
       alert(
-        `Error creating term: ${error.response?.data?.message || error.message}`
+        `Error updating term: ${error.response?.data?.message || error.message}`
       );
     }
   };
 
-  if (!isCreateModalOpen) return null;
+  const handleClose = () => {
+    setEditModalOpen(false);
+    setSelectedTerm(null);
+  };
+
+  if (!isEditModalOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -61,10 +80,10 @@ export default function CreateTermModal() {
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Calendar className="w-6 h-6" />
-            Create New Term
+            Edit Term
           </h2>
           <button
-            onClick={() => setCreateModalOpen(false)}
+            onClick={handleClose}
             className="text-gray-400 hover:text-gray-600"
           >
             <X className="w-6 h-6" />
@@ -164,25 +183,25 @@ export default function CreateTermModal() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setCreateModalOpen(false)}
+              onClick={handleClose}
               className="w-full sm:w-auto"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={createTermMutation.isPending}
+              disabled={updateTermMutation.isPending}
               className="w-full sm:w-auto"
             >
-              {createTermMutation.isPending ? (
+              {updateTermMutation.isPending ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Creating Term...
+                  Updating Term...
                 </>
               ) : (
                 <>
                   <Calendar className="w-4 h-4 mr-2" />
-                  Create Term
+                  Update Term
                 </>
               )}
             </Button>

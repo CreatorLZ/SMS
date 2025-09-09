@@ -10,7 +10,8 @@ export interface IUser extends Document {
   refreshTokens: string[];
   linkedStudentIds?: string[];
   assignedClassId?: string;
-  subjectSpecialization?: string;
+  subjectSpecializations?: string[];
+  subjectSpecialization?: string; // Keep for backward compatibility
   status: "active" | "inactive";
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
