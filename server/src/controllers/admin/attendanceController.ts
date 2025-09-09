@@ -99,8 +99,8 @@ export const getClassAttendance = async (req: Request, res: Response) => {
         .json({ message: "Invalid date format. Use YYYY-MM-DD" });
     }
 
-    // Parse date as UTC to avoid timezone issues
-    const parsedDate = new Date(date + "T00:00:00.000Z");
+    // Parse date in local timezone (consistent with how dates are stored)
+    const parsedDate = new Date(date);
     if (isNaN(parsedDate.getTime())) {
       return res.status(400).json({ message: "Invalid date" });
     }
@@ -378,10 +378,10 @@ export const updateAttendance = async (req: Request, res: Response) => {
 
     // Update the attendance record
     attendance.records = records.map((record) => ({
-      studentId: new mongoose.Schema.Types.ObjectId(record.studentId),
+      studentId: record.studentId as any,
       status: record.status,
     }));
-    attendance.markedBy = new mongoose.Schema.Types.ObjectId(req.user._id);
+    attendance.markedBy = req.user._id as any;
     (attendance as any).updatedAt = new Date();
     await attendance.save();
 

@@ -10,6 +10,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { useToast } from "./use-toast";
+import { useGetClassAttendance } from "../../hooks/useAttendance";
 
 interface Student {
   _id: string;
@@ -39,6 +40,14 @@ export default function AttendanceMarker({
   existingAttendance = {},
 }: AttendanceMarkerProps) {
   const { toast } = useToast();
+
+  // Fetch existing attendance data for the selected date
+  const selectedDateString = `${selectedDate.getFullYear()}-${String(
+    selectedDate.getMonth() + 1
+  ).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+  const { data: existingAttendanceData, isLoading: isLoadingExisting } =
+    useGetClassAttendance(classroomId, selectedDateString);
+
   const [attendanceData, setAttendanceData] = useState<{
     [studentId: string]: "present" | "absent" | "late";
   }>({});
@@ -46,31 +55,59 @@ export default function AttendanceMarker({
   const initializedRef = useRef(false);
   const prevStudentsRef = useRef<string>("");
   const prevExistingAttendanceRef = useRef<string>("");
+  const prevExistingDataRef = useRef<string>("");
 
   // Initialize attendance data
   useEffect(() => {
     const studentsKey = JSON.stringify(students.map((s) => s._id));
     const existingAttendanceKey = JSON.stringify(existingAttendance);
+    const existingDataKey = existingAttendanceData
+      ? JSON.stringify(existingAttendanceData.records)
+      : "";
 
-    // Only reinitialize if students or existingAttendance actually changed
+    // Only reinitialize if students, existingAttendance, or backend data changed
     if (
       !initializedRef.current ||
       studentsKey !== prevStudentsRef.current ||
-      existingAttendanceKey !== prevExistingAttendanceRef.current
+      existingAttendanceKey !== prevExistingAttendanceRef.current ||
+      existingDataKey !== prevExistingDataRef.current
     ) {
       const initialData: {
         [studentId: string]: "present" | "absent" | "late";
       } = {};
-      students.forEach((student) => {
-        initialData[student._id] = existingAttendance[student._id] || "absent";
-      });
+
+      // First priority: Use backend data if available
+      if (existingAttendanceData?.records) {
+        // Create a map of student IDs to their attendance status from backend
+        const backendAttendanceMap: {
+          [studentId: string]: "present" | "absent" | "late";
+        } = {};
+        existingAttendanceData.records.forEach((record: any) => {
+          backendAttendanceMap[record.studentId._id || record.studentId] =
+            record.status;
+        });
+
+        // Initialize with backend data
+        students.forEach((student) => {
+          initialData[student._id] =
+            backendAttendanceMap[student._id] || "absent";
+        });
+      } else {
+        // Fallback: Use existingAttendance prop or default to "absent"
+        students.forEach((student) => {
+          initialData[student._id] =
+            existingAttendance[student._id] || "absent";
+        });
+      }
+
       setAttendanceData(initialData);
 
       initializedRef.current = true;
       prevStudentsRef.current = studentsKey;
       prevExistingAttendanceRef.current = existingAttendanceKey;
+      prevExistingDataRef.current = existingDataKey;
     }
-  }, [students, existingAttendance]);
+  }, [students, existingAttendance, existingAttendanceData]);
 
   const handleStatusChange = (
     studentId: string,
@@ -134,6 +171,20 @@ export default function AttendanceMarker({
       ? (((stats.present + stats.late) / stats.total) * 100).toFixed(1)
       : "0.0";
 
+  // Show loading state while fetching existing attendance
+  if (isLoadingExisting) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading existing attendance...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -142,7 +193,9 @@ export default function AttendanceMarker({
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center space-x-2">
               <Calendar className="h-5 w-5" />
-              <span>Mark Attendance</span>
+              <span>
+                {existingAttendanceData ? "Edit Attendance" : "Mark Attendance"}
+              </span>
             </CardTitle>
             <div className="text-right">
               <p className="text-lg font-semibold">

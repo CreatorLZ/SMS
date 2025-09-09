@@ -72,6 +72,13 @@ export default function ClassroomDetailView({
     classroomId: classroom._id,
   });
 
+  // Get today's attendance for accurate present count
+  const todayDate = new Date();
+  const today = `${todayDate.getFullYear()}-${String(
+    todayDate.getMonth() + 1
+  ).padStart(2, "0")}-${String(todayDate.getDate()).padStart(2, "0")}`;
+  const { data: todayAttendance } = useGetClassAttendance(classroom._id, today);
+
   // New hooks for dynamic data
   const { data: schoolDaysData, isLoading: schoolDaysLoading } = useSchoolDays(
     classroom._id
@@ -115,7 +122,11 @@ export default function ClassroomDetailView({
     if (!selectedDate) return;
 
     try {
-      const dateString = selectedDate.toISOString().split("T")[0];
+      // Use local date formatting to avoid timezone conversion issues
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+      const day = String(selectedDate.getDate()).padStart(2, "0");
+      const dateString = `${year}-${month}-${day}`;
       const records = Object.entries(attendanceData).map(
         ([studentId, status]) => ({
           studentId,
@@ -363,9 +374,10 @@ export default function ClassroomDetailView({
               <UserCheck className="h-8 w-8 text-green-600" />
               <div>
                 <p className="text-2xl font-bold text-gray-900">
-                  {Math.floor(
-                    classroom.students.length * (attendanceRate / 100)
-                  )}
+                  {todayAttendance?.records?.filter(
+                    (record) =>
+                      record.status === "present" || record.status === "late"
+                  ).length || 0}
                 </p>
                 <p className="text-sm text-gray-600">Present Today</p>
               </div>

@@ -77,8 +77,10 @@ export function useMarkAttendance() {
     onSuccess: () => {
       // Invalidate and refetch classroom data
       queryClient.invalidateQueries({ queryKey: ["classrooms"] });
-      // Invalidate attendance data if we have attendance queries
+      // Invalidate all attendance data
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      // Invalidate attendance history
+      queryClient.invalidateQueries({ queryKey: ["attendance-history"] });
     },
   });
 }
@@ -137,8 +139,10 @@ export function useUpdateAttendance() {
       return response.data;
     },
     onSuccess: () => {
-      // Invalidate attendance data
+      // Invalidate all attendance data
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      // Invalidate attendance history
+      queryClient.invalidateQueries({ queryKey: ["attendance-history"] });
     },
   });
 }

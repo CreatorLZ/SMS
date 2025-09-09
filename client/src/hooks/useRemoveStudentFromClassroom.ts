@@ -22,6 +22,9 @@ export const useRemoveStudentFromClassroom = () => {
       queryClient.invalidateQueries({ queryKey: ["classrooms"] });
       // Invalidate student queries
       queryClient.invalidateQueries({ queryKey: ["students"] });
+      // Invalidate attendance data since removing a student affects attendance
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-history"] });
     },
     onError: (error: any) => {
       console.error("Failed to remove student from classroom:", error);
