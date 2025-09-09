@@ -381,7 +381,7 @@ export const updateAttendance = async (req: Request, res: Response) => {
       studentId: new mongoose.Schema.Types.ObjectId(record.studentId),
       status: record.status,
     }));
-    attendance.markedBy = req.user._id;
+    attendance.markedBy = new mongoose.Schema.Types.ObjectId(req.user._id);
     (attendance as any).updatedAt = new Date();
     await attendance.save();
 
