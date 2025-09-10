@@ -370,15 +370,27 @@ export const removeStudentFromClassroom = async (
 
 // @desc    Get students for a specific classroom
 // @route   GET /api/admin/classrooms/:id/students
-// @access  Private/Admin
+// @access  Private/Admin/Teacher
 export const getClassroomStudents = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const userId = req.user?._id;
+    const userRole = req.user?.role;
 
     // Check if classroom exists
     const classroom = await Classroom.findById(id);
     if (!classroom) {
       return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    // Check permissions: admin/superadmin can access any classroom, teachers only their own
+    if (
+      userRole === "teacher" &&
+      classroom.teacherId.toString() !== userId?.toString()
+    ) {
+      return res.status(403).json({
+        message: "You don't have permission to access this classroom",
+      });
     }
 
     // Get students for this classroom

@@ -156,3 +156,20 @@ export const getClassroomDetails = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+// @desc    Get all classrooms assigned to teacher
+// @route   GET /api/teacher/classrooms
+// @access  Private/Teacher
+export const getTeacherClassrooms = async (req: Request, res: Response) => {
+  try {
+    const teacherId = req.user?._id;
+
+    const classrooms = await Classroom.find({ teacherId })
+      .populate("teacherId", "name email")
+      .populate("students", "fullName studentId");
+
+    res.json(classrooms);
+  } catch (error: any) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};

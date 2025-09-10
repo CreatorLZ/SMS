@@ -11,9 +11,15 @@ export const STUDENT_CLASSES = [
   { label: "JSS2", value: "JSS2" },
   { label: "JSS3", value: "JSS3" },
   // Senior Secondary School
-  { label: "SS1", value: "SS1" },
-  { label: "SS2", value: "SS2" },
-  { label: "SS3", value: "SS3" },
+  { label: "SS1 SCIENCE", value: "SS1 SCIENCE" },
+  { label: "SS1 COMMERCIAL", value: "SS1 COMMERCIAL" },
+  { label: "SS1 ART", value: "SS1 ART" },
+  { label: "SS2 SCIENCE", value: "SS2 SCIENCE" },
+  { label: "SS2 COMMERCIAL", value: "SS2 COMMERCIAL" },
+  { label: "SS2 ART", value: "SS2 ART" },
+  { label: "SS3 SCIENCE", value: "SS3 SCIENCE" },
+  { label: "SS3 COMMERCIAL", value: "SS3 COMMERCIAL" },
+  { label: "SS3 ART", value: "SS3 ART" },
 ];
 
 export const STUDENT_CLASS_VALUES = STUDENT_CLASSES.map((c) => c.value);

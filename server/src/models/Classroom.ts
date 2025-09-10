@@ -9,6 +9,7 @@ export interface IClassroom extends Document {
     time: string;
   }[];
   students: Schema.Types.ObjectId[];
+  subjects: Schema.Types.ObjectId[];
 }
 
 // Define allowed classroom names
@@ -22,9 +23,15 @@ const ALLOWED_CLASSROOMS = [
   "JSS1",
   "JSS2",
   "JSS3",
-  "SS1",
-  "SS2",
-  "SS3",
+  "SS1 SCIENCE",
+  "SS1 COMMERCIAL",
+  "SS1 ART",
+  "SS2 SCIENCE",
+  "SS2 COMMERCIAL",
+  "SS2 ART",
+  "SS3 SCIENCE",
+  "SS3 COMMERCIAL",
+  "SS3 ART",
 ];
 
 const classroomSchema = new Schema(
@@ -65,6 +72,12 @@ const classroomSchema = new Schema(
       {
         type: Schema.Types.ObjectId,
         ref: "Student",
+      },
+    ],
+    subjects: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Subject",
       },
     ],
   },

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo } from "react";
 import DashboardLayout from "../../../components/ui/dashboard-layout";
-import RoleGuard from "../../../components/ui/role-guard";
+import RoleGuard, { useRoleCheck } from "../../../components/ui/role-guard";
 import UserTable from "../../../components/ui/UserTable";
 import CreateUserModal from "../../../components/ui/CreateUserModal";
 import EditUserModal from "../../../components/ui/EditUserModal";
@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 
 export default function AdminUsersPage() {
+  const { isSuperAdmin, isAdmin } = useRoleCheck();
+
   const {
     searchQuery,
     roleFilter,
@@ -225,10 +227,11 @@ export default function AdminUsersPage() {
                   )}
                 >
                   <option value="all">All Roles</option>
-                  <option value="superadmin">Super Admin</option>
+                  {isSuperAdmin() && (
+                    <option value="superadmin">Super Admin</option>
+                  )}
                   <option value="admin">Admin</option>
                   <option value="teacher">Teacher</option>
-                  <option value="student">Student</option>
                   <option value="parent">Parent</option>
                 </select>
 

@@ -4,7 +4,9 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import { useRoleCheck } from "./role-guard";
 import api from "@/lib/api";
+import { useMemo } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -15,6 +17,8 @@ import {
   Settings,
   LogOut,
   Brain,
+  FileText,
+  BarChart3,
 } from "lucide-react";
 
 import {
@@ -37,56 +41,238 @@ import { useState } from "react";
 
 type ColorType = "emerald" | "blue" | "purple" | "cyan" | "orange" | "teal";
 
-const navItems: Array<{
+type NavItem = {
   href: string;
   label: string;
   icon: any;
   color: ColorType;
   tooltip: string;
-}> = [
-  {
-    href: "/admin",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    color: "emerald",
-    tooltip: "Dashboard",
-  },
-  {
-    href: "/admin/users",
-    label: "User Management",
-    icon: Users,
-    color: "blue",
-    tooltip: "User Management",
-  },
-  {
-    href: "/admin/students",
-    label: "Student Management",
-    icon: GraduationCap,
-    color: "purple",
-    tooltip: "Student Management",
-  },
-  {
-    href: "/admin/teachers",
-    label: "Teacher Management",
-    icon: UserCheck,
-    color: "cyan",
-    tooltip: "Teacher Management",
-  },
-  {
-    href: "/admin/classrooms",
-    label: "Classroom Management",
-    icon: Building2,
-    color: "orange",
-    tooltip: "Classroom Management",
-  },
-  {
-    href: "/admin/terms",
-    label: "Term Management",
-    icon: Calendar,
-    color: "teal",
-    tooltip: "Term Management",
-  },
-];
+  roles: string[]; // Roles that can access this item
+};
+
+// Memoized color classes function to prevent recreation on every render
+const getColorClasses = (color: ColorType, isActive: boolean) => {
+  const colorMap: Record<ColorType, { active: string; inactive: string }> = {
+    emerald: {
+      active: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      inactive: "text-gray-600 hover:bg-emerald-50 hover:text-emerald-700",
+    },
+    blue: {
+      active: "bg-blue-50 text-blue-700 border-blue-200",
+      inactive: "text-gray-600 hover:bg-blue-50 hover:text-blue-700",
+    },
+    purple: {
+      active: "bg-purple-50 text-purple-700 border-purple-200",
+      inactive: "text-gray-600 hover:bg-purple-50 hover:text-purple-700",
+    },
+    cyan: {
+      active: "bg-cyan-50 text-cyan-700 border-cyan-200",
+      inactive: "text-gray-600 hover:bg-cyan-50 hover:text-cyan-700",
+    },
+    orange: {
+      active: "bg-orange-50 text-orange-700 border-orange-200",
+      inactive: "text-gray-600 hover:bg-orange-50 hover:text-orange-700",
+    },
+    teal: {
+      active: "bg-teal-50 text-teal-700 border-teal-200",
+      inactive: "text-gray-600 hover:bg-teal-50 hover:text-teal-700",
+    },
+  };
+
+  return isActive ? colorMap[color].active : colorMap[color].inactive;
+};
+
+// Define navigation items with role restrictions
+const getNavItems = (userRole?: string): NavItem[] => {
+  const adminItems: NavItem[] = [
+    {
+      href: "/admin",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      color: "emerald",
+      tooltip: "Dashboard",
+      roles: ["admin", "superadmin"],
+    },
+    {
+      href: "/admin/users",
+      label: "User Management",
+      icon: Users,
+      color: "blue",
+      tooltip: "User Management",
+      roles: ["admin", "superadmin"],
+    },
+    {
+      href: "/admin/students",
+      label: "Student Management",
+      icon: GraduationCap,
+      color: "purple",
+      tooltip: "Student Management",
+      roles: ["admin", "superadmin"],
+    },
+    {
+      href: "/admin/teachers",
+      label: "Teacher Management",
+      icon: UserCheck,
+      color: "cyan",
+      tooltip: "Teacher Management",
+      roles: ["admin", "superadmin"],
+    },
+    {
+      href: "/admin/classrooms",
+      label: "Classroom Management",
+      icon: Building2,
+      color: "orange",
+      tooltip: "Classroom Management",
+      roles: ["admin", "superadmin"],
+    },
+    {
+      href: "/admin/terms",
+      label: "Term Management",
+      icon: Calendar,
+      color: "teal",
+      tooltip: "Term Management",
+      roles: ["admin", "superadmin"],
+    },
+  ];
+
+  const teacherItems: NavItem[] = [
+    {
+      href: "/teacher",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      color: "emerald",
+      tooltip: "Teacher Dashboard",
+      roles: ["teacher"],
+    },
+    {
+      href: "/teacher/schedule",
+      label: "Schedule",
+      icon: Calendar,
+      color: "teal",
+      tooltip: "My Schedule",
+      roles: ["teacher"],
+    },
+    {
+      href: "/teacher/attendance",
+      label: "Attendance",
+      icon: UserCheck,
+      color: "blue",
+      tooltip: "Mark Attendance",
+      roles: ["teacher"],
+    },
+    {
+      href: "/teacher/students",
+      label: "My Students",
+      icon: Users,
+      color: "purple",
+      tooltip: "View Students",
+      roles: ["teacher"],
+    },
+    {
+      href: "/teacher/grades",
+      label: "Grades",
+      icon: GraduationCap,
+      color: "cyan",
+      tooltip: "Enter Grades",
+      roles: ["teacher"],
+    },
+    {
+      href: "/teacher/reports",
+      label: "Reports",
+      icon: BarChart3,
+      color: "orange",
+      tooltip: "View Reports",
+      roles: ["teacher"],
+    },
+  ];
+
+  const studentItems: NavItem[] = [
+    {
+      href: "/student",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      color: "emerald",
+      tooltip: "Student Dashboard",
+      roles: ["student"],
+    },
+    {
+      href: "/student/grades",
+      label: "My Grades",
+      icon: GraduationCap,
+      color: "blue",
+      tooltip: "View Grades",
+      roles: ["student"],
+    },
+    {
+      href: "/student/attendance",
+      label: "Attendance",
+      icon: UserCheck,
+      color: "purple",
+      tooltip: "My Attendance",
+      roles: ["student"],
+    },
+    {
+      href: "/student/schedule",
+      label: "Schedule",
+      icon: Calendar,
+      color: "cyan",
+      tooltip: "Class Schedule",
+      roles: ["student"],
+    },
+  ];
+
+  const parentItems: NavItem[] = [
+    {
+      href: "/parent",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      color: "emerald",
+      tooltip: "Parent Dashboard",
+      roles: ["parent"],
+    },
+    {
+      href: "/parent/children",
+      label: "My Children",
+      icon: Users,
+      color: "blue",
+      tooltip: "View Children",
+      roles: ["parent"],
+    },
+    {
+      href: "/parent/progress",
+      label: "Progress Reports",
+      icon: BarChart3,
+      color: "purple",
+      tooltip: "Academic Progress",
+      roles: ["parent"],
+    },
+    {
+      href: "/parent/attendance",
+      label: "Attendance",
+      icon: UserCheck,
+      color: "cyan",
+      tooltip: "Children's Attendance",
+      roles: ["parent"],
+    },
+  ];
+
+  // Filter items based on user role
+  if (!userRole) return [];
+
+  switch (userRole) {
+    case "superadmin":
+    case "admin":
+      return adminItems.filter((item) => item.roles.includes(userRole));
+    case "teacher":
+      return teacherItems;
+    case "student":
+      return studentItems;
+    case "parent":
+      return parentItems;
+    default:
+      return [];
+  }
+};
 
 const secondaryItems: Array<{
   href: string;
@@ -128,57 +314,44 @@ export function DashboardSidebar() {
     setShowToast(true);
   };
 
-  const handleLogout = async () => {
+  const handleLogout = React.useCallback(async () => {
     if (isLoggingOut) return;
 
     setIsLoggingOut(true);
     try {
       await api.post("/auth/logout");
       logout();
-      router.push("/admin/login");
+
+      // Redirect to appropriate login page based on user role
+      const loginPath =
+        user?.role === "teacher"
+          ? "/teacher/login"
+          : user?.role === "student"
+          ? "/student/login"
+          : user?.role === "parent"
+          ? "/parent/login"
+          : "/admin/login";
+
+      router.push(loginPath);
     } catch (error) {
       console.error("Logout error:", error);
       setIsLoggingOut(false);
       showToastMessage("Logout failed, please try again", "error");
     }
-  };
+  }, [isLoggingOut, user?.role, logout, router]);
 
-  // Update secondary items with logout handler
-  const updatedSecondaryItems = secondaryItems.map((item) => ({
-    ...item,
-    handleClick: item.label === "Log Out" ? handleLogout : item.handleClick,
-  }));
+  // Memoize navigation items to prevent infinite re-renders
+  const navItems = useMemo(() => getNavItems(user?.role), [user?.role]);
 
-  const getColorClasses = (color: ColorType, isActive: boolean) => {
-    const colorMap: Record<ColorType, { active: string; inactive: string }> = {
-      emerald: {
-        active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        inactive: "text-gray-600 hover:bg-emerald-50 hover:text-emerald-700",
-      },
-      blue: {
-        active: "bg-blue-50 text-blue-700 border-blue-200",
-        inactive: "text-gray-600 hover:bg-blue-50 hover:text-blue-700",
-      },
-      purple: {
-        active: "bg-purple-50 text-purple-700 border-purple-200",
-        inactive: "text-gray-600 hover:bg-purple-50 hover:text-purple-700",
-      },
-      cyan: {
-        active: "bg-cyan-50 text-cyan-700 border-cyan-200",
-        inactive: "text-gray-600 hover:bg-cyan-50 hover:text-cyan-700",
-      },
-      orange: {
-        active: "bg-orange-50 text-orange-700 border-orange-200",
-        inactive: "text-gray-600 hover:bg-orange-50 hover:text-orange-700",
-      },
-      teal: {
-        active: "bg-teal-50 text-teal-700 border-teal-200",
-        inactive: "text-gray-600 hover:bg-teal-50 hover:text-teal-700",
-      },
-    };
-
-    return isActive ? colorMap[color].active : colorMap[color].inactive;
-  };
+  // Update secondary items with logout handler - memoized to prevent infinite re-renders
+  const updatedSecondaryItems = React.useMemo(
+    () =>
+      secondaryItems.map((item) => ({
+        ...item,
+        handleClick: item.label === "Log Out" ? handleLogout : item.handleClick,
+      })),
+    [handleLogout]
+  );
 
   return (
     <>
@@ -193,7 +366,13 @@ export function DashboardSidebar() {
                 Treasure Land
               </span>
               <span className="truncate text-xs text-sidebar-foreground/70">
-                Admin Portal
+                {user?.role === "teacher"
+                  ? "Teacher Portal"
+                  : user?.role === "student"
+                  ? "Student Portal"
+                  : user?.role === "parent"
+                  ? "Parent Portal"
+                  : "Admin Portal"}
               </span>
             </div>
           </div>

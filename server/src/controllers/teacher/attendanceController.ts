@@ -101,25 +101,63 @@ export const markAttendance = async (req: Request, res: Response) => {
 export const getAttendanceHistory = async (req: Request, res: Response) => {
   try {
     const teacherId = req.user?._id;
-    const { startDate, endDate } = req.query;
+    const { classroomId, limit = 100 } = req.query;
 
-    // Get teacher's classroom
-    const classroom = await Classroom.findOne({ teacherId }).populate({
-      path: "students",
-      select: "fullName studentId attendance",
-      match: {
-        "attendance.date": {
-          $gte: startDate,
-          $lte: endDate || new Date(),
-        },
-      },
-    });
+    // If classroomId is provided, verify teacher has access to it
+    if (classroomId) {
+      const classroom = await Classroom.findOne({
+        _id: classroomId,
+        teacherId,
+      });
 
-    if (!classroom) {
-      return res.status(404).json({ message: "No classroom assigned" });
+      if (!classroom) {
+        return res.status(403).json({
+          message: "You don't have access to this classroom",
+        });
+      }
+
+      // Get attendance records for this specific classroom
+      const attendance = await Attendance.find({
+        classroomId: classroom._id,
+      })
+        .populate({
+          path: "records.studentId",
+          select: "fullName studentId",
+        })
+        .sort({ date: -1 })
+        .limit(parseInt(limit as string));
+
+      res.json({ attendance });
+    } else {
+      // Get all classrooms for the teacher and their attendance
+      const classrooms = await Classroom.find({ teacherId });
+
+      if (classrooms.length === 0) {
+        return res.status(404).json({ message: "No classrooms assigned" });
+      }
+
+      // Get attendance for all teacher's classrooms
+      const attendancePromises = classrooms.map(async (classroom) => {
+        const attendance = await Attendance.find({
+          classroomId: classroom._id,
+        })
+          .populate({
+            path: "records.studentId",
+            select: "fullName studentId",
+          })
+          .sort({ date: -1 })
+          .limit(parseInt(limit as string));
+
+        return {
+          classroomId: classroom._id,
+          classroomName: classroom.name,
+          attendance,
+        };
+      });
+
+      const attendanceData = await Promise.all(attendancePromises);
+      res.json({ classrooms: attendanceData });
     }
-
-    res.json(classroom.students);
   } catch (error: any) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

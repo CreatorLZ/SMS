@@ -17,8 +17,18 @@ export const generateStudentId = async (
 ): Promise<string> => {
   const { includeYear = true, yearDigits = 2, sequencePadding = 4 } = config;
 
-  // Extract class prefix (remove numbers and spaces)
-  const classPrefix = currentClass.replace(/[\d\s]/g, "").toUpperCase();
+  // Extract class prefix - handle new subdivided format
+  let classPrefix: string;
+  if (currentClass.includes("SCIENCE")) {
+    classPrefix = currentClass.replace(/\s+.*$/, "").toUpperCase() + "S";
+  } else if (currentClass.includes("COMMERCIAL")) {
+    classPrefix = currentClass.replace(/\s+.*$/, "").toUpperCase() + "C";
+  } else if (currentClass.includes("ART")) {
+    classPrefix = currentClass.replace(/\s+.*$/, "").toUpperCase() + "A";
+  } else {
+    // Fallback for old format (remove numbers and spaces)
+    classPrefix = currentClass.replace(/[\d\s]/g, "").toUpperCase();
+  }
 
   // Get current year (last N digits)
   const currentYear = includeYear
@@ -77,7 +87,18 @@ export const validateStudentIdFormat = (studentId: string): boolean => {
 export const previewNextStudentId = async (
   currentClass: string
 ): Promise<string> => {
-  const classPrefix = currentClass.replace(/[\d\s]/g, "").toUpperCase();
+  // Extract class prefix - handle new subdivided format
+  let classPrefix: string;
+  if (currentClass.includes("SCIENCE")) {
+    classPrefix = currentClass.replace(/\s+.*$/, "").toUpperCase() + "S";
+  } else if (currentClass.includes("COMMERCIAL")) {
+    classPrefix = currentClass.replace(/\s+.*$/, "").toUpperCase() + "C";
+  } else if (currentClass.includes("ART")) {
+    classPrefix = currentClass.replace(/\s+.*$/, "").toUpperCase() + "A";
+  } else {
+    // Fallback for old format (remove numbers and spaces)
+    classPrefix = currentClass.replace(/[\d\s]/g, "").toUpperCase();
+  }
   const currentYear = new Date().getFullYear().toString().slice(-2);
 
   try {
@@ -127,7 +148,18 @@ export const isStudentIdAvailable = async (
  * Generates a suggested student ID for preview purposes
  */
 export const generateSuggestedStudentId = (currentClass: string): string => {
-  const classPrefix = currentClass.replace(/[\d\s]/g, "").toUpperCase();
+  // Extract class prefix - handle new subdivided format
+  let classPrefix: string;
+  if (currentClass.includes("SCIENCE")) {
+    classPrefix = currentClass.replace(/\s+.*$/, "").toUpperCase() + "S";
+  } else if (currentClass.includes("COMMERCIAL")) {
+    classPrefix = currentClass.replace(/\s+.*$/, "").toUpperCase() + "C";
+  } else if (currentClass.includes("ART")) {
+    classPrefix = currentClass.replace(/\s+.*$/, "").toUpperCase() + "A";
+  } else {
+    // Fallback for old format (remove numbers and spaces)
+    classPrefix = currentClass.replace(/[\d\s]/g, "").toUpperCase();
+  }
   const currentYear = new Date().getFullYear().toString().slice(-2);
   return `${classPrefix}${currentYear}XXXX`; // XXXX will be replaced with actual sequence
 };

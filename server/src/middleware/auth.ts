@@ -1,7 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User";
-import { JwtPayload } from "../types/auth.types";
+import { JwtPayload, Permission } from "../types/auth.types";
+import {
+  getRolePermissions,
+  hasPermission,
+  hasAnyPermission,
+} from "../utils/permissions";
 
 export const protect = async (
   req: Request,
@@ -52,4 +57,84 @@ export const authorize = (...roles: string[]) => {
     }
     next();
   };
+};
+
+/**
+ * Middleware to check if user has specific permission
+ */
+export const requirePermission = (permission: Permission) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    if (!hasPermission(req.user.role, permission)) {
+      return res.status(403).json({
+        message: `Insufficient permissions. Required: ${permission}`,
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Middleware to check if user has any of the specified permissions
+ */
+export const requireAnyPermission = (...permissions: Permission[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    if (!hasAnyPermission(req.user.role, permissions)) {
+      return res.status(403).json({
+        message: `Insufficient permissions. Required one of: ${permissions.join(
+          ", "
+        )}`,
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Middleware to check if user has all of the specified permissions
+ */
+export const requireAllPermissions = (...permissions: Permission[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const userPermissions = getRolePermissions(req.user.role);
+    const hasAllRequired = permissions.every((permission) =>
+      userPermissions.includes(permission)
+    );
+
+    if (!hasAllRequired) {
+      return res.status(403).json({
+        message: `Insufficient permissions. Required all of: ${permissions.join(
+          ", "
+        )}`,
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Middleware to set user permissions on request object
+ */
+export const setPermissions = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  if (req.user) {
+    req.permissions = getRolePermissions(req.user.role);
+  }
+  next();
 };

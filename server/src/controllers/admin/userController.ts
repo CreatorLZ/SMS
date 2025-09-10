@@ -47,7 +47,7 @@ export const registerUser = async (req: Request, res: Response) => {
       }
     }
 
-    // Create user
+    // Create user - handle optional ObjectId fields properly
     const user = await User.create({
       name,
       email,
@@ -56,7 +56,10 @@ export const registerUser = async (req: Request, res: Response) => {
       linkedStudentIds: role === "parent" ? linkedStudentIds : undefined,
       subjectSpecialization:
         role === "teacher" ? subjectSpecialization : undefined,
-      assignedClassId: role === "teacher" ? assignedClassId : undefined,
+      assignedClassId:
+        role === "teacher" && assignedClassId && assignedClassId.trim() !== ""
+          ? assignedClassId
+          : undefined,
     });
 
     // Create Student record if role is student

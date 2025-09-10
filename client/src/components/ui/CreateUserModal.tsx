@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useCreateUserMutation } from "@/hooks/useCreateUserMutation";
 import { useUserManagementStore } from "@/store/userManagementStore";
 import { Toast } from "./Toast";
-import { STUDENT_CLASSES } from "@/constants/classes";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
@@ -30,9 +29,7 @@ export default function CreateUserModal() {
     name: "",
     email: "",
     password: "",
-    role: "student",
-    studentId: "",
-    currentClass: "",
+    role: "parent",
     linkedStudentIds: [] as string[],
     subjectSpecialization: "",
     assignedClassId: "",
@@ -57,13 +54,6 @@ export default function CreateUserModal() {
       let submitData: typeof baseData & Record<string, any>;
 
       switch (formData.role) {
-        case "student":
-          submitData = {
-            ...baseData,
-            studentId: formData.studentId,
-            currentClass: formData.currentClass,
-          };
-          break;
         case "parent":
           submitData = {
             ...baseData,
@@ -88,9 +78,7 @@ export default function CreateUserModal() {
         name: "",
         email: "",
         password: "",
-        role: "student",
-        studentId: "",
-        currentClass: "",
+        role: "parent",
         linkedStudentIds: [],
         subjectSpecialization: "",
         assignedClassId: "",
@@ -108,8 +96,6 @@ export default function CreateUserModal() {
       ...formData,
       role,
       // Reset role-specific fields when role changes
-      studentId: "",
-      currentClass: "",
       linkedStudentIds: [],
       subjectSpecialization: "",
       assignedClassId: "",
@@ -218,7 +204,6 @@ export default function CreateUserModal() {
                     className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     required
                   >
-                    <option value="student">Student</option>
                     <option value="parent">Parent</option>
                     <option value="teacher">Teacher</option>
                     <option value="admin">Admin</option>
@@ -230,69 +215,6 @@ export default function CreateUserModal() {
           </Card>
 
           {/* Role-specific Information */}
-          {formData.role === "student" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BookOpen className="w-5 h-5" />
-                  Student Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="studentId"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Student ID
-                    </label>
-                    <Input
-                      id="studentId"
-                      type="text"
-                      value={formData.studentId}
-                      onChange={(e) =>
-                        setFormData({ ...formData, studentId: e.target.value })
-                      }
-                      placeholder="Auto-generated if empty"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="currentClass"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Current Class *
-                    </label>
-                    <select
-                      id="currentClass"
-                      value={formData.currentClass}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          currentClass: e.target.value,
-                        })
-                      }
-                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      required
-                    >
-                      <option value="">Select a class</option>
-                      {STUDENT_CLASSES.map((classOption) => (
-                        <option
-                          key={classOption.value}
-                          value={classOption.value}
-                        >
-                          {classOption.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {formData.role === "teacher" && (
             <Card>
               <CardHeader>

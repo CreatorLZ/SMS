@@ -8,6 +8,7 @@ import {
   submitResults,
   getStudentResults,
   getClassroomDetails,
+  getTeacherClassrooms,
 } from "../../controllers/teacher/resultController";
 
 const router = express.Router();
@@ -25,5 +26,6 @@ router.get("/results/:studentId", getStudentResults);
 
 // Classroom routes
 router.get("/classroom", getClassroomDetails);
+router.get("/classrooms", getTeacherClassrooms);
 
 export default router;

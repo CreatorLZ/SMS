@@ -27,10 +27,73 @@ export interface TokenPayload {
   refreshToken: string;
 }
 
+export type Permission =
+  // User Management
+  | "users.create"
+  | "users.read"
+  | "users.update"
+  | "users.delete"
+  | "users.manage_admins"
+  | "users.manage_superadmins"
+
+  // Student Management
+  | "students.create"
+  | "students.read"
+  | "students.update"
+  | "students.delete"
+
+  // Teacher Management
+  | "teachers.create"
+  | "teachers.read"
+  | "teachers.update"
+  | "teachers.delete"
+
+  // Classroom Management
+  | "classrooms.create"
+  | "classrooms.read"
+  | "classrooms.update"
+  | "classrooms.delete"
+  | "classrooms.assign_students"
+  | "classrooms.assign_subjects"
+
+  // Subject Management
+  | "subjects.create"
+  | "subjects.read"
+  | "subjects.update"
+  | "subjects.delete"
+
+  // Term Management
+  | "terms.create"
+  | "terms.read"
+  | "terms.update"
+  | "terms.delete"
+  | "terms.activate"
+
+  // Attendance
+  | "attendance.create"
+  | "attendance.read"
+  | "attendance.update"
+  | "attendance.delete"
+
+  // Reports & Analytics
+  | "reports.read"
+  | "reports.export"
+
+  // Audit Logs
+  | "audit.read"
+
+  // System Configuration
+  | "system.configure";
+
+export interface RolePermissions {
+  [key: string]: Permission[];
+}
+
 declare global {
   namespace Express {
     interface Request {
       user?: IUser;
+      permissions?: Permission[];
     }
   }
 }
