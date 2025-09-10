@@ -57,6 +57,12 @@ export const rolePermissions: RolePermissions = {
     // Audit Logs - Full access
     "audit.read",
 
+    // Timetable Management - Full access
+    "timetables.create",
+    "timetables.read",
+    "timetables.update",
+    "timetables.delete",
+
     // System Configuration - Full access
     "system.configure",
   ],
@@ -114,6 +120,12 @@ export const rolePermissions: RolePermissions = {
     // Audit Logs - Full access
     "audit.read",
 
+    // Timetable Management - Full access
+    "timetables.create",
+    "timetables.read",
+    "timetables.update",
+    "timetables.delete",
+
     // System Configuration - Limited
     // Note: Admin cannot configure system settings
   ],
@@ -138,6 +150,11 @@ export const rolePermissions: RolePermissions = {
     "attendance.create",
     "attendance.read",
     "attendance.update",
+
+    // Timetable Management - Can create, read, and update for assigned classes
+    "timetables.create",
+    "timetables.read",
+    "timetables.update",
 
     // Reports - Limited to own classes
     "reports.read",

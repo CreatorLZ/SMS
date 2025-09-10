@@ -4,7 +4,15 @@ import { useTermManagementStore } from "@/store/termManagementStore";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
-import { Calendar, X } from "lucide-react";
+import HolidayForm from "./HolidayForm";
+import HolidayList from "./HolidayList";
+import { Calendar, X, ChevronDown, ChevronUp } from "lucide-react";
+
+interface Holiday {
+  name: string;
+  startDate: string;
+  endDate: string;
+}
 
 export default function EditTermModal() {
   const { isEditModalOpen, selectedTerm, setEditModalOpen, setSelectedTerm } =
@@ -18,6 +26,13 @@ export default function EditTermModal() {
     endDate: "",
   });
 
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [showHolidayForm, setShowHolidayForm] = useState(false);
+  const [editingHolidayIndex, setEditingHolidayIndex] = useState<number | null>(
+    null
+  );
+  const [showHolidays, setShowHolidays] = useState(true);
+
   // Update form data when selectedTerm changes
   useEffect(() => {
     if (selectedTerm) {
@@ -27,8 +42,46 @@ export default function EditTermModal() {
         startDate: selectedTerm.startDate.split("T")[0], // Convert to YYYY-MM-DD format
         endDate: selectedTerm.endDate.split("T")[0],
       });
+      setHolidays(selectedTerm.holidays || []);
     }
   }, [selectedTerm]);
+
+  // Holiday management handlers
+  const handleAddHoliday = () => {
+    setEditingHolidayIndex(null);
+    setShowHolidayForm(true);
+  };
+
+  const handleEditHoliday = (index: number) => {
+    setEditingHolidayIndex(index);
+    setShowHolidayForm(true);
+  };
+
+  const handleDeleteHoliday = (index: number) => {
+    if (confirm("Are you sure you want to delete this holiday?")) {
+      const newHolidays = holidays.filter((_, i) => i !== index);
+      setHolidays(newHolidays);
+    }
+  };
+
+  const handleSaveHoliday = (holiday: Holiday) => {
+    if (editingHolidayIndex !== null) {
+      // Edit existing holiday
+      const newHolidays = [...holidays];
+      newHolidays[editingHolidayIndex] = holiday;
+      setHolidays(newHolidays);
+    } else {
+      // Add new holiday
+      setHolidays([...holidays, holiday]);
+    }
+    setShowHolidayForm(false);
+    setEditingHolidayIndex(null);
+  };
+
+  const handleCancelHolidayForm = () => {
+    setShowHolidayForm(false);
+    setEditingHolidayIndex(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +107,10 @@ export default function EditTermModal() {
     try {
       await updateTermMutation.mutateAsync({
         id: selectedTerm._id,
-        data: formData,
+        data: {
+          ...formData,
+          holidays,
+        },
       });
       alert("Term updated successfully!");
       setEditModalOpen(false);
@@ -177,6 +233,54 @@ export default function EditTermModal() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Holiday Management */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Holiday Management</h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowHolidays(!showHolidays)}
+              >
+                {showHolidays ? (
+                  <ChevronUp className="w-4 h-4 mr-2" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 mr-2" />
+                )}
+                {showHolidays ? "Hide" : "Show"} Holidays
+              </Button>
+            </div>
+
+            {showHolidays && (
+              <div className="space-y-4">
+                {showHolidayForm ? (
+                  <HolidayForm
+                    holiday={
+                      editingHolidayIndex !== null
+                        ? holidays[editingHolidayIndex]
+                        : undefined
+                    }
+                    termStartDate={formData.startDate}
+                    termEndDate={formData.endDate}
+                    onSave={handleSaveHoliday}
+                    onCancel={handleCancelHolidayForm}
+                    isEditing={editingHolidayIndex !== null}
+                  />
+                ) : (
+                  <HolidayList
+                    holidays={holidays}
+                    termStartDate={formData.startDate}
+                    termEndDate={formData.endDate}
+                    onAddHoliday={handleAddHoliday}
+                    onEditHoliday={handleEditHoliday}
+                    onDeleteHoliday={handleDeleteHoliday}
+                  />
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Form Actions */}
           <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">

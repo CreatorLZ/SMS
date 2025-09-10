@@ -362,8 +362,6 @@ export default function AdminTermsPage() {
           <TermTable
             terms={filteredTerms}
             onEdit={handleEdit}
-            onDelete={handleDelete}
-            onActivate={handleActivate}
             isLoading={isLoading}
           />
 

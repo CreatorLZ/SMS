@@ -20,6 +20,7 @@ import { useSchoolDays } from "../../hooks/useSchoolDays";
 import { useAttendanceComparison } from "../../hooks/useAttendanceComparison";
 import { useRecentActivity } from "../../hooks/useRecentActivity";
 import { useTeacherClassroomStudents } from "../../hooks/useTeacherClassroomsQuery";
+import { useActiveTermQuery } from "../../hooks/useActiveTermQuery";
 import { useToast } from "./use-toast";
 import api from "../../lib/api";
 
@@ -78,6 +79,9 @@ export default function TeacherClassroomDetailView({
     useAttendanceComparison(classroom._id);
   const { data: recentActivity, isLoading: activityLoading } =
     useRecentActivity(classroom._id);
+
+  // Active term hook for holidays
+  const { data: activeTerm } = useActiveTermQuery();
 
   const [attendanceRate, setAttendanceRate] = useState(0);
   const [loadingRate, setLoadingRate] = useState(true);
@@ -528,6 +532,7 @@ export default function TeacherClassroomDetailView({
                 classroomId={classroom._id}
                 onDateSelect={handleDateSelect}
                 selectedDate={selectedDate || undefined}
+                holidays={activeTerm?.holidays || []}
               />
             )}
           </div>

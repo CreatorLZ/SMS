@@ -31,15 +31,16 @@ export const saveTimetable = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Classroom not found" });
     }
 
-    // Check permissions
-    if (
-      req.user.role !== "admin" &&
-      classroom.teacherId.toString() !== req.user._id.toString()
-    ) {
-      return res.status(403).json({
-        message: "Not authorized to manage timetable for this classroom",
-      });
+    // Check permissions - admins and superadmins can access all classrooms
+    // Teachers can only access classrooms they are assigned to
+    if (req.user.role === "teacher") {
+      if (classroom.teacherId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          message: "Not authorized to manage timetable for this classroom",
+        });
+      }
     }
+    // Superadmin and admin have full access - no additional checks needed
 
     // Validate timetable entries
     for (const entry of timetable) {
@@ -70,8 +71,10 @@ export const saveTimetable = async (req: Request, res: Response) => {
     // Save new timetable entries
     const savedEntries = [];
     for (const entry of timetable) {
+      // Destructure to exclude _id for new entries (MongoDB generates ObjectIds automatically)
+      const { _id, ...entryData } = entry;
       const timetableEntry = new Timetable({
-        ...entry,
+        ...entryData,
         classroomId,
         createdBy: req.user._id,
       });
@@ -82,13 +85,9 @@ export const saveTimetable = async (req: Request, res: Response) => {
     // Create audit log
     await AuditLog.create({
       userId: req.user._id,
-      action: "TIMETABLE_SAVED",
-      details: {
-        classroomId,
-        entryCount: savedEntries.length,
-      },
-      ipAddress: req.ip,
-      userAgent: req.get("User-Agent"),
+      actionType: "TIMETABLE_SAVED",
+      description: `Saved timetable for classroom ${classroom.name} with ${savedEntries.length} entries`,
+      targetId: classroomId,
     });
 
     res.status(201).json({
@@ -119,15 +118,16 @@ export const getTimetable = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Classroom not found" });
     }
 
-    // Check permissions
-    if (
-      req.user.role !== "admin" &&
-      classroom.teacherId.toString() !== req.user._id.toString()
-    ) {
-      return res.status(403).json({
-        message: "Not authorized to view timetable for this classroom",
-      });
+    // Check permissions - admins and superadmins can access all classrooms
+    // Teachers can only access classrooms they are assigned to
+    if (req.user.role === "teacher") {
+      if (classroom.teacherId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          message: "Not authorized to view timetable for this classroom",
+        });
+      }
     }
+    // Superadmin and admin have full access - no additional checks needed
 
     const timetable = await Timetable.find({ classroomId })
       .populate("teacherId", "name email")
@@ -156,8 +156,8 @@ export const getAllTimetables = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "User not authenticated" });
     }
 
-    // Only admins can view all timetables
-    if (req.user.role !== "admin") {
+    // Only admins and superadmins can view all timetables
+    if (req.user.role !== "admin" && req.user.role !== "superadmin") {
       return res
         .status(403)
         .json({ message: "Only administrators can view all timetables" });
@@ -209,15 +209,16 @@ export const updateTimetable = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Classroom not found" });
     }
 
-    // Check permissions
-    if (
-      req.user.role !== "admin" &&
-      classroom.teacherId.toString() !== req.user._id.toString()
-    ) {
-      return res.status(403).json({
-        message: "Not authorized to update timetable for this classroom",
-      });
+    // Check permissions - admins and superadmins can access all classrooms
+    // Teachers can only access classrooms they are assigned to
+    if (req.user.role === "teacher") {
+      if (classroom.teacherId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          message: "Not authorized to update timetable for this classroom",
+        });
+      }
     }
+    // Superadmin and admin have full access - no additional checks needed
 
     // Check for conflicts if dayOfWeek or period is being updated
     if (updateData.dayOfWeek !== undefined || updateData.period !== undefined) {
@@ -260,14 +261,9 @@ export const updateTimetable = async (req: Request, res: Response) => {
     // Create audit log
     await AuditLog.create({
       userId: req.user._id,
-      action: "TIMETABLE_UPDATED",
-      details: {
-        classroomId,
-        entryId,
-        changes: updateData,
-      },
-      ipAddress: req.ip,
-      userAgent: req.get("User-Agent"),
+      actionType: "TIMETABLE_UPDATED",
+      description: `Updated timetable entry for classroom ${classroom.name}`,
+      targetId: entryId,
     });
 
     res.json({
@@ -308,15 +304,9 @@ export const deleteTimetable = async (req: Request, res: Response) => {
     // Create audit log
     await AuditLog.create({
       userId: req.user._id,
-      action: "TIMETABLE_DELETED",
-      details: {
-        classroomId,
-        entryId,
-        subject: deletedEntry.subject,
-        teacherId: deletedEntry.teacherId,
-      },
-      ipAddress: req.ip,
-      userAgent: req.get("User-Agent"),
+      actionType: "TIMETABLE_DELETED",
+      description: `Deleted timetable entry for subject ${deletedEntry.subject}`,
+      targetId: entryId,
     });
 
     res.json({

@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { protect as authenticate, authorize } from "../../middleware/auth";
+import { protect as authenticate } from "../../middleware/auth";
+import { requirePermission, requireAnyPermission } from "../../middleware/auth";
 import {
   saveTimetable,
   getTimetable,
@@ -14,22 +15,30 @@ const router = Router();
 router.use(authenticate);
 
 // Save/update timetable for a classroom
-router.post("/:classroomId", authorize("admin", "teacher"), saveTimetable);
+router.post(
+  "/:classroomId",
+  requireAnyPermission("timetables.create", "timetables.update"),
+  saveTimetable
+);
 
 // Get timetable for a specific classroom
-router.get("/:classroomId", authorize("admin", "teacher"), getTimetable);
+router.get("/:classroomId", requirePermission("timetables.read"), getTimetable);
 
-// Get all timetables (admin only)
-router.get("/", authorize("admin"), getAllTimetables);
+// Get all timetables (admin/superadmin only)
+router.get("/", requirePermission("timetables.read"), getAllTimetables);
 
 // Update specific timetable entry
 router.put(
   "/:classroomId/:entryId",
-  authorize("admin", "teacher"),
+  requireAnyPermission("timetables.update", "timetables.create"),
   updateTimetable
 );
 
 // Delete timetable entry
-router.delete("/:classroomId/:entryId", authorize("admin"), deleteTimetable);
+router.delete(
+  "/:classroomId/:entryId",
+  requirePermission("timetables.delete"),
+  deleteTimetable
+);
 
 export default router;

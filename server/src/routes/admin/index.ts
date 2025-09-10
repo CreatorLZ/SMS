@@ -26,6 +26,8 @@ import {
 import {
   createTerm,
   activateTerm,
+  updateTerm,
+  deactivateTerm,
   getTerms,
 } from "../../controllers/admin/termController";
 import {
@@ -136,10 +138,18 @@ router
   .post(requirePermission("terms.create"), createTerm)
   .get(requirePermission("terms.read"), getTerms);
 
+router.route("/terms/:id").put(requirePermission("terms.update"), updateTerm);
+
 router.patch(
   "/terms/:id/activate",
   requirePermission("terms.activate"),
   activateTerm
+);
+
+router.patch(
+  "/terms/:id/deactivate",
+  requirePermission("terms.update"),
+  deactivateTerm
 );
 
 // Classroom routes

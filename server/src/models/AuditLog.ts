@@ -50,6 +50,12 @@ const auditLogSchema = new Schema({
       "SUBJECT_UPDATE",
       "TERM_CREATE",
       "TERM_ACTIVATE",
+      "TERM_UPDATE",
+      "HOLIDAY_CREATE",
+      "HOLIDAY_UPDATE",
+      "TIMETABLE_SAVED",
+      "TIMETABLE_UPDATED",
+      "TIMETABLE_DELETED",
     ],
   },
   description: {

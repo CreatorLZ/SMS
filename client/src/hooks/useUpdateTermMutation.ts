@@ -6,6 +6,11 @@ interface UpdateTermData {
   year: number;
   startDate: string;
   endDate: string;
+  holidays?: {
+    name: string;
+    startDate: string;
+    endDate: string;
+  }[];
 }
 
 export const useUpdateTermMutation = () => {

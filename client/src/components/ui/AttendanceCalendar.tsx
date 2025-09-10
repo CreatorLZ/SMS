@@ -16,6 +16,11 @@ interface AttendanceCalendarProps {
   classroomId: string;
   onDateSelect: (date: Date) => void;
   selectedDate?: Date;
+  holidays?: {
+    name: string;
+    startDate: string;
+    endDate: string;
+  }[];
 }
 
 interface AttendanceData {
@@ -31,6 +36,7 @@ export default function AttendanceCalendar({
   classroomId,
   onDateSelect,
   selectedDate,
+  holidays = [],
 }: AttendanceCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -123,6 +129,22 @@ export default function AttendanceCalendar({
     return selectedDate && date.toDateString() === selectedDate.toDateString();
   };
 
+  const isHoliday = (date: Date) => {
+    return holidays.some((holiday) => {
+      const holidayStart = new Date(holiday.startDate);
+      const holidayEnd = new Date(holiday.endDate);
+      return date >= holidayStart && date <= holidayEnd;
+    });
+  };
+
+  const getHolidayInfo = (date: Date) => {
+    return holidays.find((holiday) => {
+      const holidayStart = new Date(holiday.startDate);
+      const holidayEnd = new Date(holiday.endDate);
+      return date >= holidayStart && date <= holidayEnd;
+    });
+  };
+
   const days = getDaysInMonth(currentDate);
   const monthNames = [
     "January",
@@ -200,12 +222,24 @@ export default function AttendanceCalendar({
                           : "border-transparent"
                       }
                       ${isToday(date) ? "ring-2 ring-green-200" : ""}
-                      ${getStatusColor(getAttendanceStatus(date))}
-                      flex items-center justify-center text-white font-medium
+                      ${
+                        isHoliday(date)
+                          ? "bg-purple-500 hover:bg-purple-600 ring-2 ring-purple-200"
+                          : getStatusColor(getAttendanceStatus(date))
+                      }
+                      flex flex-col items-center justify-center text-white font-medium
                       hover:scale-105 transform
                     `}
+                    title={
+                      isHoliday(date)
+                        ? `${getHolidayInfo(date)?.name} (Holiday)`
+                        : undefined
+                    }
                   >
                     <span className="text-sm">{date.getDate()}</span>
+                    {isHoliday(date) && (
+                      <span className="text-xs opacity-80">★</span>
+                    )}
                   </button>
                 ) : (
                   <div className="w-full h-full"></div>
@@ -230,12 +264,20 @@ export default function AttendanceCalendar({
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-red-500 rounded"></div>
-              <span>Poor (&lt;70%)</span>{" "}
+              <span>Poor (less than 70%)</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-gray-300 rounded"></div>
               <span>No Data</span>
             </div>
+            {holidays.length > 0 && (
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-purple-500 rounded flex items-center justify-center">
+                  <span className="text-white text-xs">★</span>
+                </div>
+                <span>Holiday</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

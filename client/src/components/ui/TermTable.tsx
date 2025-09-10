@@ -1,41 +1,38 @@
 import { useState } from "react";
 import { Term } from "@/hooks/useTermsQuery";
+import { useActivateTermMutation } from "@/hooks/useActivateTermMutation";
+import { useDeactivateTermMutation } from "@/hooks/useDeactivateTermMutation";
 import { Button } from "./button";
 import { Badge } from "./badge";
 import { Card, CardContent } from "./card";
 import { Skeleton } from "./skeleton";
-import {
-  Edit,
-  Trash2,
-  CheckCircle,
-  XCircle,
-  Calendar,
-  Clock,
-} from "lucide-react";
+import { Edit, CheckCircle, XCircle, Calendar, Clock } from "lucide-react";
 
 interface TermTableProps {
   terms: Term[];
   onEdit: (term: Term) => void;
-  onDelete: (term: Term) => void;
-  onActivate: (termId: string) => Promise<void>;
   isLoading: boolean;
 }
 
 export default function TermTable({
   terms,
   onEdit,
-  onDelete,
-  onActivate,
   isLoading,
 }: TermTableProps) {
-  const [activatingTerm, setActivatingTerm] = useState<string | null>(null);
+  const [processingTerm, setProcessingTerm] = useState<string | null>(null);
+  const activateTermMutation = useActivateTermMutation();
+  const deactivateTermMutation = useDeactivateTermMutation();
 
-  const handleActivate = async (term: Term) => {
-    setActivatingTerm(term._id);
+  const handleToggleStatus = async (term: Term) => {
+    setProcessingTerm(term._id);
     try {
-      await onActivate(term._id);
+      if (term.isActive) {
+        await deactivateTermMutation.mutateAsync(term._id);
+      } else {
+        await activateTermMutation.mutateAsync(term._id);
+      }
     } finally {
-      setActivatingTerm(null);
+      setProcessingTerm(null);
     }
   };
 
@@ -167,30 +164,28 @@ export default function TermTable({
                           <Edit className="w-4 h-4 mr-1" />
                           Edit
                         </Button>
-                        {!term.isActive && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleActivate(term)}
-                            disabled={activatingTerm === term._id}
-                          >
-                            {activatingTerm === term._id ? (
-                              "Activating..."
-                            ) : (
-                              <>
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Activate
-                              </>
-                            )}
-                          </Button>
-                        )}
                         <Button
-                          variant="destructive"
+                          variant={term.isActive ? "destructive" : "default"}
                           size="sm"
-                          onClick={() => onDelete(term)}
+                          onClick={() => handleToggleStatus(term)}
+                          disabled={processingTerm === term._id}
                         >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Delete
+                          {processingTerm === term._id ? (
+                            term.isActive ? (
+                              "Deactivating..."
+                            ) : (
+                              "Activating..."
+                            )
+                          ) : (
+                            <>
+                              {term.isActive ? (
+                                <XCircle className="w-4 h-4 mr-1" />
+                              ) : (
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                              )}
+                              {term.isActive ? "Deactivate" : "Activate"}
+                            </>
+                          )}
                         </Button>
                       </div>
                     </td>
@@ -250,32 +245,29 @@ export default function TermTable({
                     <Edit className="w-4 h-4 mr-2" />
                     Edit
                   </Button>
-                  {!term.isActive && (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => handleActivate(term)}
-                      disabled={activatingTerm === term._id}
-                      className="w-full"
-                    >
-                      {activatingTerm === term._id ? (
-                        "Activating..."
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Activate
-                        </>
-                      )}
-                    </Button>
-                  )}
                   <Button
-                    variant="destructive"
+                    variant={term.isActive ? "destructive" : "default"}
                     size="sm"
-                    onClick={() => onDelete(term)}
+                    onClick={() => handleToggleStatus(term)}
+                    disabled={processingTerm === term._id}
                     className="w-full"
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
+                    {processingTerm === term._id ? (
+                      term.isActive ? (
+                        "Deactivating..."
+                      ) : (
+                        "Activating..."
+                      )
+                    ) : (
+                      <>
+                        {term.isActive ? (
+                          <XCircle className="w-4 h-4 mr-2" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                        )}
+                        {term.isActive ? "Deactivate" : "Activate"}
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>

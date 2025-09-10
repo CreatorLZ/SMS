@@ -82,6 +82,12 @@ export type Permission =
   // Audit Logs
   | "audit.read"
 
+  // Timetable Management
+  | "timetables.create"
+  | "timetables.read"
+  | "timetables.update"
+  | "timetables.delete"
+
   // System Configuration
   | "system.configure";
 

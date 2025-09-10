@@ -23,6 +23,7 @@ import { useAttendanceComparison } from "../../hooks/useAttendanceComparison";
 import { useRecentActivity } from "../../hooks/useRecentActivity";
 import { useClassroomSubjectsQuery } from "../../hooks/useClassroomSubjectsQuery";
 import { useRemoveSubjectMutation } from "../../hooks/useAssignSubjectsMutation";
+import { useActiveTermQuery } from "../../hooks/useActiveTermQuery";
 import { useToast } from "./use-toast";
 import { useClassroomManagementStore } from "../../store/classroomManagementStore";
 import api from "../../lib/api";
@@ -103,6 +104,9 @@ export default function ClassroomDetailView({
   const { data: classroomSubjects, isLoading: subjectsLoading } =
     useClassroomSubjectsQuery(classroom._id);
   const removeSubjectMutation = useRemoveSubjectMutation();
+
+  // Active term hook for holidays
+  const { data: activeTerm } = useActiveTermQuery();
 
   // Real-time updates effect
   useEffect(() => {
@@ -788,6 +792,7 @@ export default function ClassroomDetailView({
                 classroomId={classroom._id}
                 onDateSelect={handleDateSelect}
                 selectedDate={selectedDate || undefined}
+                holidays={activeTerm?.holidays || []}
               />
             )}
           </div>

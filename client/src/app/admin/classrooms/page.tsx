@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import DashboardLayout from "../../../components/ui/dashboard-layout";
 import RoleGuard from "../../../components/ui/role-guard";
 import ClassroomCards from "../../../components/ui/ClassroomCards";
+import ClassroomTable from "../../../components/ui/ClassroomTable";
 import ClassroomDetailView from "../../../components/ui/ClassroomDetailView";
 import CreateClassroomModal from "../../../components/ui/CreateClassroomModal";
 import AssignStudentsModal from "../../../components/ui/AssignStudentsModal";
@@ -217,17 +218,10 @@ export default function AdminClassroomsPage() {
                 onViewDetails={handleViewDetails}
               />
             ) : (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <div className="text-center py-8">
-                  <Grid className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-4">
-                    Table view will be implemented in Phase 2
-                  </p>
-                  <Button onClick={() => setViewType("cards")}>
-                    Switch to Card View
-                  </Button>
-                </div>
-              </div>
+              <ClassroomTable
+                classrooms={classrooms || []}
+                onViewDetails={handleViewDetails}
+              />
             )}
           </div>
         )}
