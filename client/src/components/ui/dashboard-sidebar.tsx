@@ -19,6 +19,7 @@ import {
   Brain,
   FileText,
   BarChart3,
+  DollarSign,
 } from "lucide-react";
 
 import {
@@ -131,6 +132,14 @@ const getNavItems = (userRole?: string): NavItem[] => {
       icon: Calendar,
       color: "teal",
       tooltip: "Term Management",
+      roles: ["admin", "superadmin"],
+    },
+    {
+      href: "/admin/fees",
+      label: "Fee Management",
+      icon: DollarSign,
+      color: "emerald",
+      tooltip: "Fee Management",
       roles: ["admin", "superadmin"],
     },
   ];

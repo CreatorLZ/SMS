@@ -111,32 +111,25 @@ export default function CreateStudentModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Create the student
+      let submissionData = { ...formData };
+
+      // If creating within a classroom context, ensure classroomId is set properly
+      if (currentClassroomId && currentClassroomName) {
+        submissionData.classroomId = currentClassroomId;
+        submissionData.currentClass = currentClassroomName;
+      }
+
+      // Create the student with proper classroom data
       const createdStudent = (await createStudentMutation.mutateAsync(
-        formData
+        submissionData
       )) as Student;
 
-      // If classroomId is provided, automatically assign the student to the classroom
-      if (currentClassroomId && createdStudent) {
-        try {
-          await addStudentsMutation.mutateAsync({
-            classroomId: currentClassroomId,
-            data: { studentIds: [createdStudent._id] },
-          });
-          showToastMessage(
-            "Student created and added to class successfully!",
-            "success"
-          );
-        } catch (assignmentError: any) {
-          console.error(
-            "Error assigning student to classroom:",
-            assignmentError
-          );
-          showToastMessage(
-            "Student created but failed to assign to class. Please assign manually.",
-            "error"
-          );
-        }
+      // If this was created within a classroom context, the student is already assigned
+      if (currentClassroomId) {
+        showToastMessage(
+          "Student created and added to class successfully!",
+          "success"
+        );
       } else {
         showToastMessage("Student created successfully!", "success");
       }

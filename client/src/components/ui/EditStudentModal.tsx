@@ -4,6 +4,7 @@ import { useUpdateStudentMutation } from "@/hooks/useUpdateStudentMutation";
 import { useStudentsQuery, Student } from "@/hooks/useStudentsQuery";
 import { useStudent } from "@/hooks/useStudents";
 import { useUsersQuery } from "@/hooks/useUsersQuery";
+import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
 import { Toast } from "./Toast";
 import { Button } from "./button";
@@ -41,6 +42,7 @@ export default function EditStudentModal() {
     useStudentManagementStore();
   const updateStudentMutation = useUpdateStudentMutation();
   const { data: users } = useUsersQuery();
+  const { data: classroomsResponse } = useClassroomsQuery();
 
   // Get all students to find the selected one
   const { data: studentsResponse } = useStudentsQuery();
@@ -58,6 +60,7 @@ export default function EditStudentModal() {
     fullName: "",
     studentId: "",
     currentClass: "",
+    classroomId: "",
     parentId: "",
     gender: "",
     dateOfBirth: "",
@@ -71,6 +74,9 @@ export default function EditStudentModal() {
     status: "",
     photo: "",
   });
+
+  const [assignedClassroomName, setAssignedClassroomName] =
+    useState<string>("");
 
   const [toastProps, setToastProps] = useState<{
     message: string;
@@ -95,12 +101,28 @@ export default function EditStudentModal() {
   };
 
   useEffect(() => {
-    if (completeStudentData && isEditModalOpen) {
+    if (completeStudentData && isEditModalOpen && classroomsResponse) {
       const parentId = findParentId(completeStudentData._id);
+
+      // Find the current classroom assignment
+      let currentClassroomId = (completeStudentData as any).classroomId || "";
+      let currentClassName = (completeStudentData as any).currentClass || "";
+
+      // Get classroom name for display
+      if (currentClassroomId && classroomsResponse) {
+        const classroom = classroomsResponse.find(
+          (c: any) => c._id === currentClassroomId
+        );
+        if (classroom) {
+          setAssignedClassroomName(classroom.name);
+        }
+      }
+
       setFormData({
         fullName: completeStudentData.fullName || "",
         studentId: completeStudentData.studentId || "",
-        currentClass: "", // Will be populated from classroom data if needed
+        currentClass: currentClassName,
+        classroomId: currentClassroomId,
         parentId: parentId,
         gender: completeStudentData.gender || "",
         dateOfBirth: toDateInputValue(completeStudentData.dateOfBirth),
@@ -127,7 +149,7 @@ export default function EditStudentModal() {
         photo: "", // Photo not available in this interface
       });
     }
-  }, [completeStudentData, isEditModalOpen, users]);
+  }, [completeStudentData, isEditModalOpen, users, classroomsResponse]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -308,24 +330,74 @@ export default function EditStudentModal() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="currentClass">Class *</Label>
-                <select
-                  id="currentClass"
-                  value={formData.currentClass}
-                  onChange={(e) =>
-                    setFormData({ ...formData, currentClass: e.target.value })
-                  }
-                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  required
-                >
-                  <option value="">Select a class</option>
-                  {STUDENT_CLASSES.map((classOption) => (
-                    <option key={classOption.value} value={classOption.value}>
-                      {classOption.label}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currentClass">Class *</Label>
+                  <select
+                    id="currentClass"
+                    value={formData.currentClass}
+                    onChange={(e) =>
+                      setFormData({ ...formData, currentClass: e.target.value })
+                    }
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    required
+                  >
+                    <option value="">Select a class</option>
+                    {STUDENT_CLASSES.map((classOption) => (
+                      <option key={classOption.value} value={classOption.value}>
+                        {classOption.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="classroomId">
+                    Assigned Classroom
+                    {assignedClassroomName && (
+                      <span className="text-sm text-muted-foreground ml-2">
+                        (Currently: {assignedClassroomName})
+                      </span>
+                    )}
+                  </Label>
+                  <select
+                    id="classroomId"
+                    value={formData.classroomId}
+                    onChange={(e) => {
+                      const selectedClassroomId = e.target.value;
+                      const selectedClassroom = classroomsResponse?.find(
+                        (c: any) => c._id === selectedClassroomId
+                      );
+
+                      setFormData({
+                        ...formData,
+                        classroomId: selectedClassroomId,
+                        // Update currentClass to match the classroom's class name if selected
+                        currentClass:
+                          selectedClassroom?.name || formData.currentClass,
+                      });
+
+                      // Update assigned classroom name display
+                      setAssignedClassroomName(selectedClassroom?.name || "");
+                    }}
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Not assigned to a classroom</option>
+                    {classroomsResponse?.map((classroom: any) => (
+                      <option key={classroom._id} value={classroom._id}>
+                        {classroom.name}
+                        {classroom.teacherId?.name &&
+                          ` (${classroom.teacherId.name})`}
+                      </option>
+                    ))}
+                  </select>
+                  {!formData.classroomId && (
+                    <p className="text-sm text-amber-600">
+                      ⚠️ Student won't receive fee syncs without classroom
+                      assignment
+                    </p>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

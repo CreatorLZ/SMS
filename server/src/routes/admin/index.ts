@@ -60,6 +60,7 @@ import {
 import attendanceRoutes from "./attendance.routes";
 import timetableRoutes from "./timetable.routes";
 import reportsRoutes from "./reports.routes";
+import feesRoutes from "./fees.routes";
 
 const router = express.Router();
 
@@ -266,5 +267,6 @@ router
 router.use("/attendance", attendanceRoutes);
 router.use("/timetable", timetableRoutes);
 router.use("/reports", reportsRoutes);
+router.use("/fees", feesRoutes);
 
 export default router;

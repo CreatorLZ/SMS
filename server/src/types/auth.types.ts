@@ -88,6 +88,14 @@ export type Permission =
   | "timetables.update"
   | "timetables.delete"
 
+  // Fee Management
+  | "fees.create"
+  | "fees.read"
+  | "fees.update"
+  | "fees.delete"
+  | "fees.sync"
+  | "fees.pay"
+
   // System Configuration
   | "system.configure";
 

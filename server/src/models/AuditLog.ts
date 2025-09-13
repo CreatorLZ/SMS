@@ -56,6 +56,8 @@ const auditLogSchema = new Schema({
       "TIMETABLE_SAVED",
       "TIMETABLE_UPDATED",
       "TIMETABLE_DELETED",
+      "FEE_STRUCTURE_UPDATE",
+      "FEE_PAYMENT",
     ],
   },
   description: {

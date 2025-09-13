@@ -65,6 +65,14 @@ export const rolePermissions: RolePermissions = {
 
     // System Configuration - Full access
     "system.configure",
+
+    // Fee Management - Full access
+    "fees.create",
+    "fees.read",
+    "fees.update",
+    "fees.delete",
+    "fees.sync",
+    "fees.pay",
   ],
 
   admin: [
@@ -125,6 +133,14 @@ export const rolePermissions: RolePermissions = {
     "timetables.read",
     "timetables.update",
     "timetables.delete",
+
+    // Fee Management - Full access
+    "fees.create",
+    "fees.read",
+    "fees.update",
+    "fees.delete",
+    "fees.sync",
+    "fees.pay",
 
     // System Configuration - Limited
     // Note: Admin cannot configure system settings

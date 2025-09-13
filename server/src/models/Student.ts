@@ -27,6 +27,16 @@ export interface IStudent extends Document {
     paid: boolean;
     pinCode: string;
     viewable: boolean;
+    amount: number;
+    paymentDate?: Date;
+    paymentMethod?:
+      | "cash"
+      | "bank_transfer"
+      | "online"
+      | "check"
+      | "mobile_money";
+    receiptNumber?: string;
+    updatedBy?: Schema.Types.ObjectId;
   }[];
 
   results: {
@@ -143,6 +153,25 @@ const studentSchema = new Schema(
         viewable: {
           type: Boolean,
           default: false,
+        },
+        amount: {
+          type: Number,
+          required: [true, "Fee amount is required"],
+          min: [0, "Fee amount cannot be negative"],
+        },
+        paymentDate: {
+          type: Date,
+        },
+        paymentMethod: {
+          type: String,
+          enum: ["cash", "bank_transfer", "online", "check", "mobile_money"],
+        },
+        receiptNumber: {
+          type: String,
+        },
+        updatedBy: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
         },
       },
     ],
