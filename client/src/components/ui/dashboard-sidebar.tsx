@@ -404,7 +404,11 @@ export function DashboardSidebar() {
                         tooltip={item.tooltip}
                         className={getColorClasses(item.color, isActive)}
                       >
-                        <Link href={item.href} className="truncate">
+                        <Link
+                          href={item.href}
+                          prefetch={true}
+                          className="truncate"
+                        >
                           <Icon className="size-4 flex-shrink-0" />
                           <span className="group-data-[collapsible=icon]:hidden truncate">
                             {item.label}
