@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useCreateUserMutation } from "@/hooks/useCreateUserMutation";
 import { useUserManagementStore } from "@/store/userManagementStore";
-import { Toast } from "./Toast";
+import { Toast } from "./toast";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";

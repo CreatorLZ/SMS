@@ -3,7 +3,7 @@ import { useUsersQuery, User } from "@/hooks/useUsersQuery";
 import { useUserManagementStore } from "@/store/userManagementStore";
 import { useDeleteUserMutation } from "@/hooks/useDeleteUserMutation";
 import { useUpdateUserMutation } from "@/hooks/useUpdateUserMutation";
-import { Toast } from "./Toast";
+import { Toast } from "./toast";
 import { Button } from "./button";
 import { Badge } from "./badge";
 import { Card, CardContent } from "./card";

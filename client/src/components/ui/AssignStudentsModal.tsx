@@ -6,7 +6,7 @@ import { useRemoveStudentsMutation } from "@/hooks/useRemoveStudentsMutation";
 import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useClassroomManagementStore } from "@/store/classroomManagementStore";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
-import { Toast } from "./Toast";
+import { Toast } from "./toast";
 import { Button } from "./button";
 import { Plus, UserMinus, Users, CheckCircle, XCircle } from "lucide-react";
 

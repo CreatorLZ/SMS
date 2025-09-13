@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useUpdateUserMutation } from "@/hooks/useUpdateUserMutation";
 import { useUserManagementStore } from "@/store/userManagementStore";
 import { useUsersQuery, useUserQuery } from "@/hooks/useUsersQuery";
-import { Toast } from "./Toast";
+import { Toast } from "./toast";
 import { STUDENT_CLASSES } from "@/constants/classes";
 import { Button } from "./button";
 import { Input } from "./input";

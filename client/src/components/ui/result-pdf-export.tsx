@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useState } from "react";
-import { Toast } from "./Toast";
+import { Toast } from "./toast";
 
 interface Result {
   term: string;

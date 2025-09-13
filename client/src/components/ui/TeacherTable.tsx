@@ -4,7 +4,7 @@ import { Badge } from "./badge";
 import { Card, CardContent } from "./card";
 import { Skeleton } from "./skeleton";
 import { useDeleteTeacherMutation } from "@/hooks/useDeleteTeacherMutation";
-import { Toast } from "./Toast";
+import { Toast } from "./toast";
 import {
   Edit,
   UserX,

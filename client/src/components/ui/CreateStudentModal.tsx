@@ -6,7 +6,7 @@ import { useStudentManagementStore } from "@/store/studentManagementStore";
 import { useAddStudentsMutation } from "@/hooks/useAddStudentsMutation";
 import { useStudentIdPreview } from "@/hooks/useStudentIdPreview";
 import { Student } from "@/hooks/useStudentsQuery";
-import { Toast } from "./Toast";
+import { Toast } from "./toast";
 import { Button } from "./button";
 import { Input } from "./input";
 

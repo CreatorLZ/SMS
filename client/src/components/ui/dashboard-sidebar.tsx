@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
-import { Toast } from "./Toast";
+import { Toast } from "./toast";
 import { useState } from "react";
 
 type ColorType = "emerald" | "blue" | "purple" | "cyan" | "orange" | "teal";

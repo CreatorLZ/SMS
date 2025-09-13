@@ -1,7 +1,7 @@
 import { useStudentsQuery, Student } from "@/hooks/useStudentsQuery";
 import { useToggleStudentStatusMutation } from "@/hooks/useToggleStudentStatusMutation";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
-import { Toast } from "./Toast";
+import { Toast } from "./toast";
 import { Button } from "./button";
 import { Badge } from "./badge";
 import { Card, CardContent } from "./card";

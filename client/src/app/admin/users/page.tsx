@@ -9,7 +9,7 @@ import DeleteConfirmationModal from "../../../components/ui/DeleteConfirmationMo
 import { useUserManagementStore } from "../../../store/userManagementStore";
 import { useDeleteUserMutation } from "../../../hooks/useDeleteUserMutation";
 import { useUsersQuery } from "../../../hooks/useUsersQuery";
-import { Toast } from "../../../components/ui/Toast";
+import { Toast } from "../../../components/ui/toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

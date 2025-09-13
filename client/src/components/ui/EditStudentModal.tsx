@@ -6,7 +6,7 @@ import { useStudent } from "@/hooks/useStudents";
 import { useUsersQuery } from "@/hooks/useUsersQuery";
 import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
-import { Toast } from "./Toast";
+import { Toast } from "./toast";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Label } from "./label";
