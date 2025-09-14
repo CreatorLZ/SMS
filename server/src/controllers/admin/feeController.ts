@@ -31,56 +31,72 @@ export const createFeeStructure = async (req: Request, res: Response) => {
       classroomId,
       termId,
       amount,
+      isActive: term.isActive, // Only activate if term is active
       createdBy: req.user?._id,
-      updatedBy: req.user?._id as any,
+      updatedBy: req.user?._id,
     });
 
-    // Get all active students in this classroom for sync
-    const students = await Student.find({
-      classroomId,
-      status: "active",
-    }).select("_id");
+    // Perform synchronous fee sync only if term is active
+    let syncResult: any = null;
+    if (term.isActive) {
+      // Get all active students in this classroom for sync
+      const students = await Student.find({
+        classroomId,
+        status: "active",
+      }).select("_id");
 
-    const studentIds = students.map((s) => (s._id as any).toString());
+      const studentIds = students.map((s) => (s._id as any).toString());
 
-    // Perform synchronous fee sync
-    const syncResult = await syncStudentFeesForClassroomBatched(
-      classroomId.toString(),
-      req.user?._id?.toString()
-    );
+      // Perform synchronous fee sync
+      syncResult = await syncStudentFeesForClassroomBatched(
+        classroomId.toString(),
+        req.user?._id?.toString()
+      );
+    }
 
-    // Create fee sync log
-    await FeeSyncLog.create({
-      operationId: syncResult.operationId,
-      classroomId,
-      termId,
-      enqueuedBy: req.user?._id,
-      status: "completed",
-      summary: {
-        syncedStudents: syncResult.created + syncResult.updated,
-        totalFees: syncResult.attempted,
-        errors: syncResult.errors?.length || 0,
-      },
-      syncErrors: syncResult.errors,
-      startedAt: new Date(),
-      finishedAt: new Date(),
-    });
+    // Create fee sync log only if synced
+    if (syncResult) {
+      await FeeSyncLog.create({
+        operationId: syncResult.operationId,
+        classroomId,
+        termId,
+        enqueuedBy: req.user?._id,
+        status: "completed",
+        summary: {
+          syncedStudents: syncResult.created + syncResult.updated,
+          totalFees: syncResult.attempted,
+          errors: syncResult.errors?.length || 0,
+        },
+        syncErrors: syncResult.errors,
+        startedAt: new Date(),
+        finishedAt: new Date(),
+      });
+    }
 
     // Create audit log
+    let description = `Created fee structure for ${classroom.name} - ${term.name} ${term.year}: ₦${amount}`;
+    if (syncResult) {
+      description += ` and synced ${
+        syncResult.created + syncResult.updated
+      } student fees`;
+    } else {
+      description += ` (term is inactive - no sync performed)`;
+    }
+
     await AuditLog.create({
       userId: req.user?._id,
       actionType: "FEE_STRUCTURE_UPDATE",
-      description: `Created fee structure for ${classroom.name} - ${
-        term.name
-      } ${term.year}: ₦${amount} and synced ${
-        syncResult.created + syncResult.updated
-      } student fees`,
+      description,
       targetId: feeStructure._id,
     });
 
+    let message = term.isActive
+      ? "Fee structure created and fees synced successfully"
+      : "Fee structure created successfully (term is inactive - fees will sync when term is activated)";
+
     res.status(201).json({
       feeStructure,
-      message: "Fee structure created and fees synced successfully",
+      message,
       syncResult,
     });
   } catch (error: any) {

@@ -175,9 +175,17 @@ interface IFeeStructure extends Document {
 **Business Rules:**
 
 - Unique constraint on `(classroomId, termId)` - one fee per classroom-term
-- `isActive: false` = soft delete (preserves historical data)
+- `isActive: false` = soft delete or inactive term (preserves historical data)
+- `isActive` mirrors term active status - fee structures are only active when their term is active
+- Fee structures for inactive terms are inactive by default and become active when term activates
 - `amount` must be >= 0
 - Audited fields track all changes: createdBy, updatedBy, deletedBy
+
+**Activation Logic:**
+
+- Inactive Term → Create Fee Structure → `isActive: false` (no sync)
+- Activate Term → Fee Structures → `isActive: true` (sync triggered)
+- Active Term → Create Fee Structure → `isActive: true` (immediate sync)
 
 **Indexes:**
 
@@ -328,9 +336,11 @@ const resultsAvailable = termFee.viewable === true;
 
 - Validates classroom and term exist
 - Checks for duplicate (classroom+term)
-- Triggers immediate student fee sync
-- Creates audit log entry
-- Generates FeeSyncLog for tracking
+- Sets fee structure `isActive` status based on term's active status
+- **NEW:** Triggers immediate student fee sync ONLY if term is active
+- If term inactive: Fee structure created but sync deferred until term activation
+- Creates audit log entry with sync status information
+- Generates FeeSyncLog for tracking (only when sync actually occurs)
 
 #### GET `/admin/fees/structures`
 
@@ -1062,19 +1072,29 @@ export const useCreateFeeStructure = () => {
 
 ### 7.1 Fee Structure Creation Sync
 
-**Immediate Synchronization:**
+**Conditional Synchronization Based on Term Status:**
 
 ```typescript
-// When fee structure is created
+// When fee structure is created - NEW WORKFLOW
 POST /admin/fees/structures
-├── Create FeeStructure record
-├── Query students in classroom
-├── Batch create termFees for ALL students
-├── Generate unique PIN codes
-├── Update student records
-├── Create sync log
+├── Create FeeStructure record (isActive: term.isActive)
+├── Check term status
+├── IF term.isActive: sync immediately with students
+│   ├── Query students in classroom
+│   ├── Batch create termFees for ALL students
+│   ├── Generate unique PIN codes
+│   ├── Update student records
+│   └── Create sync log
+├── IF term.inactive: no sync (deferred until activation)
 └── Audit trail entry
 ```
+
+**Key Changes:**
+
+- **Sync Timing:** Only when term is active
+- **Fee Structure Activation:** Mirrors term active status
+- **Deferred Sync:** Fee structures created inactive for inactive terms
+- **Consistent State:** All fee structures for a term have same activation status
 
 **Transactional Safety:**
 

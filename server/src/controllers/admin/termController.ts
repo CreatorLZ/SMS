@@ -51,15 +51,63 @@ export const activateTerm = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Term not found" });
     }
 
+    // Activate all fee structures for this term
+    const { FeeStructure } = await import("../../models/FeeStructure");
+    const { syncStudentFeesForClassroomBatched } = await import(
+      "../../services/feeSync.service"
+    );
+    const { FeeSyncLog } = await import("../../models/FeeSyncLog");
+
+    const feeStructuresUpdated = await FeeStructure.updateMany(
+      { termId: term._id },
+      { isActive: true, updatedBy: req.user?._id }
+    );
+
+    // Return a response immediately while syncing in background
+    let syncResult: any = null;
+    if (feeStructuresUpdated.modifiedCount > 0) {
+      try {
+        // Sync fees for classrooms that have fee structures for this term
+        const affectedFeeStructures = await FeeStructure.find({
+          termId: term._id,
+        }).select("classroomId");
+
+        const processedClassrooms = new Set();
+        for (const fs of affectedFeeStructures) {
+          const classroomId = (fs.classroomId as any).toString();
+          if (!processedClassrooms.has(classroomId)) {
+            processedClassrooms.add(classroomId);
+            await syncStudentFeesForClassroomBatched(
+              classroomId,
+              req.user?._id?.toString()
+            );
+          }
+        }
+      } catch (syncError: any) {
+        console.error("Error syncing fees for activated term:", syncError);
+        // Don't fail the activation if sync fails
+      }
+    }
+
     // Create audit log
     await AuditLog.create({
       userId: req.user?._id,
       actionType: "TERM_ACTIVATE",
-      description: `Activated term: ${term.name} ${term.year}`,
+      description: `Activated term: ${term.name} ${term.year}${
+        feeStructuresUpdated.modifiedCount > 0
+          ? ` and synced fees for ${feeStructuresUpdated.modifiedCount} fee structures`
+          : ""
+      }`,
       targetId: term._id,
     });
 
-    res.json(term);
+    res.json({
+      term,
+      message:
+        feeStructuresUpdated.modifiedCount > 0
+          ? `Term activated successfully. Fees for ${feeStructuresUpdated.modifiedCount} fee structures have been synced to students.`
+          : "Term activated successfully. No new fee structures to sync.",
+    });
   } catch (error: any) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
