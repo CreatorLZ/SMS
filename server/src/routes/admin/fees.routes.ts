@@ -12,6 +12,10 @@ import {
   getArrears,
   syncAllStudentFees,
   syncIndividualStudentFees,
+  syncTermsFees,
+  deduplicateStudentFees,
+  backfillMissingStudentFees,
+  fullFeeReconciliation,
   getOperationStatus,
   getFeeHealthCheck,
 } from "../../controllers/admin/feeController";
@@ -64,10 +68,32 @@ router.post(
 
 // Sync and monitoring routes
 router.post("/sync-all", requirePermission("fees.sync"), syncAllStudentFees);
+router.post(
+  "/terms/:termId/sync",
+  requirePermission("fees.sync"),
+  syncTermsFees
+);
 router.get(
   "/operations/:operationId",
   requirePermission("fees.read"),
   getOperationStatus
+);
+
+// Reconciliation routes
+router.post(
+  "/reconcile/deduplicate",
+  requirePermission("fees.sync"),
+  deduplicateStudentFees
+);
+router.post(
+  "/reconcile/backfill",
+  requirePermission("fees.sync"),
+  backfillMissingStudentFees
+);
+router.post(
+  "/reconcile/full",
+  requirePermission("fees.sync"),
+  fullFeeReconciliation
 );
 
 // Reporting routes

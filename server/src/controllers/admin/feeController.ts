@@ -6,7 +6,17 @@ import { Classroom } from "../../models/Classroom";
 import { Term } from "../../models/Term";
 import { AuditLog } from "../../models/AuditLog";
 import { FeeSyncLog } from "../../models/FeeSyncLog";
-import { syncStudentFeesForClassroomBatched } from "../../services/feeSync.service";
+import {
+  syncStudentFeesForClassroomBatched,
+  removeDuplicateStudentFees,
+  backfillMissingFees,
+  fullReconciliation,
+} from "../../services/feeSync.service";
+
+// Generate PIN code for fee access
+const generatePinCode = (): string => {
+  return Math.random().toString().slice(2, 8).padStart(6, "0");
+};
 
 // @desc    Create fee structure
 // @route   POST /api/admin/fees/structures
@@ -33,7 +43,7 @@ export const createFeeStructure = async (req: Request, res: Response) => {
       amount,
       isActive: term.isActive, // Only activate if term is active
       createdBy: req.user?._id,
-      updatedBy: req.user?._id,
+      updatedBy: req.user?._id as any,
     });
 
     // Perform synchronous fee sync only if term is active
@@ -515,13 +525,107 @@ export const getStudentFees = async (req: Request, res: Response) => {
       return feeStructureMap.has(feeKey);
     });
 
-    // Return student with filtered fees
-    const filteredStudent = {
+    // Check for inconsistencies - Detect missing or incorrect fees
+    let inconsistenciesFound = false;
+    const repairedFees = [...filteredTermFees];
+
+    // Check if student has classroom and get admission date for validation
+    if (student.classroomId) {
+      const admissionDate = new Date(student.admissionDate || "2020-01-01");
+
+      // Check for missing fees that should exist
+      for (const feeStructure of feeStructures) {
+        const fsClassroomId = (feeStructure.classroomId as any)._id.toString();
+        if (fsClassroomId !== (student.classroomId as any)._id.toString())
+          continue;
+
+        const term = feeStructure.termId as any;
+        const termEnd = new Date(term.endDate);
+
+        // Skip if student wasn't enrolled during this term
+        if (admissionDate > termEnd) continue;
+
+        const feeKey = `${term.name}-${term.year}`;
+        const hasFee = filteredTermFees.some(
+          (fee) => fee.term === term.name && fee.year === term.year
+        );
+
+        // Auto-repair: Create missing fee record
+        if (!hasFee) {
+          console.log(
+            `Auto-repairing missing fee for student ${student.fullName}: ${term.name} ${term.year}`
+          );
+          inconsistenciesFound = true;
+
+          repairedFees.push({
+            term: term.name,
+            year: term.year,
+            paid: false,
+            pinCode: generatePinCode(),
+            viewable: false,
+            amount: feeStructure.amount,
+            paymentDate: undefined,
+            updatedBy: req.user?._id as any,
+          });
+        }
+      }
+
+      // Check for amount mismatches and repair
+      for (const fee of filteredTermFees) {
+        const feeKey = `${(student.classroomId as any)._id}-${fee.term}-${
+          fee.year
+        }`;
+        const feeStructure = feeStructureMap.get(feeKey);
+
+        if (feeStructure && fee.amount !== feeStructure.amount) {
+          console.log(
+            `Auto-repairing fee amount for student ${student.fullName}: ${fee.term} ${fee.year} - ${fee.amount} -> ${feeStructure.amount}`
+          );
+          inconsistenciesFound = true;
+
+          // Find and update the fee in repairedFees
+          const index = repairedFees.findIndex(
+            (f) => f.term === fee.term && f.year === fee.year
+          );
+          if (index !== -1) {
+            repairedFees[index] = {
+              ...repairedFees[index],
+              amount: feeStructure.amount,
+              updatedBy: req.user?._id as any,
+            };
+          }
+        }
+      }
+
+      // If inconsistencies found, save the repaired data
+      if (inconsistenciesFound) {
+        student.termFees = repairedFees;
+        await student.save();
+
+        // Create audit log for auto-repair
+        await AuditLog.create({
+          userId: req.user?._id,
+          actionType: "FEE_AUTO_REPAIR",
+          description: `Auto-repaired fee inconsistencies for student ${student.fullName}`,
+          targetId: student._id,
+        });
+
+        console.log(
+          `Auto-repaired ${
+            repairedFees.length - filteredTermFees.length
+          } fee entries for student ${student.fullName}`
+        );
+      }
+    }
+
+    // Return student with repaired fees
+    const resultStudent = {
       ...student.toObject(),
-      termFees: filteredTermFees,
+      termFees: repairedFees,
+      autoRepaired: inconsistenciesFound,
     };
 
-    res.json(filteredStudent);
+    res.json(resultStudent);
   } catch (error: any) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -770,6 +874,208 @@ export const syncIndividualStudentFees = async (
     });
   } catch (error: any) {
     console.error("Error syncing student fees:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Sync all fee structures for a specific term
+// @route   POST /api/admin/fees/terms/:termId/sync
+// @access  Private/Admin
+export const syncTermsFees = async (req: Request, res: Response) => {
+  try {
+    const { termId } = req.params;
+
+    // Validate term exists
+    const term = await Term.findById(termId);
+    if (!term) {
+      return res.status(404).json({ message: "Term not found" });
+    }
+
+    console.log(`Starting fee sync for term: ${term.name} ${term.year}`);
+
+    const startTime = Date.now();
+
+    // Get all active fee structures for this term
+    const feeStructures = await FeeStructure.find({
+      termId,
+      isActive: true,
+    })
+      .populate("classroomId", "_id")
+      .populate("termId", "name year");
+
+    if (feeStructures.length === 0) {
+      return res.json({
+        message: "No active fee structures found for this term",
+        stats: { totalFeeStructures: 0, syncedClassrooms: 0, totalStudents: 0 },
+      });
+    }
+
+    console.log(
+      `Found ${feeStructures.length} fee structures for term ${term.name} ${term.year}`
+    );
+
+    let totalSyncedStudents = 0;
+    let totalFeesProcessed = 0;
+    let totalErrors = 0;
+    const processedClassrooms = new Set();
+    const classroomResults: any[] = [];
+
+    // Process each fee structure - sync the associated classroom
+    for (const feeStructure of feeStructures) {
+      const classroomId = (feeStructure.classroomId as any)._id.toString();
+
+      // Skip if we already processed this classroom
+      if (processedClassrooms.has(classroomId)) {
+        continue;
+      }
+      processedClassrooms.add(classroomId);
+
+      try {
+        console.log(
+          `Syncing classroom ${classroomId} for term ${term.name} ${term.year}`
+        );
+
+        const result = await syncStudentFeesForClassroomBatched(
+          classroomId,
+          req.user?._id?.toString()
+        );
+
+        classroomResults.push({
+          classroomId,
+          students: result.created + result.updated,
+          feesProcessed: result.attempted,
+          errors: result.errors?.length || 0,
+        });
+
+        totalSyncedStudents += result.created + result.updated;
+        totalFeesProcessed += result.attempted;
+        if (result.errors) totalErrors += result.errors.length;
+      } catch (classroomError: any) {
+        console.error(
+          `Error syncing classroom ${classroomId}:`,
+          classroomError
+        );
+        classroomResults.push({
+          classroomId,
+          students: 0,
+          feesProcessed: 0,
+          errors: 1,
+          errorMessage: classroomError.message,
+        });
+        totalErrors++;
+      }
+    }
+
+    const duration = Date.now() - startTime;
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user?._id,
+      actionType: "FEE_STRUCTURE_UPDATE",
+      description: `Term fee sync completed: ${term.name} ${term.year} - ${totalSyncedStudents} students synced, ${totalFeesProcessed} fees processed in ${duration}ms`,
+      targetId: term._id,
+    });
+
+    res.json({
+      message: `Term fee synchronization completed for ${term.name} ${term.year}`,
+      term: {
+        _id: term._id,
+        name: term.name,
+        year: term.year,
+      },
+      stats: {
+        totalFeeStructures: feeStructures.length,
+        syncedClassrooms: processedClassrooms.size,
+        syncedStudents: totalSyncedStudents,
+        totalFeesProcessed,
+        totalErrors,
+        duration: `${duration}ms`,
+      },
+      classroomResults,
+    });
+  } catch (error: any) {
+    console.error("Error during term fee sync:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Remove duplicate student fee records
+// @route   POST /api/admin/fees/reconcile/deduplicate
+// @access  Private/Admin
+export const deduplicateStudentFees = async (req: Request, res: Response) => {
+  try {
+    console.log("Starting fee deduplication process...");
+    const result = await removeDuplicateStudentFees(req.user?._id?.toString());
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user?._id,
+      actionType: "FEE_RECONCILIATION",
+      description: `Fee deduplication completed: ${result.duplicatesFound} duplicates found, ${result.duplicatesRemoved} removed, ${result.errors.length} errors`,
+      targetId: null,
+    });
+
+    res.json({
+      message: "Fee deduplication completed",
+      stats: result,
+    });
+  } catch (error: any) {
+    console.error("Error during fee deduplication:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Backfill missing fees for students
+// @route   POST /api/admin/fees/reconcile/backfill
+// @access  Private/Admin
+export const backfillMissingStudentFees = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    console.log("Starting fee backfill process...");
+    const result = await backfillMissingFees(req.user?._id?.toString());
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user?._id,
+      actionType: "FEE_RECONCILIATION",
+      description: `Fee backfill completed: ${result.missingFeesFound} missing fees found, ${result.feesBackfilled} backfilled, ${result.errors.length} errors`,
+      targetId: null,
+    });
+
+    res.json({
+      message: "Fee backfill completed",
+      stats: result,
+    });
+  } catch (error: any) {
+    console.error("Error during fee backfill:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Full reconciliation (deduplicate + backfill)
+// @route   POST /api/admin/fees/reconcile/full
+// @access  Private/Admin
+export const fullFeeReconciliation = async (req: Request, res: Response) => {
+  try {
+    console.log("Starting full fee reconciliation process...");
+    const result = await fullReconciliation(req.user?._id?.toString());
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user?._id,
+      actionType: "FEE_RECONCILIATION",
+      description: `Full fee reconciliation completed: ${result.deduplication.duplicatesRemoved} duplicates removed, ${result.backfill.feesBackfilled} fees backfilled, ${result.totalErrors} total errors`,
+      targetId: null,
+    });
+
+    res.json({
+      message: "Full fee reconciliation completed",
+      stats: result,
+    });
+  } catch (error: any) {
+    console.error("Error during full fee reconciliation:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };

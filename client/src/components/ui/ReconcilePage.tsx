@@ -3,8 +3,15 @@ import { Button } from "./button";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Badge } from "./badge";
 import { Skeleton } from "./skeleton";
-import { AlertCircle, CheckCircle, RefreshCw, Database } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle,
+  RefreshCw,
+  Database,
+  Loader2,
+} from "lucide-react";
 import api from "../../lib/api";
+import { useToast } from "./use-toast";
 
 interface HealthReport {
   timestamp: string;
@@ -26,9 +33,15 @@ interface HealthReport {
 }
 
 export default function ReconcilePage() {
+  const { toast } = useToast();
   const [healthReport, setHealthReport] = useState<HealthReport | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Reconciliation action states
+  const [isDeduplicating, setIsDeduplicating] = useState(false);
+  const [isBackfilling, setIsBackfilling] = useState(false);
+  const [isFullReconciliation, setIsFullReconciliation] = useState(false);
 
   const runHealthCheck = async () => {
     setIsLoading(true);
@@ -62,6 +75,84 @@ export default function ReconcilePage() {
         return <Badge className="bg-yellow-100 text-yellow-800">Warning</Badge>;
       default:
         return <Badge variant="destructive">Critical</Badge>;
+    }
+  };
+
+  // Reconciliation action functions
+  const runDeduplication = async () => {
+    setIsDeduplicating(true);
+    setError(null);
+    try {
+      const response = await api.post("/admin/fees/reconcile/deduplicate");
+      const data = response.data as any;
+      toast({
+        title: "✅ Deduplication Complete",
+        description: `Removed ${data.stats.duplicatesFound} duplicates`,
+      });
+      // Run health check automatically after reconciliation
+      await runHealthCheck();
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Deduplication failed";
+      setError(errorMessage);
+      toast({
+        title: "❌ Deduplication Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeduplicating(false);
+    }
+  };
+
+  const runBackfill = async () => {
+    setIsBackfilling(true);
+    setError(null);
+    try {
+      const response = await api.post("/admin/fees/reconcile/backfill");
+      const data = response.data as any;
+      toast({
+        title: "✅ Backfill Complete",
+        description: `Backfilled ${data.stats.feesBackfilled} missing fees`,
+      });
+      // Run health check automatically after reconciliation
+      await runHealthCheck();
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || "Backfill failed";
+      setError(errorMessage);
+      toast({
+        title: "❌ Backfill Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsBackfilling(false);
+    }
+  };
+
+  const runFullReconciliation = async () => {
+    setIsFullReconciliation(true);
+    setError(null);
+    try {
+      const response = await api.post("/admin/fees/reconcile/full");
+      const data = response.data as any;
+      toast({
+        title: "✅ Full Reconciliation Complete",
+        description: `Removed ${data.stats.deduplication.duplicatesRemoved} duplicates, backfilled ${data.stats.backfill.feesBackfilled} fees`,
+      });
+      // Run health check automatically after reconciliation
+      await runHealthCheck();
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Full reconciliation failed";
+      setError(errorMessage);
+      toast({
+        title: "❌ Full Reconciliation Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsFullReconciliation(false);
     }
   };
 
@@ -187,17 +278,44 @@ export default function ReconcilePage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Database className="w-4 h-4" />
-                  Run Deduplication
+                <Button
+                  variant="outline"
+                  disabled={isDeduplicating}
+                  onClick={runDeduplication}
+                  className="flex items-center gap-2"
+                >
+                  {isDeduplicating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Database className="w-4 h-4" />
+                  )}
+                  {isDeduplicating ? "Running..." : "Run Deduplication"}
                 </Button>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4" />
-                  Backfill Missing Fees
+                <Button
+                  variant="outline"
+                  disabled={isBackfilling}
+                  onClick={runBackfill}
+                  className="flex items-center gap-2"
+                >
+                  {isBackfilling ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  {isBackfilling ? "Running..." : "Backfill Missing Fees"}
                 </Button>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  Full Reconciliation
+                <Button
+                  variant="outline"
+                  disabled={isFullReconciliation}
+                  onClick={runFullReconciliation}
+                  className="flex items-center gap-2"
+                >
+                  {isFullReconciliation ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4" />
+                  )}
+                  {isFullReconciliation ? "Running..." : "Full Reconciliation"}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-4">
