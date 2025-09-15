@@ -128,7 +128,7 @@ export const getClassAttendance = async (req: Request, res: Response) => {
 
     if (!attendance) {
       return res
-        .status(404)
+        .status(200)
         .json({ message: "Attendance not found for this date" });
     }
 

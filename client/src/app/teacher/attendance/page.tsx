@@ -11,7 +11,6 @@ import {
   UserCheck,
   UserX,
   Clock,
-  Calendar,
   CheckCircle,
   XCircle,
   Save,
@@ -50,8 +49,12 @@ export default function TeacherAttendancePage() {
   const { toast } = useToast();
   const { data: classrooms, isLoading: classroomsLoading } =
     useTeacherClassroomsQuery();
-  const { data: existingAttendance, isLoading: attendanceLoading } =
-    useGetClassAttendance(selectedClass, selectedDate);
+  const {
+    data: existingAttendance,
+    isLoading: attendanceLoading,
+    error: attendanceError,
+  } = useGetClassAttendance(selectedClass, selectedDate, true); // Enable debug mode
+
   const markAttendance = useMarkAttendance();
   const updateAttendance = useUpdateAttendance();
 
@@ -69,7 +72,27 @@ export default function TeacherAttendancePage() {
 
   // Initialize attendance data when existing attendance loads
   useEffect(() => {
-    if (existingAttendance?.records) {
+    // Always reset attendance data when date or class changes
+    if (!selectedClassroom) {
+      // Reset attendance data if no classroom is selected
+      setAttendanceData({});
+      setHasUnsavedChanges(false);
+      setLastSaved(null);
+      return;
+    }
+
+    // Reset attendance data when date/class changes, before checking for data
+    setAttendanceData({});
+    setHasUnsavedChanges(false);
+    setLastSaved(null);
+
+    // Check if we have actual attendance data (not just a "not found" message)
+    if (
+      existingAttendance &&
+      "records" in existingAttendance &&
+      existingAttendance.records &&
+      !attendanceLoading
+    ) {
       const attendanceMap: {
         [studentId: string]: "present" | "absent" | "late";
       } = {};
@@ -80,8 +103,13 @@ export default function TeacherAttendancePage() {
       // Reset unsaved changes flag when loading existing data
       hasUnsavedChangesRef.current = false;
       setHasUnsavedChanges(false);
-    } else if (selectedClassroom?.students) {
-      // Initialize with unmarked status for all students
+      setLastSaved(null); // Reset last saved time for new date
+    } else if (
+      selectedClassroom?.students &&
+      !existingAttendance &&
+      !attendanceLoading
+    ) {
+      // Initialize with unmarked status for all students (only if not showing a message and not loading)
       const attendanceMap: {
         [studentId: string]: "present" | "absent" | "late";
       } = {};
@@ -92,8 +120,25 @@ export default function TeacherAttendancePage() {
       // Reset unsaved changes flag when initializing new data
       hasUnsavedChangesRef.current = false;
       setHasUnsavedChanges(false);
+      setLastSaved(null);
+    } else if (
+      selectedClass &&
+      selectedDate &&
+      !existingAttendance &&
+      !attendanceLoading
+    ) {
+      // Reset attendance data when date changes but no new data yet
+      setAttendanceData({});
+      setHasUnsavedChanges(false);
+      setLastSaved(null);
     }
-  }, [existingAttendance, selectedClassroom]);
+  }, [
+    existingAttendance,
+    selectedClassroom,
+    selectedDate,
+    selectedClass,
+    attendanceLoading,
+  ]);
 
   // Track unsaved changes - improved logic to prevent false positives
   useEffect(() => {
@@ -104,7 +149,10 @@ export default function TeacherAttendancePage() {
 
     // Check if this is a meaningful change (not just initialization)
     const hasExistingData =
-      existingAttendance?.records && existingAttendance.records.length > 0;
+      existingAttendance &&
+      "records" in existingAttendance &&
+      existingAttendance.records &&
+      existingAttendance.records.length > 0;
     const isInitialized = selectedClassroom.students.every(
       (student) => attendanceData[student._id] !== undefined
     );
@@ -112,7 +160,11 @@ export default function TeacherAttendancePage() {
     // Only mark as unsaved if we have initialized data and it's different from existing
     if (isInitialized && !hasUnsavedChangesRef.current) {
       // For existing attendance, check if data has actually changed
-      if (hasExistingData && existingAttendance?.records) {
+      if (
+        hasExistingData &&
+        existingAttendance &&
+        "records" in existingAttendance
+      ) {
         const hasChanges = existingAttendance.records.some((record: any) => {
           const currentStatus = attendanceData[record.studentId._id];
           return currentStatus && currentStatus !== record.status;
@@ -362,7 +414,11 @@ export default function TeacherAttendancePage() {
         })
       );
 
-      if (existingAttendance?._id) {
+      if (
+        existingAttendance &&
+        "_id" in existingAttendance &&
+        existingAttendance._id
+      ) {
         // Update existing attendance
         await updateAttendance.mutateAsync({
           attendanceId: existingAttendance._id,
@@ -487,66 +543,108 @@ export default function TeacherAttendancePage() {
 
           {selectedClass && (
             <>
+              {/* Specific Date + Class Header */}
+              <Card className="border-blue-200 bg-blue-50">
+                <CardHeader>
+                  <CardTitle className="text-blue-900 flex items-center gap-2">
+                    📚 {selectedClassroom?.name} -{" "}
+                    {new Date(selectedDate).toLocaleDateString()}
+                  </CardTitle>
+                  <p className="text-sm text-blue-700">
+                    Mark attendance for {selectedClassroom?.name} on{" "}
+                    {new Date(selectedDate).toLocaleDateString()}
+                  </p>
+                </CardHeader>
+              </Card>
+
               {/* Attendance Statistics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card>
+                <Card className={attendanceLoading ? "opacity-50" : ""}>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">
                           Total Students
                         </p>
-                        <p className="text-2xl font-bold">
-                          {attendanceStats.total}
-                        </p>
+                        {attendanceLoading ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-sm">Loading...</span>
+                          </div>
+                        ) : (
+                          <p className="text-2xl font-bold">
+                            {attendanceStats.total}
+                          </p>
+                        )}
                       </div>
                       <UserCheck className="h-8 w-8 text-muted-foreground" />
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className={attendanceLoading ? "opacity-50" : ""}>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">
                           Present
                         </p>
-                        <p className="text-2xl font-bold text-green-600">
-                          {attendanceStats.present}
-                        </p>
+                        {attendanceLoading ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-sm">Loading...</span>
+                          </div>
+                        ) : (
+                          <p className="text-2xl font-bold text-green-600">
+                            {attendanceStats.present}
+                          </p>
+                        )}
                       </div>
                       <CheckCircle className="h-8 w-8 text-green-600" />
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className={attendanceLoading ? "opacity-50" : ""}>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">
                           Late
                         </p>
-                        <p className="text-2xl font-bold text-yellow-600">
-                          {attendanceStats.late}
-                        </p>
+                        {attendanceLoading ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-sm">Loading...</span>
+                          </div>
+                        ) : (
+                          <p className="text-2xl font-bold text-yellow-600">
+                            {attendanceStats.late}
+                          </p>
+                        )}
                       </div>
                       <Clock className="h-8 w-8 text-yellow-600" />
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className={attendanceLoading ? "opacity-50" : ""}>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">
                           Absent
                         </p>
-                        <p className="text-2xl font-bold text-red-600">
-                          {attendanceStats.absent}
-                        </p>
+                        {attendanceLoading ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-sm">Loading...</span>
+                          </div>
+                        ) : (
+                          <p className="text-2xl font-bold text-red-600">
+                            {attendanceStats.absent}
+                          </p>
+                        )}
                       </div>
                       <XCircle className="h-8 w-8 text-red-600" />
                     </div>
@@ -581,7 +679,9 @@ export default function TeacherAttendancePage() {
                       onClick={markAllPresent}
                       variant="outline"
                       className="flex items-center gap-2"
-                      disabled={bulkOperationLoading === "present"}
+                      disabled={
+                        bulkOperationLoading === "present" || attendanceLoading
+                      }
                     >
                       {bulkOperationLoading === "present" ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -596,7 +696,9 @@ export default function TeacherAttendancePage() {
                       onClick={markAllAbsent}
                       variant="outline"
                       className="flex items-center gap-2"
-                      disabled={bulkOperationLoading === "absent"}
+                      disabled={
+                        bulkOperationLoading === "absent" || attendanceLoading
+                      }
                     >
                       {bulkOperationLoading === "absent" ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -611,7 +713,9 @@ export default function TeacherAttendancePage() {
                       onClick={resetAttendance}
                       variant="outline"
                       className="flex items-center gap-2"
-                      disabled={bulkOperationLoading === "reset"}
+                      disabled={
+                        bulkOperationLoading === "reset" || attendanceLoading
+                      }
                     >
                       {bulkOperationLoading === "reset" ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -636,7 +740,7 @@ export default function TeacherAttendancePage() {
                       )}
                       <Button
                         onClick={() => setShowSaveDialog(true)}
-                        disabled={isSaving}
+                        disabled={isSaving || attendanceLoading}
                         className="flex items-center gap-2"
                       >
                         {isSaving ? (
@@ -658,11 +762,12 @@ export default function TeacherAttendancePage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>Mark Attendance</span>
+                    <span>Mark Attendance for {selectedClassroom?.name}</span>
                     {attendanceLoading && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Loading attendance data...
+                        Loading attendance data for{" "}
+                        {new Date(selectedDate).toLocaleDateString()}...
                       </div>
                     )}
                   </CardTitle>
@@ -712,7 +817,8 @@ export default function TeacherAttendancePage() {
                               </div>
                             </td>
                             <td className="p-4 align-middle text-muted-foreground">
-                              {existingAttendance
+                              {existingAttendance &&
+                              "records" in existingAttendance
                                 ? new Date(
                                     existingAttendance.updatedAt ||
                                       existingAttendance.createdAt
@@ -735,6 +841,7 @@ export default function TeacherAttendancePage() {
                                     )
                                   }
                                   className="text-xs"
+                                  disabled={attendanceLoading}
                                 >
                                   P
                                 </Button>
@@ -749,6 +856,7 @@ export default function TeacherAttendancePage() {
                                     handleAttendanceChange(student._id, "late")
                                   }
                                   className="text-xs"
+                                  disabled={attendanceLoading}
                                 >
                                   L
                                 </Button>
@@ -766,6 +874,7 @@ export default function TeacherAttendancePage() {
                                     )
                                   }
                                   className="text-xs"
+                                  disabled={attendanceLoading}
                                 >
                                   A
                                 </Button>
@@ -800,10 +909,18 @@ export default function TeacherAttendancePage() {
                 } on ${new Date(
                   selectedDate
                 ).toLocaleDateString()}? This will ${
-                  existingAttendance ? "update" : "create"
+                  existingAttendance &&
+                  "records" in existingAttendance &&
+                  existingAttendance._id
+                    ? "update"
+                    : "create"
                 } the attendance record.`}
                 confirmText={
-                  existingAttendance ? "Update Attendance" : "Save Attendance"
+                  existingAttendance &&
+                  "records" in existingAttendance &&
+                  existingAttendance._id
+                    ? "Update Attendance"
+                    : "Save Attendance"
                 }
               />
             </>

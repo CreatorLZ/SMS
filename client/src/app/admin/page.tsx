@@ -620,7 +620,7 @@ export default function AdminDashboard() {
                       <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
                     </div>
                   </div>
-                ) : attendanceData ? (
+                ) : attendanceData && "records" in attendanceData ? (
                   <div className="space-y-4">
                     {/* Attendance Statistics */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -633,11 +633,9 @@ export default function AdminDashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold text-green-600">
-                            {
-                              attendanceData.records.filter(
-                                (r) => r.status === "present"
-                              ).length
-                            }
+                            {attendanceData.records?.filter(
+                              (r) => r.status === "present"
+                            ).length || 0}
                           </div>
                           <p className="text-xs text-muted-foreground">
                             Students present
@@ -654,11 +652,9 @@ export default function AdminDashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold text-yellow-600">
-                            {
-                              attendanceData.records.filter(
-                                (r) => r.status === "late"
-                              ).length
-                            }
+                            {attendanceData.records?.filter(
+                              (r) => r.status === "late"
+                            ).length || 0}
                           </div>
                           <p className="text-xs text-muted-foreground">
                             Students late
@@ -675,11 +671,9 @@ export default function AdminDashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold text-red-600">
-                            {
-                              attendanceData.records.filter(
-                                (r) => r.status === "absent"
-                              ).length
-                            }
+                            {attendanceData.records?.filter(
+                              (r) => r.status === "absent"
+                            ).length || 0}
                           </div>
                           <p className="text-xs text-muted-foreground">
                             Students absent
@@ -705,7 +699,7 @@ export default function AdminDashboard() {
                           </tr>
                         </thead>
                         <tbody>
-                          {attendanceData.records.map((record, index) => (
+                          {attendanceData.records?.map((record, index) => (
                             <tr key={index} className="border-t">
                               <td className="p-4 align-middle font-medium">
                                 {record.studentId.fullName}
@@ -735,7 +729,9 @@ export default function AdminDashboard() {
                   </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
-                    No attendance data found for this date
+                    {attendanceData && "message" in attendanceData
+                      ? attendanceData.message
+                      : "No attendance data found for this date"}
                   </div>
                 )}
               </div>

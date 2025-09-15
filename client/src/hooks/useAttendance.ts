@@ -85,16 +85,82 @@ export function useMarkAttendance() {
   });
 }
 
-export function useGetClassAttendance(classroomId: string, date: string) {
+export function useGetClassAttendance(
+  classroomId: string,
+  date: string,
+  debug = false
+) {
   return useQuery({
     queryKey: ["attendance", "class", classroomId, date],
-    queryFn: async (): Promise<AttendanceResponse> => {
-      const response = await api.get(
-        `/admin/attendance/class/${classroomId}/${date}`
-      );
-      return response.data as AttendanceResponse;
+    queryFn: async (): Promise<AttendanceResponse | { message: string }> => {
+      // 🔧 Enhanced validation and debugging
+      if (!classroomId || !date) {
+        console.warn("useGetClassAttendance: Missing required parameters", {
+          classroomId,
+          date,
+          hasClassroomId: !!classroomId,
+          hasDate: !!date,
+        });
+        throw new Error("Missing classroomId or date parameter");
+      }
+
+      if (debug) {
+        console.log("Fetching attendance:", { classroomId, date });
+      }
+
+      try {
+        const response = await api.get(
+          `/admin/attendance/class/${classroomId}/${date}`
+        );
+
+        // Handle the case where attendance doesn't exist for the date
+        if (
+          response.status === 200 &&
+          (response.data as any)?.message &&
+          !(response.data as any)?.records
+        ) {
+          if (debug) {
+            console.log("No attendance found for date:", { classroomId, date });
+          }
+          // Return a consistent structure for "no attendance" case
+          return { message: (response.data as any).message };
+        }
+
+        if (debug) {
+          console.log("Attendance fetch successful:", {
+            status: response.status,
+            dataKeys: response.data ? Object.keys(response.data) : [],
+            hasRecords: !!(response.data as any)?.records?.length,
+            recordsCount: (response.data as any)?.records?.length ?? 0,
+          });
+        }
+
+        return response.data as AttendanceResponse;
+      } catch (error: any) {
+        console.error("Attendance fetch failed:", {
+          classroomId,
+          date,
+          error: error.message,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+        });
+
+        // Re-throw with more context
+        throw new Error(
+          `Failed to fetch attendance: ${
+            error.response?.data?.message || error.message
+          }`
+        );
+      }
     },
     enabled: !!classroomId && !!date,
+    retry: (failureCount, error) => {
+      // Don't retry on 404 (attendance doesn't exist) or 403 (unauthorized)
+      if (error?.message?.includes("404") || error?.message?.includes("403")) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 }
 

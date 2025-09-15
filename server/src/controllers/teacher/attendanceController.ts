@@ -101,7 +101,7 @@ export const markAttendance = async (req: Request, res: Response) => {
 export const getAttendanceHistory = async (req: Request, res: Response) => {
   try {
     const teacherId = req.user?._id;
-    const { classroomId, limit = 100 } = req.query;
+    const { classroomId, limit = 50, page = 1 } = req.query;
 
     // If classroomId is provided, verify teacher has access to it
     if (classroomId) {
@@ -116,7 +116,13 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
         });
       }
 
-      // Get attendance records for this specific classroom
+      // Calculate pagination
+      const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+      const totalCount = await Attendance.countDocuments({
+        classroomId: classroom._id,
+      });
+
+      // Get attendance records for this specific classroom with pagination
       const attendance = await Attendance.find({
         classroomId: classroom._id,
       })
@@ -125,9 +131,26 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
           select: "fullName studentId",
         })
         .sort({ date: -1 })
+        .skip(skip)
         .limit(parseInt(limit as string));
 
-      res.json({ attendance });
+      const totalPages = Math.ceil(totalCount / parseInt(limit as string));
+      const hasNextPage = parseInt(page as string) < totalPages;
+      const hasPrevPage = parseInt(page as string) > 1;
+
+      res.json({
+        attendance,
+        pagination: {
+          currentPage: parseInt(page as string),
+          totalPages,
+          totalRecords: totalCount,
+          limit: parseInt(limit as string),
+          hasNextPage,
+          hasPrevPage,
+          nextPage: hasNextPage ? parseInt(page as string) + 1 : null,
+          prevPage: hasPrevPage ? parseInt(page as string) - 1 : null,
+        },
+      });
     } else {
       // Get all classrooms for the teacher and their attendance
       const classrooms = await Classroom.find({ teacherId });
@@ -136,7 +159,10 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
         return res.status(404).json({ message: "No classrooms assigned" });
       }
 
-      // Get attendance for all teacher's classrooms
+      // Calculate pagination for each classroom
+      const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+
+      // Get attendance for all teacher's classrooms with pagination
       const attendancePromises = classrooms.map(async (classroom) => {
         const attendance = await Attendance.find({
           classroomId: classroom._id,
@@ -146,6 +172,7 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
             select: "fullName studentId",
           })
           .sort({ date: -1 })
+          .skip(skip)
           .limit(parseInt(limit as string));
 
         return {
@@ -155,8 +182,30 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
         };
       });
 
+      // Get total counts for pagination metadata
+      const totalCountsPromises = classrooms.map(async (classroom) =>
+        Attendance.countDocuments({ classroomId: classroom._id })
+      );
+      const totalCounts = await Promise.all(totalCountsPromises);
+      const maxTotalCount = Math.max(...totalCounts);
+      const totalPages = Math.ceil(maxTotalCount / parseInt(limit as string));
+
       const attendanceData = await Promise.all(attendancePromises);
-      res.json({ classrooms: attendanceData });
+      const hasNextPage = parseInt(page as string) < totalPages;
+      const hasPrevPage = parseInt(page as string) > 1;
+
+      res.json({
+        classrooms: attendanceData,
+        pagination: {
+          currentPage: parseInt(page as string),
+          totalPages,
+          limit: parseInt(limit as string),
+          hasNextPage,
+          hasPrevPage,
+          nextPage: hasNextPage ? parseInt(page as string) + 1 : null,
+          prevPage: hasPrevPage ? parseInt(page as string) - 1 : null,
+        },
+      });
     }
   } catch (error: any) {
     res.status(500).json({ message: "Server error", error: error.message });
