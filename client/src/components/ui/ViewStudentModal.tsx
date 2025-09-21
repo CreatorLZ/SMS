@@ -195,8 +195,8 @@ export default function ViewStudentModal() {
 
   if (isLoadingStudent || !completeStudentData) {
     return (
-      <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="w-full max-w-6xl bg-white border-4 border-gray-600 font-mono text-gray-800 shadow-2xl">
+      <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4">
+        <div className="w-full max-w-md bg-white border-4 border-gray-600 font-mono text-gray-800 shadow-2xl">
           <div className="flex flex-col items-center justify-center p-12">
             <div className="animate-pulse text-xs mb-4">
               [LOADING STUDENT DATA...]
@@ -251,7 +251,7 @@ export default function ViewStudentModal() {
   );
 
   return (
-    <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4">
       {/* Retro CRT scanlines effect */}
       <div
         className="absolute inset-0 pointer-events-none opacity-10"
@@ -269,18 +269,18 @@ export default function ViewStudentModal() {
       {/* Main Terminal Container */}
       <div className="w-full max-w-6xl max-h-[95vh] bg-white border-4 border-gray-600 font-mono text-gray-800 shadow-2xl relative">
         {/* Terminal Header */}
-        <div className="border-b-2 border-gray-600 p-4 bg-gray-100/20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="border-b-2 border-gray-600 p-2 md:p-4 bg-gray-100/20">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 md:gap-4">
               <div className="flex items-center gap-2">
-                <Terminal className="w-5 h-5 text-gray-600" />
-                <span className="text-sm font-bold">
+                <Terminal className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+                <span className="text-xs md:text-sm font-bold">
                   MY SCHOOL INTERNATIONAL SCHOOLS
                 </span>
               </div>
               <div className="text-xs">STUDENT RECORD SYSTEM v2.4.1</div>
             </div>
-            <div className="flex items-center gap-6 text-xs">
+            <div className="flex items-center gap-2 md:gap-6 text-xs">
               <span>TIME: {currentTime}</span>
               <span>USER: {getDisplayRole(user?.role || "")}</span>
               <span>SECURITY: {getSecurityLevel(user?.role || "")}</span>
@@ -289,16 +289,16 @@ export default function ViewStudentModal() {
         </div>
 
         {/* Sub Header */}
-        <div className="border-b border-gray-600 p-3 bg-gray-100/10 text-xs">
-          <div className="flex items-center justify-between">
+        <div className="border-b border-gray-600 p-2 md:p-3 bg-gray-100/10 text-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-1">
             <span>[ACCESSING STUDENT DATABASE...]</span>
             <span>CONNECTION: SECURE | STATUS: ONLINE</span>
           </div>
         </div>
 
-        <div className="flex h-[calc(95vh-120px)]">
+        <div className="flex flex-col md:flex-row h-[calc(95vh-120px)]">
           {/* Left Panel - Photo and Basic Info */}
-          <div className="w-80 border-r-2 border-gray-600 p-6">
+          <div className="w-full md:w-80 border-r-0 md:border-r-2 border-gray-600 p-4 md:p-6">
             {/* Photo Frame */}
             <div className="border-2 border-gray-600 p-2 mb-6 bg-gray-100/20">
               <div className="text-xs mb-2 text-center">STUDENT PHOTOGRAPH</div>
@@ -348,13 +348,13 @@ export default function ViewStudentModal() {
           {/* Right Panel - Main Content */}
           <div className="flex-1 flex flex-col">
             {/* Tab Navigation */}
-            <div className="border-b border-gray-600 p-4 bg-gray-100/10">
+            <div className="border-b border-gray-600 p-2 md:p-4 bg-gray-100/10">
               <div className="flex gap-2 text-xs">
                 {["STUDENT", "GUARDIAN"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 border border-gray-600 transition-all duration-200 ${
+                    className={`px-3 md:px-4 py-2 border border-gray-600 transition-all duration-200 text-xs md:text-sm ${
                       activeTab === tab
                         ? "bg-gray-600 text-white font-bold"
                         : "bg-gray-50 hover:bg-gray-100/20"
@@ -367,7 +367,7 @@ export default function ViewStudentModal() {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 p-4 md:p-6 overflow-y-auto custom-scrollbar">
               {activeTab === "STUDENT" && (
                 <div>
                   <div className="border-b border-gray-600 mb-4 pb-2">
@@ -379,9 +379,11 @@ export default function ViewStudentModal() {
                     {studentDetails.map((detail, index) => (
                       <div
                         key={index}
-                        className="flex border-b border-gray-600/20 py-2"
+                        className="flex flex-col md:flex-row border-b border-gray-600/20 py-2"
                       >
-                        <div className="w-48 font-bold">{detail.label}:</div>
+                        <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
+                          {detail.label}:
+                        </div>
                         <div className="flex-1">{detail.value}</div>
                       </div>
                     ))}
@@ -406,36 +408,44 @@ export default function ViewStudentModal() {
                           PRIMARY GUARDIAN
                         </div>
                         <div className="space-y-1 text-xs">
-                          <div className="flex">
-                            <div className="w-40 font-bold">NAME:</div>
+                          <div className="flex flex-col md:flex-row">
+                            <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                              NAME:
+                            </div>
                             <div>
                               {linkedParent?.name ||
                                 completeStudentData.parentName}
                             </div>
                           </div>
-                          <div className="flex">
-                            <div className="w-40 font-bold">RELATIONSHIP:</div>
+                          <div className="flex flex-col md:flex-row">
+                            <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                              RELATIONSHIP:
+                            </div>
                             <div>
                               {completeStudentData.relationshipToStudent ||
                                 "PARENT"}
                             </div>
                           </div>
-                          <div className="flex">
-                            <div className="w-40 font-bold">PHONE:</div>
+                          <div className="flex flex-col md:flex-row">
+                            <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                              PHONE:
+                            </div>
                             <div>
                               {completeStudentData.parentPhone || "N/A"}
                             </div>
                           </div>
-                          <div className="flex">
-                            <div className="w-40 font-bold">EMAIL:</div>
+                          <div className="flex flex-col md:flex-row">
+                            <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                              EMAIL:
+                            </div>
                             <div>
                               {linkedParent?.email ||
                                 completeStudentData.parentEmail ||
                                 "N/A"}
                             </div>
                           </div>
-                          <div className="flex">
-                            <div className="w-40 font-bold">
+                          <div className="flex flex-col md:flex-row">
+                            <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
                               ACCOUNT STATUS:
                             </div>
                             <div
@@ -459,22 +469,26 @@ export default function ViewStudentModal() {
                             EMERGENCY CONTACT
                           </div>
                           <div className="space-y-1 text-xs">
-                            <div className="flex">
-                              <div className="w-40 font-bold">NAME:</div>
+                            <div className="flex flex-col md:flex-row">
+                              <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                                NAME:
+                              </div>
                               <div>
                                 {completeStudentData.emergencyContact.name}
                               </div>
                             </div>
-                            <div className="flex">
-                              <div className="w-40 font-bold">
+                            <div className="flex flex-col md:flex-row">
+                              <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
                                 RELATIONSHIP:
                               </div>
                               <div>
                                 {completeStudentData.emergencyContact.relationship?.toUpperCase()}
                               </div>
                             </div>
-                            <div className="flex">
-                              <div className="w-40 font-bold">PHONE:</div>
+                            <div className="flex flex-col md:flex-row">
+                              <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                                PHONE:
+                              </div>
                               <div>
                                 {
                                   completeStudentData.emergencyContact
@@ -499,14 +513,14 @@ export default function ViewStudentModal() {
             </div>
 
             {/* Command Bar */}
-            <div className="border-t-2 border-gray-600 p-4 bg-gray-100/20">
-              <div className="flex items-center justify-between">
+            <div className="border-t-2 border-gray-600 p-3 md:p-4 bg-gray-100/20">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="text-xs">
                   [RECORD ACCESSED] | [CLASSIFICATION: STUDENT-DATA] | [SESSION:
                   ACTIVE]
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <button
                     onClick={handleDownloadPDF}
                     disabled={isDownloadingPDF}
