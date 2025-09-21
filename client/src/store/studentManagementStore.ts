@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 interface StudentManagementState {
   isCreateModalOpen: boolean;
+  isViewModalOpen: boolean;
   isEditModalOpen: boolean;
   selectedStudentId: string | null;
   searchQuery: string;
@@ -11,6 +12,7 @@ interface StudentManagementState {
   classroomName?: string;
   onStudentCreated?: () => void;
   setCreateModalOpen: (open: boolean) => void;
+  setViewModalOpen: (open: boolean, studentId?: string | null) => void;
   setEditModalOpen: (open: boolean, studentId?: string | null) => void;
   setSearchQuery: (query: string) => void;
   setClassFilter: (classId: string) => void;
@@ -26,12 +28,18 @@ interface StudentManagementState {
 export const useStudentManagementStore = create<StudentManagementState>(
   (set) => ({
     isCreateModalOpen: false,
+    isViewModalOpen: false,
     isEditModalOpen: false,
     selectedStudentId: null,
     searchQuery: "",
     classFilter: "",
     currentPage: 1,
     setCreateModalOpen: (open) => set({ isCreateModalOpen: open }),
+    setViewModalOpen: (open, studentId = null) =>
+      set({
+        isViewModalOpen: open,
+        selectedStudentId: studentId,
+      }),
     setEditModalOpen: (open, studentId = null) =>
       set({
         isEditModalOpen: open,
@@ -49,6 +57,7 @@ export const useStudentManagementStore = create<StudentManagementState>(
     closeAllModals: () =>
       set({
         isCreateModalOpen: false,
+        isViewModalOpen: false,
         isEditModalOpen: false,
         selectedStudentId: null,
       }),

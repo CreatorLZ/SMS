@@ -6,8 +6,10 @@ export interface Student {
   fullName: string;
   studentId: string;
   currentClass: string;
+  classroomId?: string;
   status: "active" | "inactive" | "graduated" | "transferred";
   createdAt: string;
+  updatedAt?: string;
   gender?: "Male" | "Female" | "Other";
   dateOfBirth?: Date | string;
   address?: string;
@@ -16,16 +18,15 @@ export interface Student {
   parentPhone?: string;
   parentEmail?: string;
   relationshipToStudent?: "Father" | "Mother" | "Guardian";
-  admissionDate?: Date | string;
-  photo?: string;
   email?: string;
-  phoneNumber?: string;
   emergencyContact?: {
     name: string;
     relationship: string;
     phoneNumber: string;
   };
   enrollmentDate?: Date | string;
+  admissionDate?: Date | string;
+  passportPhoto?: string;
 }
 
 export interface StudentsResponse {

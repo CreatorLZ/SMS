@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 export default function StudentTable() {
-  const { searchQuery, classFilter, currentPage, setEditModalOpen } =
+  const { searchQuery, classFilter, currentPage, setViewModalOpen } =
     useStudentManagementStore();
 
   const {
@@ -113,7 +113,7 @@ export default function StudentTable() {
                 : "Get started by adding your first student."}
             </p>
             {!searchQuery && !classFilter && (
-              <Button onClick={() => setEditModalOpen(true)}>
+              <Button onClick={() => setViewModalOpen(true)}>
                 Add Student
               </Button>
             )}
@@ -201,10 +201,10 @@ export default function StudentTable() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setEditModalOpen(true, student._id)}
+                          onClick={() => setViewModalOpen(true, student._id)}
                         >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
                         </Button>
                         <Button
                           variant={
@@ -281,11 +281,11 @@ export default function StudentTable() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setEditModalOpen(true, student._id)}
+                    onClick={() => setViewModalOpen(true, student._id)}
                     className="w-full"
                   >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
+                    <Eye className="w-4 h-4 mr-2" />
+                    View
                   </Button>
                   <Button
                     variant={

@@ -5,6 +5,7 @@ import RoleGuard from "../../../components/ui/role-guard";
 import StudentTable from "../../../components/ui/StudentTable";
 import CreateStudentModal from "../../../components/ui/CreateStudentModal";
 import EditStudentModal from "../../../components/ui/EditStudentModal";
+import ViewStudentModal from "../../../components/ui/ViewStudentModal";
 import { useStudentManagementStore } from "../../../store/studentManagementStore";
 import { useStudentsQuery } from "../../../hooks/useStudentsQuery";
 import { STUDENT_CLASSES } from "../../../constants/classes";
@@ -341,6 +342,7 @@ export default function AdminStudentsPage() {
         {/* Modals */}
         <CreateStudentModal />
         <EditStudentModal />
+        <ViewStudentModal />
       </DashboardLayout>
     </RoleGuard>
   );

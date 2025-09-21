@@ -5,25 +5,29 @@ interface Student {
   _id: string;
   fullName: string;
   studentId: string;
-  email?: string;
-  dateOfBirth?: string | Date;
+  currentClass: string;
+  classroomId?: string;
+  status: "active" | "inactive" | "graduated" | "transferred";
+  createdAt: string;
+  updatedAt?: string;
   gender?: "Male" | "Female" | "Other";
+  dateOfBirth?: Date | string;
   address?: string;
   location?: string;
   parentName?: string;
   parentPhone?: string;
+  parentEmail?: string;
   relationshipToStudent?: "Father" | "Mother" | "Guardian";
-  admissionDate?: string | Date;
+  email?: string;
   phoneNumber?: string;
   emergencyContact?: {
     name: string;
     relationship: string;
     phoneNumber: string;
   };
-  enrollmentDate: string;
-  status: "active" | "inactive" | "graduated" | "transferred";
-  classroomId?: string;
-  parentId?: string;
+  enrollmentDate?: Date | string;
+  admissionDate?: Date | string;
+  passportPhoto?: string;
 }
 
 export function useStudents(classroomId?: string) {

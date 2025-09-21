@@ -16,6 +16,7 @@ import {
   createStudent,
   updateStudent,
   toggleStudentStatus,
+  updateStudentPassportPhoto,
   createTeacher,
   getTeachers,
   getTeacherById,
@@ -107,6 +108,13 @@ router.patch(
   "/students/:id/status",
   requirePermission("students.update"),
   toggleStudentStatus
+);
+
+// Passport photo update route
+router.put(
+  "/students/:studentId/passport-photo",
+  requirePermission("students.update"),
+  updateStudentPassportPhoto
 );
 
 router.get("/logs", requirePermission("audit.read"), getAuditLogs);

@@ -12,6 +12,7 @@ import { Input } from "./input";
 import { Label } from "./label";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Separator } from "./separator";
+import { PassportPhotoUploader } from "@/components/PassportPhotoUploader";
 
 import {
   STUDENT_CLASSES,
@@ -555,6 +556,29 @@ export default function EditStudentModal() {
                   />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Photo Upload Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Student Photo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <PassportPhotoUploader studentId={selectedStudentId || ""} />
+              {formData.photo && (
+                <div className="mt-4">
+                  <Label>Current Photo:</Label>
+                  <img
+                    src={formData.photo}
+                    alt="Student photo"
+                    className="w-32 h-32 object-cover rounded-md border mt-2"
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 

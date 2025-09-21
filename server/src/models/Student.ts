@@ -7,7 +7,13 @@ export interface IStudent extends Document {
   dateOfBirth: Date;
   address: string;
   location: string;
-  photo?: string;
+  email?: string;
+  passportPhoto?: string;
+  emergencyContact: {
+    name: string;
+    relationship: string;
+    phoneNumber: string;
+  };
 
   parentName: string;
   parentPhone: string;
@@ -82,8 +88,26 @@ const studentSchema = new Schema(
       type: String,
       required: true,
     },
-    photo: {
-      type: String, // URL of uploaded profile picture
+    email: {
+      type: String,
+      trim: true,
+    },
+    passportPhoto: {
+      type: String, // URL of uploaded passport photo
+    },
+    emergencyContact: {
+      name: {
+        type: String,
+        required: true,
+      },
+      relationship: {
+        type: String,
+        required: true,
+      },
+      phoneNumber: {
+        type: String,
+        required: true,
+      },
     },
 
     parentName: {

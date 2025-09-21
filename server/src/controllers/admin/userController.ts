@@ -281,15 +281,8 @@ export const getStudentById = async (req: Request, res: Response) => {
     const formattedStudent = {
       ...student.toObject(),
       // Map database fields to frontend expectations
-      phoneNumber: student.parentPhone,
-      email: student.parentEmail,
+      email: student.email, // Now using student email field
       enrollmentDate: student.admissionDate,
-      // Add emergency contact information
-      emergencyContact: {
-        name: student.parentName || "",
-        relationship: student.relationshipToStudent || "",
-        phoneNumber: student.parentPhone || "",
-      },
       // Handle populated relationships
       classroom: student.classroomId,
       parent: student.parentId,
@@ -320,10 +313,12 @@ export const createStudent = async (req: Request, res: Response) => {
       dateOfBirth,
       address,
       location,
+      email,
       parentName,
       parentPhone,
       relationshipToStudent,
       admissionDate,
+      emergencyContact,
     } = req.body;
 
     // Validation
@@ -351,6 +346,18 @@ export const createStudent = async (req: Request, res: Response) => {
         .json({ message: "Parent phone must contain only digits" });
     }
 
+    // Validate emergency contact if provided
+    if (emergencyContact && typeof emergencyContact === "object") {
+      if (
+        emergencyContact.phoneNumber &&
+        !/^\d+$/.test(emergencyContact.phoneNumber)
+      ) {
+        return res.status(400).json({
+          message: "Emergency contact phone must contain only digits",
+        });
+      }
+    }
+
     let studentId = providedStudentId;
 
     // Auto-generate student ID if not provided or empty
@@ -373,10 +380,16 @@ export const createStudent = async (req: Request, res: Response) => {
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       address,
       location,
+      email: email || undefined, // Optional student email
       parentName,
       parentPhone,
       relationshipToStudent,
       admissionDate: admissionDate ? new Date(admissionDate) : new Date(),
+      emergencyContact: emergencyContact || {
+        name: "",
+        relationship: "",
+        phoneNumber: "",
+      },
       termFees: [],
       results: [],
     };
@@ -435,10 +448,12 @@ export const updateStudent = async (req: Request, res: Response) => {
       dateOfBirth,
       address,
       location,
+      email,
       parentName,
       parentPhone,
       relationshipToStudent,
       admissionDate,
+      emergencyContact,
     } = req.body;
 
     // Check if student exists
@@ -472,6 +487,18 @@ export const updateStudent = async (req: Request, res: Response) => {
         .json({ message: "Parent phone must contain only digits" });
     }
 
+    // Validate emergency contact if provided
+    if (emergencyContact && typeof emergencyContact === "object") {
+      if (
+        emergencyContact.phoneNumber &&
+        !/^\d+$/.test(emergencyContact.phoneNumber)
+      ) {
+        return res.status(400).json({
+          message: "Emergency contact phone must contain only digits",
+        });
+      }
+    }
+
     // Check if new student ID conflicts (if changed)
     if (studentId !== student.studentId) {
       const existingStudent = await Student.findOne({ studentId });
@@ -489,7 +516,9 @@ export const updateStudent = async (req: Request, res: Response) => {
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       address,
       location,
+      email: email !== undefined ? email : undefined, // Optional student email
       admissionDate: admissionDate ? new Date(admissionDate) : undefined,
+      emergencyContact: emergencyContact || undefined, // Emergency contact object
     };
 
     // Handle parent information (map from frontend fields to database fields)
@@ -1056,6 +1085,73 @@ export const deleteUser = async (req: Request, res: Response) => {
       success: true,
       message: "User deactivated successfully",
       data: updatedUser,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+// @desc    Update student passport photo URL
+// @route   PUT /api/admin/students/:studentId/passport-photo
+// @access  Private/Admin
+export const updateStudentPassportPhoto = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { studentId } = req.params;
+    const { passportPhoto } = req.body;
+
+    // Validate required fields
+    if (!passportPhoto) {
+      return res.status(400).json({
+        success: false,
+        message: "Passport photo URL is required",
+      });
+    }
+
+    // Find student
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    // Update passport photo URL
+    const updatedStudent = await Student.findByIdAndUpdate(
+      studentId,
+      { passportPhoto },
+      { new: true }
+    ).select("-termFees -results");
+
+    // Create audit log (don't fail the operation if audit logging fails)
+    try {
+      await AuditLog.create({
+        userId: req.user?._id,
+        actionType: "STUDENT_PHOTO_UPDATE",
+        description: `Updated passport photo for student ${student.fullName} (${student.studentId})`,
+        targetId: studentId,
+      });
+    } catch (auditError) {
+      console.error("Audit log creation failed:", auditError);
+      // Don't return error - audit logging failure shouldn't affect the main operation
+    }
+
+    res.json({
+      success: true,
+      message: "Passport photo updated successfully",
+      data: {
+        _id: updatedStudent?._id,
+        studentId: updatedStudent?.studentId,
+        fullName: updatedStudent?.fullName,
+        passportPhoto: updatedStudent?.passportPhoto,
+      },
     });
   } catch (error) {
     res.status(500).json({
