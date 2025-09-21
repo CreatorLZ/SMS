@@ -2,7 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 
 interface UpdateStudentData {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   studentId: string;
   currentClass: string;
   parentId?: string;

@@ -1,7 +1,9 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IStudent extends Document {
-  fullName: string;
+  firstName: string;
+  lastName: string;
+  fullName: string; // Keep for backward compatibility
   studentId: string;
   gender: "Male" | "Female" | "Other";
   dateOfBirth: Date;
@@ -60,9 +62,28 @@ export interface IStudent extends Document {
 
 const studentSchema = new Schema(
   {
+    firstName: {
+      type: String,
+      required: [true, "First name is required"],
+      trim: true,
+      set: function (v: string) {
+        // Auto-capitalize first letter
+        return v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+      },
+    },
+    lastName: {
+      type: String,
+      required: [true, "Last name is required"],
+      trim: true,
+      set: function (v: string) {
+        // Auto-capitalize first letter
+        return v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+      },
+    },
+    // Keep fullName for backward compatibility - auto-generated from firstName + lastName
     fullName: {
       type: String,
-      required: [true, "Full name is required"],
+      required: false, // Not required since it's auto-generated from firstName + lastName
       trim: true,
     },
     studentId: {
@@ -244,6 +265,31 @@ const studentSchema = new Schema(
     timestamps: true,
   }
 );
+
+// Pre-save hook to auto-generate fullName from firstName + lastName
+studentSchema.pre("save", function (next) {
+  if (this.firstName && this.lastName) {
+    this.fullName = `${this.firstName} ${this.lastName}`;
+  }
+  next();
+});
+
+studentSchema.pre("findOneAndUpdate", function (next) {
+  const update = this.getUpdate() as any;
+  if (update.firstName && update.lastName) {
+    update.fullName = `${update.firstName} ${update.lastName}`;
+  } else if (update.firstName || update.lastName) {
+    // If only one name is being updated, get the other from the document
+    this.model.findOne(this.getQuery()).then((doc) => {
+      if (doc) {
+        const firstName = update.firstName || doc.firstName;
+        const lastName = update.lastName || doc.lastName;
+        update.fullName = `${firstName} ${lastName}`;
+      }
+    });
+  }
+  next();
+});
 
 // index for faster queries
 studentSchema.index({ currentClass: 1 });

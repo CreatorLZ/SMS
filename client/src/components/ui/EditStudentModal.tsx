@@ -6,13 +6,16 @@ import { useStudent } from "@/hooks/useStudents";
 import { useUsersQuery } from "@/hooks/useUsersQuery";
 import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
+import { useAuthStore } from "@/store/authStore";
 import { Toast } from "./toast";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Label } from "./label";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Separator } from "./separator";
-import { PassportPhotoUploader } from "@/components/PassportPhotoUploader";
+import { UploadButton } from "@uploadthing/react";
+import type { OurFileRouter } from "@/app/api/uploadthing/core";
+import { Upload, Loader2 } from "lucide-react";
 
 import {
   STUDENT_CLASSES,
@@ -28,7 +31,10 @@ import {
   GraduationCap,
   Edit,
   X,
+  Terminal,
+  Database,
 } from "lucide-react";
+import { usePassportUpload } from "@/hooks/usePassportUpload";
 
 const toDateInputValue = (date: string | Date | undefined | null) => {
   if (!date) return "";
@@ -58,7 +64,8 @@ export default function EditStudentModal() {
   );
 
   const [formData, setFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     studentId: "",
     currentClass: "",
     classroomId: "",
@@ -84,10 +91,48 @@ export default function EditStudentModal() {
     type: "success" | "error";
   } | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [activeTab, setActiveTab] = useState("STUDENT");
+  const [currentTime] = useState(
+    new Date().toLocaleTimeString("en-US", { hour12: false })
+  );
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Photo upload hooks
+  const {
+    onUploadComplete: hookOnUploadComplete,
+    onUploadError: hookOnUploadError,
+    onUploadBegin: hookOnUploadBegin,
+  } = usePassportUpload({ studentId: selectedStudentId || "" });
+
+  const { user } = useAuthStore();
+
+  const [formInitialized, setFormInitialized] = useState(false);
 
   const showToastMessage = (message: string, type: "success" | "error") => {
     setToastProps({ message, type });
     setShowToast(true);
+  };
+
+  const getSecurityLevel = (role: string) => {
+    switch (role) {
+      case "superadmin":
+        return "LEVEL-10";
+      case "admin":
+        return "LEVEL-7";
+      case "teacher":
+        return "LEVEL-5";
+      case "parent":
+        return "LEVEL-3";
+      case "student":
+        return "LEVEL-2";
+      default:
+        return "LEVEL-1";
+    }
+  };
+
+  const getDisplayRole = (role: string) => {
+    return role?.toUpperCase() || "UNKNOWN";
   };
 
   // Find parent of selected student by checking linkedStudentIds
@@ -102,7 +147,12 @@ export default function EditStudentModal() {
   };
 
   useEffect(() => {
-    if (completeStudentData && isEditModalOpen && classroomsResponse) {
+    if (
+      completeStudentData &&
+      isEditModalOpen &&
+      classroomsResponse &&
+      !formInitialized
+    ) {
       const parentId = findParentId(completeStudentData._id);
 
       // Find the current classroom assignment
@@ -119,8 +169,16 @@ export default function EditStudentModal() {
         }
       }
 
+      // Split fullName into firstName and lastName for initialization
+      const nameParts = (completeStudentData.fullName || "")
+        .trim()
+        .split(/\s+/);
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
       setFormData({
-        fullName: completeStudentData.fullName || "",
+        firstName: firstName,
+        lastName: lastName,
         studentId: completeStudentData.studentId || "",
         currentClass: currentClassName,
         classroomId: currentClassroomId,
@@ -147,10 +205,18 @@ export default function EditStudentModal() {
             completeStudentData.admissionDate
         ),
         status: completeStudentData.status || "active",
-        photo: "", // Photo not available in this interface
+        photo: completeStudentData.passportPhoto || "", // Use the actual photo field
       });
+
+      setFormInitialized(true);
     }
-  }, [completeStudentData, isEditModalOpen, users, classroomsResponse]);
+  }, [
+    completeStudentData,
+    isEditModalOpen,
+    classroomsResponse,
+    formInitialized,
+    users,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,448 +247,618 @@ export default function EditStudentModal() {
   // Show loading state while fetching student data
   if (isLoadingStudent || !completeStudentData) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-center p-12">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-gray-600">Loading student data...</p>
+      <div className="fixed inset-0 bg-slate-900/95 flex items-center justify-center z-50 p-4">
+        <div className="w-full max-w-6xl bg-black border-4 border-green-400 font-mono text-green-400 shadow-2xl">
+          <div className="flex flex-col items-center justify-center p-12">
+            <div className="animate-pulse text-xs mb-4">
+              [LOADING STUDENT DATA...]
             </div>
+            <Database className="w-8 h-8 animate-spin text-green-400" />
           </div>
         </div>
       </div>
     );
   }
 
+  const [firstName, ...lastNameParts] = completeStudentData.fullName.split(" ");
+  const lastName = lastNameParts.join(" ");
+  const admissionDate =
+    completeStudentData.enrollmentDate || completeStudentData.admissionDate;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Edit className="w-6 h-6" />
-            Edit Student
-          </h2>
-          <button
-            onClick={() => setEditModalOpen(false)}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-6 h-6" />
-          </button>
+    <div className="fixed inset-0 bg-slate-900/95 flex items-center justify-center z-50 p-4">
+      {/* Retro CRT scanlines effect */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-10"
+        style={{
+          background: `repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 255, 0, 0.1) 2px,
+            rgba(0, 255, 0, 0.1) 4px
+          )`,
+        }}
+      />
+
+      {/* Main Terminal Container */}
+      <div className="w-full max-w-6xl max-h-[95vh] bg-slate-900/95 border-4 border-green-400 font-mono text-green-400 shadow-2xl relative">
+        {/* Terminal Header */}
+        <div className="border-b-2 border-green-400 p-4 bg-green-400/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-5 h-5" />
+                <span className="text-sm font-bold">
+                  MY SCHOOL INTERNATIONAL SCHOOLS
+                </span>
+              </div>
+              <div className="text-xs">STUDENT EDIT SYSTEM v2.4.1</div>
+            </div>
+            <div className="flex items-center gap-6 text-xs">
+              <span>TIME: {currentTime}</span>
+              <span>USER: {getDisplayRole(user?.role || "")}</span>
+              <span>SECURITY: {getSecurityLevel(user?.role || "")}</span>
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Basic Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name *</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    value={formData.fullName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, fullName: e.target.value })
-                    }
-                    placeholder="Enter student's full name"
-                    required
+        {/* Sub Header */}
+        <div className="border-b border-green-400 p-3 bg-green-400/3 text-xs">
+          <div className="flex items-center justify-between">
+            <span>[EDITING STUDENT RECORD...]</span>
+            <span>CONNECTION: SECURE | MODE: EDIT</span>
+          </div>
+        </div>
+
+        <div className="flex h-[calc(95vh-120px)]">
+          {/* Left Panel - Photo and Basic Info */}
+          <div className="w-80 border-r-2 border-green-400 p-6">
+            {/* Photo Frame */}
+            <div className="border-2 border-green-400 p-2 mb-6 bg-green-400/5 relative">
+              <div className="text-xs mb-2 text-center">STUDENT PHOTOGRAPH</div>
+              <div className="w-full h-48 border border-green-400 bg-black flex items-center justify-center relative overflow-hidden">
+                {formData.photo || completeStudentData.passportPhoto ? (
+                  <img
+                    src={formData.photo || completeStudentData.passportPhoto}
+                    alt="STUDENT PHOTO"
+                    className="w-full h-full object-cover"
                   />
-                </div>
+                ) : (
+                  <div className="text-center text-xs">
+                    <div>NO PHOTO</div>
+                    <div>AVAILABLE</div>
+                  </div>
+                )}
+                {/* Simple hover overlay and upload button */}
+                <div
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer hover:opacity-0"
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                >
+                  <UploadButton<OurFileRouter, "passportUploader">
+                    endpoint="passportUploader"
+                    onClientUploadComplete={async (res: any) => {
+                      if (res && res[0]) {
+                        const url = res[0].url;
+                        setFormData((prev) => ({ ...prev, photo: url }));
+                        setIsUploadingPhoto(false);
+                        showToastMessage(
+                          "Photo updated successfully!",
+                          "success"
+                        );
 
-                <div className="space-y-2">
-                  <Label htmlFor="studentId">Student ID *</Label>
-                  <Input
-                    id="studentId"
-                    type="text"
-                    value={formData.studentId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, studentId: e.target.value })
-                    }
-                    placeholder="Enter student ID"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gender *</Label>
-                  <select
-                    id="gender"
-                    value={formData.gender}
-                    onChange={(e) =>
-                      setFormData({ ...formData, gender: e.target.value })
-                    }
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    required
-                  >
-                    <option value="">Select gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status *</Label>
-                  <select
-                    id="status"
-                    value={formData.status}
-                    onChange={(e) =>
-                      setFormData({ ...formData, status: e.target.value })
-                    }
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    required
-                  >
-                    <option value="">Select status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="graduated">Graduated</option>
-                    <option value="transferred">Transferred</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    value={formData.dateOfBirth}
-                    onChange={(e) =>
-                      setFormData({ ...formData, dateOfBirth: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="admissionDate">Admission Date *</Label>
-                  <Input
-                    id="admissionDate"
-                    type="date"
-                    value={formData.admissionDate}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        admissionDate: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Academic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <GraduationCap className="w-5 h-5" />
-                Academic Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currentClass">Class *</Label>
-                  <select
-                    id="currentClass"
-                    value={formData.currentClass}
-                    onChange={(e) =>
-                      setFormData({ ...formData, currentClass: e.target.value })
-                    }
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    required
-                  >
-                    <option value="">Select a class</option>
-                    {STUDENT_CLASSES.map((classOption) => (
-                      <option key={classOption.value} value={classOption.value}>
-                        {classOption.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="classroomId">
-                    Assigned Classroom
-                    {assignedClassroomName && (
-                      <span className="text-sm text-muted-foreground ml-2">
-                        (Currently: {assignedClassroomName})
-                      </span>
-                    )}
-                  </Label>
-                  <select
-                    id="classroomId"
-                    value={formData.classroomId}
-                    onChange={(e) => {
-                      const selectedClassroomId = e.target.value;
-                      const selectedClassroom = classroomsResponse?.find(
-                        (c: any) => c._id === selectedClassroomId
-                      );
-
-                      setFormData({
-                        ...formData,
-                        classroomId: selectedClassroomId,
-                        // Update currentClass to match the classroom's class name if selected
-                        currentClass:
-                          selectedClassroom?.name || formData.currentClass,
-                      });
-
-                      // Update assigned classroom name display
-                      setAssignedClassroomName(selectedClassroom?.name || "");
+                        // Trigger backend update
+                        await hookOnUploadComplete(res);
+                      }
                     }}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">Not assigned to a classroom</option>
-                    {classroomsResponse?.map((classroom: any) => (
-                      <option key={classroom._id} value={classroom._id}>
-                        {classroom.name}
-                        {classroom.teacherId?.name &&
-                          ` (${classroom.teacherId.name})`}
-                      </option>
-                    ))}
-                  </select>
-                  {!formData.classroomId && (
-                    <p className="text-sm text-amber-600">
-                      ⚠️ Student won't receive fee syncs without classroom
-                      assignment
-                    </p>
+                    onUploadError={(error: any) => {
+                      setIsUploadingPhoto(false);
+                      showToastMessage("Upload failed!", "error");
+                      hookOnUploadError(error);
+                    }}
+                    onUploadBegin={() => {
+                      setIsUploadingPhoto(true);
+                      hookOnUploadBegin();
+                    }}
+                    content={{
+                      button: ({ ready, isUploading: uploadButtonUploading }) =>
+                        null,
+                      allowedContent: () => null,
+                    }}
+                    className="absolute inset-0 w-full h-full"
+                  />
+                </div>
+
+                {/* Hover overlay */}
+                <div
+                  className={`absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-lg pointer-events-none transition-opacity duration-200 ${
+                    isHovered || isUploadingPhoto ? "opacity-100" : "opacity-0"
+                  }`}
+                >
+                  {isUploadingPhoto ? (
+                    <>
+                      <Loader2 className="w-8 h-8 animate-spin text-green-400 mr-2" />
+                      <div className="text-sm text-green-300 font-mono">
+                        uploading photo...
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-green-400 mr-2" />
+                      <div className="text-sm text-green-300 font-mono">
+                        click to change
+                      </div>
+                    </>
                   )}
                 </div>
+                {/* Photo overlay effect */}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-green-400/5 to-transparent pointer-events-none" />
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Address Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                Address Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="address">Address *</Label>
-                <Input
-                  id="address"
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
-                  placeholder="Enter student's address"
-                  required
-                />
+            {/* Quick Info Panel */}
+            <div className="border border-green-400 p-3 bg-green-400/3">
+              <div className="text-xs mb-3 border-b border-green-400 pb-1">
+                CURRENT RECORD
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="location">Location *</Label>
-                <Input
-                  id="location"
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
-                  placeholder="Enter location/area"
-                  required
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Parent/Guardian Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Parent/Guardian Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="parentName">Parent Name *</Label>
-                  <Input
-                    id="parentName"
-                    type="text"
-                    value={formData.parentName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, parentName: e.target.value })
-                    }
-                    placeholder="Enter parent's full name"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="relationshipToStudent">
-                    Relationship to Student *
-                  </Label>
-                  <select
-                    id="relationshipToStudent"
-                    value={formData.relationshipToStudent}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        relationshipToStudent: e.target.value,
-                      })
-                    }
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    required
-                  >
-                    <option value="">Select relationship</option>
-                    <option value="Father">Father</option>
-                    <option value="Mother">Mother</option>
-                    <option value="Guardian">Guardian</option>
-                  </select>
+              <div className="space-y-2 text-xs">
+                <div>NAME: {completeStudentData.fullName}</div>
+                <div>ID: {completeStudentData.studentId}</div>
+                <div>CLASS: {completeStudentData.currentClass}</div>
+                <div>
+                  STATUS:
+                  <span className="text-green-300">
+                    ● {completeStudentData.status?.toUpperCase() || "ACTIVE"}
+                  </span>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="parentPhone">Parent Phone *</Label>
-                  <Input
-                    id="parentPhone"
-                    type="tel"
-                    value={formData.parentPhone}
-                    onChange={(e) =>
-                      setFormData({ ...formData, parentPhone: e.target.value })
-                    }
-                    placeholder="Enter phone number"
-                    pattern="[0-9]*"
-                    title="Please enter only digits"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="parentEmail">Parent Email (Optional)</Label>
-                  <Input
-                    id="parentEmail"
-                    type="email"
-                    value={formData.parentEmail}
-                    onChange={(e) =>
-                      setFormData({ ...formData, parentEmail: e.target.value })
-                    }
-                    placeholder="Enter parent's email"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="parentId">
-                    Link to Parent Account (Optional)
-                  </Label>
-                  <select
-                    id="parentId"
-                    value={formData.parentId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, parentId: e.target.value })
-                    }
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">Select a parent account</option>
-                    {parentUsers.map((parent) => (
-                      <option key={parent._id} value={parent._id}>
-                        {parent.name} ({parent.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="photo">Profile Photo URL (Optional)</Label>
-                  <Input
-                    id="photo"
-                    type="url"
-                    value={formData.photo}
-                    onChange={(e) =>
-                      setFormData({ ...formData, photo: e.target.value })
-                    }
-                    placeholder="Enter photo URL"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Photo Upload Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Student Photo
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <PassportPhotoUploader studentId={selectedStudentId || ""} />
-              {formData.photo && (
-                <div className="mt-4">
-                  <Label>Current Photo:</Label>
-                  <img
-                    src={formData.photo}
-                    alt="Student photo"
-                    className="w-32 h-32 object-cover rounded-md border mt-2"
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Separator />
-
-          {/* Form Actions */}
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setEditModalOpen(false)}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={updateStudentMutation.isPending}
-              className="w-full sm:w-auto"
-            >
-              {updateStudentMutation.isPending ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Updating Student...
-                </>
-              ) : (
-                <>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Update Student
-                </>
-              )}
-            </Button>
+            </div>
           </div>
-        </form>
 
-        <div className="p-6">
-          {showToast && toastProps && (
-            <Toast
-              message={toastProps.message}
-              type={toastProps.type}
-              onClose={() => setShowToast(false)}
-            />
-          )}
+          {/* Right Panel - Main Content */}
+          <div className="flex-1 flex flex-col">
+            {/* Tab Navigation */}
+            <div className="border-b border-green-400 p-4 bg-green-400/3">
+              <div className="flex gap-2 text-xs">
+                {["STUDENT", "GUARDIAN"].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-4 py-2 border border-green-400 transition-all duration-200 ${
+                      activeTab === tab
+                        ? "bg-green-400 text-black font-bold"
+                        : "bg-black hover:bg-green-400/10"
+                    }`}
+                  >
+                    {tab} EDIT
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+              {activeTab === "STUDENT" && (
+                <div>
+                  <div className="border-b border-green-400 mb-4 pb-2">
+                    <div className="text-sm font-bold">STUDENT RECORD EDIT</div>
+                    <div className="text-xs">MODIFY STUDENT DATA BELOW</div>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-1 text-xs font-mono">
+                      {/* First Name and Student ID */}
+                      <div className="flex border-b border-green-400/20 py-2">
+                        <div className="w-48 font-bold">FIRST NAME:</div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.firstName}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                firstName: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            placeholder="Enter first name"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-green-400/20 py-2">
+                        <div className="w-48 font-bold">SURNAME:</div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.lastName}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                lastName: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            placeholder="Enter surname"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-green-400/20 py-2">
+                        <div className="w-48 font-bold">STUDENT ID:</div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.studentId}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                studentId: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            placeholder="Enter student ID"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-green-400/20 py-2">
+                        <div className="w-48 font-bold">ADDRESS:</div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.address}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                address: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            placeholder="Enter address"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-green-400/20 py-2">
+                        <div className="w-48 font-bold">CLASS:</div>
+                        <div className="flex-1">
+                          <select
+                            value={formData.currentClass}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                currentClass: e.target.value,
+                              })
+                            }
+                            className="w-full bg-black border border-green-400/30 px-2 py-1 text-green-400 focus:outline-none focus:border-green-400"
+                            required
+                          >
+                            <option
+                              value=""
+                              className="bg-black text-green-400"
+                            >
+                              Select a class
+                            </option>
+                            {STUDENT_CLASSES.map((classOption) => (
+                              <option
+                                key={classOption.value}
+                                value={classOption.value}
+                                className="bg-black text-green-400"
+                              >
+                                {classOption.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-green-400/20 py-2">
+                        <div className="w-48 font-bold">GENDER:</div>
+                        <div className="flex-1">
+                          <select
+                            value={formData.gender}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                gender: e.target.value,
+                              })
+                            }
+                            className="w-full bg-black border border-green-400/30 px-2 py-1 text-green-400 focus:outline-none focus:border-green-400"
+                            required
+                          >
+                            <option
+                              value=""
+                              className="bg-black text-green-400"
+                            >
+                              Select gender
+                            </option>
+                            <option
+                              value="Male"
+                              className="bg-black text-green-400"
+                            >
+                              Male
+                            </option>
+                            <option
+                              value="Female"
+                              className="bg-black text-green-400"
+                            >
+                              Female
+                            </option>
+                            <option
+                              value="Other"
+                              className="bg-black text-green-400"
+                            >
+                              Other
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-green-400/20 py-2">
+                        <div className="w-48 font-bold">YEAR OF ADMISSION:</div>
+                        <div className="flex-1">
+                          <input
+                            type="date"
+                            value={formData.admissionDate}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                admissionDate: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-green-400/20 py-2">
+                        <div className="w-48 font-bold">STATE:</div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.location}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                location: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            placeholder="Enter state"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-green-400/20 py-2">
+                        <div className="w-48 font-bold">COUNTRY:</div>
+                        <div>NIGERIA</div>
+                      </div>
+
+                      <div className="flex border-b border-green-400/20 py-2">
+                        <div className="w-48 font-bold">EMAIL:</div>
+                        <div className="flex-1">
+                          <input
+                            type="email"
+                            value={formData.parentEmail}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                parentEmail: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            placeholder="Enter email"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-green-400/20 py-2">
+                        <div className="w-48 font-bold">PHONE:</div>
+                        <div className="flex-1">
+                          <input
+                            type="tel"
+                            value={formData.parentPhone}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                parentPhone: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            placeholder="Enter phone"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {activeTab === "GUARDIAN" && (
+                <div>
+                  <div className="border-b border-green-400 mb-4 pb-2">
+                    <div className="text-sm font-bold">
+                      GUARDIAN/PARENT RECORD EDIT
+                    </div>
+                    <div className="text-xs">MODIFY PARENT DATA BELOW</div>
+                  </div>
+
+                  <form className="space-y-6">
+                    {/* Primary Guardian */}
+                    <div className="border border-green-400 p-4 bg-green-400/5">
+                      <div className="text-xs mb-3 font-bold border-b border-green-400 pb-1">
+                        PRIMARY GUARDIAN EDIT
+                      </div>
+                      <div className="space-y-4 text-xs">
+                        <div className="flex">
+                          <div className="w-40 font-bold">NAME:</div>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={formData.parentName}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  parentName: e.target.value,
+                                })
+                              }
+                              className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                              placeholder="Enter parent name"
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="flex">
+                          <div className="w-40 font-bold">RELATIONSHIP:</div>
+                          <div className="flex-1">
+                            <select
+                              value={formData.relationshipToStudent}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  relationshipToStudent: e.target.value,
+                                })
+                              }
+                              className="w-full bg-black border border-green-400/30 px-2 py-1 text-green-400 focus:outline-none focus:border-green-400"
+                              required
+                            >
+                              <option
+                                value=""
+                                className="bg-black text-green-400"
+                              >
+                                Select relationship
+                              </option>
+                              <option
+                                value="Father"
+                                className="bg-black text-green-400"
+                              >
+                                Father
+                              </option>
+                              <option
+                                value="Mother"
+                                className="bg-black text-green-400"
+                              >
+                                Mother
+                              </option>
+                              <option
+                                value="Guardian"
+                                className="bg-black text-green-400"
+                              >
+                                Guardian
+                              </option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex">
+                          <div className="w-40 font-bold">PHONE:</div>
+                          <div className="flex-1">
+                            <input
+                              type="tel"
+                              value={formData.parentPhone}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  parentPhone: e.target.value,
+                                })
+                              }
+                              className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                              placeholder="Enter parent phone"
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="flex">
+                          <div className="w-40 font-bold">EMAIL:</div>
+                          <div className="flex-1">
+                            <input
+                              type="email"
+                              value={formData.parentEmail}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  parentEmail: e.target.value,
+                                })
+                              }
+                              className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                              placeholder="Enter parent email"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+
+            {/* Command Bar */}
+            <div className="border-t-2 border-green-400 p-4 bg-green-400/5">
+              <div className="flex items-center justify-between">
+                <div className="text-xs">
+                  [EDIT SESSION ACTIVE] | [MODE: STUDENT-RECORD] | [STATUS:
+                  READY]
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleSubmit}
+                    disabled={updateStudentMutation.isPending}
+                    className="px-4 py-2 border border-green-400 bg-black hover:bg-green-400 hover:text-black transition-colors text-xs font-bold disabled:opacity-50"
+                  >
+                    {updateStudentMutation.isPending
+                      ? "[UPDATING...]"
+                      : "[SAVE CHANGES]"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditModalOpen(false)}
+                    className="px-4 py-2 border border-red-500 bg-black hover:bg-red-500 transition-colors text-xs font-bold"
+                  >
+                    [CANCEL]
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Custom Terminal Scrollbar */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 12px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: black;
+          border: 1px solid #00ff00;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #00ff00;
+          border: 1px solid black;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #00cc00;
+        }
+      `}</style>
+
+      <div className="p-6">
+        {showToast && toastProps && (
+          <Toast
+            message={toastProps.message}
+            type={toastProps.type}
+            onClose={() => setShowToast(false)}
+          />
+        )}
       </div>
     </div>
   );

@@ -3,7 +3,9 @@ import api from "@/lib/api";
 
 export interface Student {
   _id: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
+  fullName?: string; // Keep for backward compatibility
   studentId: string;
   currentClass: string;
   classroomId?: string;

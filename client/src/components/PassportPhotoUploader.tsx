@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { UploadButton } from "@uploadthing/react";
 import { usePassportUpload } from "@/hooks/usePassportUpload";
 import type { OurFileRouter } from "@/app/api/uploadthing/core";
+import { Upload, Loader2 } from "lucide-react";
 
 interface PassportPhotoUploaderProps {
   studentId: string;
@@ -73,42 +74,78 @@ export function PassportPhotoUploader({
     hookOnUploadBegin?.();
   }, [onUploadBegin, hookOnUploadBegin]);
 
-  const getUploadZoneClasses = () => {
-    const baseClasses =
-      "relative border-2 border-dashed rounded-lg transition-all duration-200 overflow-hidden";
-
-    if (isUploading) {
-      return `${baseClasses} border-gray-300 bg-gray-50 opacity-60 cursor-not-allowed`;
-    }
-
-    if (isHovering) {
-      return `${baseClasses} border-blue-400 bg-blue-50 hover:scale-[1.01]`;
-    }
-
-    return `${baseClasses} border-gray-300 bg-gray-50 hover:border-gray-400`;
-  };
-
-  const getInstructionText = () => {
-    if (isUploading) return "Uploading...";
-    return "Click the button below to upload passport photo";
-  };
-
-  const getIcon = () => {
-    if (isUploading) return "⏳";
-    return "📷";
-  };
-
   return (
     <div
-      className={`w-full h-full flex items-center justify-center ${className}`}
+      className={`w-full h-full absolute inset-0 z-10 ${className}`}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
     >
-      <UploadButton<OurFileRouter, "passportUploader">
-        endpoint="passportUploader"
-        onClientUploadComplete={handleUploadComplete}
-        onUploadError={handleUploadError}
-        onUploadBegin={handleUploadBegin}
-        disabled={isUploading}
-      />
+      {/* Upload Button Container */}
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="relative">
+          <UploadButton<OurFileRouter, "passportUploader">
+            endpoint="passportUploader"
+            onClientUploadComplete={handleUploadComplete}
+            onUploadError={handleUploadError}
+            onUploadBegin={handleUploadBegin}
+            disabled={isUploading}
+            content={{
+              button: ({
+                ready,
+                isUploading: uploadButtonUploading,
+                uploadProgress,
+              }) => {
+                if (uploadButtonUploading || isUploading) {
+                  return (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-xs">UPLOADING...</span>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="flex items-center gap-2 opacity-0">
+                    <Upload className="w-4 h-4" />
+                    <span className="text-xs">SELECT FILE</span>
+                  </div>
+                );
+              },
+              allowedContent: ({
+                ready,
+                fileTypes,
+                isUploading: uploadButtonUploading,
+              }) => {
+                // Hide the default allowed content
+                return null;
+              },
+            }}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+
+          {/* Invisible overlay to ensure click area */}
+          {(isHovering || isUploading) && (
+            <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center rounded-lg pointer-events-none">
+              <div className="text-center">
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-8 h-8 mx-auto mb-2 text-green-400 animate-spin" />
+                    <div className="text-xs text-green-300">
+                      uploading photo...
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-green-400" />
+                    <div className="text-xs text-green-300">
+                      click to change
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

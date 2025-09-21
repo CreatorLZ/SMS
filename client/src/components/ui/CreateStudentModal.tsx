@@ -61,7 +61,8 @@ export default function CreateStudentModal({
   const currentOnStudentCreated = onStudentCreated || storeOnStudentCreated;
 
   const [formData, setFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     studentId: "",
     currentClass: currentClassroomName || "",
     classroomId: currentClassroomId || "",
@@ -171,7 +172,8 @@ export default function CreateStudentModal({
 
   const resetForm = () => {
     setFormData({
-      fullName: "",
+      firstName: "",
+      lastName: "",
       studentId: "",
       currentClass: currentClassroomName || "",
       classroomId: currentClassroomId || "",
@@ -230,22 +232,41 @@ export default function CreateStudentModal({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <label
-                    htmlFor="fullName"
+                    htmlFor="firstName"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    Full Name *
+                    First Name *
                   </label>
                   <Input
-                    id="fullName"
+                    id="firstName"
                     type="text"
-                    value={formData.fullName}
+                    value={formData.firstName}
                     onChange={(e) =>
-                      setFormData({ ...formData, fullName: e.target.value })
+                      setFormData({ ...formData, firstName: e.target.value })
                     }
-                    placeholder="Enter student's full name"
+                    placeholder="Enter first name"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="lastName"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Surname *
+                  </label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    value={formData.lastName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, lastName: e.target.value })
+                    }
+                    placeholder="Enter surname"
                     required
                   />
                 </div>

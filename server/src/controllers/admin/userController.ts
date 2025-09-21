@@ -304,7 +304,8 @@ export const getStudentById = async (req: Request, res: Response) => {
 export const createStudent = async (req: Request, res: Response) => {
   try {
     const {
-      fullName,
+      firstName,
+      lastName,
       studentId: providedStudentId,
       currentClass,
       classroomId,
@@ -373,7 +374,8 @@ export const createStudent = async (req: Request, res: Response) => {
 
     // Create student - only include classroomId if it's a valid ObjectId
     const studentData: any = {
-      fullName,
+      firstName,
+      lastName,
       studentId,
       currentClass,
       gender,
@@ -413,7 +415,7 @@ export const createStudent = async (req: Request, res: Response) => {
       await AuditLog.create({
         userId: req.user?._id,
         actionType: "STUDENT_CREATE",
-        description: `Created new student ${fullName} (${studentId})`,
+        description: `Created new student ${firstName} ${lastName} (${studentId})`,
         targetId: student._id,
       });
     } catch (auditError) {
@@ -440,7 +442,8 @@ export const updateStudent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const {
-      fullName,
+      firstName,
+      lastName,
       studentId,
       currentClass,
       parentId,
@@ -509,7 +512,8 @@ export const updateStudent = async (req: Request, res: Response) => {
 
     // Update student - handle field mappings from frontend to database
     const updateData: any = {
-      fullName,
+      firstName,
+      lastName,
       studentId,
       currentClass,
       gender,
@@ -550,7 +554,7 @@ export const updateStudent = async (req: Request, res: Response) => {
       await AuditLog.create({
         userId: req.user?._id,
         actionType: "STUDENT_UPDATE",
-        description: `Updated student ${fullName} (${studentId})`,
+        description: `Updated student ${firstName} ${lastName} (${studentId})`,
         targetId: id,
       });
     } catch (auditError) {

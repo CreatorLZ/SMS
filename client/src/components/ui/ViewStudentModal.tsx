@@ -208,8 +208,17 @@ export default function ViewStudentModal() {
     );
   }
 
-  const [firstName, ...lastNameParts] = completeStudentData.fullName.split(" ");
-  const lastName = lastNameParts.join(" ");
+  // Use new firstName and lastName fields if available, fallback to splitting fullName
+  const firstName =
+    (completeStudentData as any).firstName ||
+    (completeStudentData.fullName
+      ? completeStudentData.fullName.split(" ")[0]
+      : "N/A");
+  const lastName =
+    (completeStudentData as any).lastName ||
+    (completeStudentData.fullName
+      ? completeStudentData.fullName.split(" ").slice(1).join(" ")
+      : "N/A");
   const admissionDate =
     completeStudentData.enrollmentDate || completeStudentData.admissionDate;
 
