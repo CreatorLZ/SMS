@@ -247,13 +247,13 @@ export default function EditStudentModal() {
   // Show loading state while fetching student data
   if (isLoadingStudent || !completeStudentData) {
     return (
-      <div className="fixed inset-0 bg-slate-900/95 flex items-center justify-center z-50 p-4">
-        <div className="w-full max-w-6xl bg-black border-4 border-green-400 font-mono text-green-400 shadow-2xl">
+      <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="w-full max-w-md bg-white border-4 border-gray-600 font-mono text-gray-800 shadow-2xl">
           <div className="flex flex-col items-center justify-center p-12">
             <div className="animate-pulse text-xs mb-4">
               [LOADING STUDENT DATA...]
             </div>
-            <Database className="w-8 h-8 animate-spin text-green-400" />
+            <Database className="w-8 h-8 animate-spin text-gray-600" />
           </div>
         </div>
       </div>
@@ -266,7 +266,7 @@ export default function EditStudentModal() {
     completeStudentData.enrollmentDate || completeStudentData.admissionDate;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/95 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       {/* Retro CRT scanlines effect */}
       <div
         className="absolute inset-0 pointer-events-none opacity-10"
@@ -275,25 +275,25 @@ export default function EditStudentModal() {
             0deg,
             transparent,
             transparent 2px,
-            rgba(0, 255, 0, 0.1) 2px,
-            rgba(0, 255, 0, 0.1) 4px
+            rgba(75, 85, 99, 0.1) 2px,
+            rgba(75, 85, 99, 0.1) 4px
           )`,
         }}
       />
 
       {/* Main Terminal Container */}
-      <div className="w-full max-w-6xl max-h-[95vh] bg-slate-900/95 border-4 border-green-400 font-mono text-green-400 shadow-2xl relative">
+      <div className="w-full max-w-6xl max-h-[95vh] bg-white border-4 border-gray-600 font-mono text-gray-800 shadow-2xl relative">
         {/* Terminal Header */}
-        <div className="border-b-2 border-green-400 p-4 bg-green-400/5">
+        <div className="border-b-2 border-gray-600 p-4 bg-gray-100/20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Terminal className="w-5 h-5" />
+                <Terminal className="w-5 h-5 text-gray-600" />
                 <span className="text-sm font-bold">
                   MY SCHOOL INTERNATIONAL SCHOOLS
                 </span>
               </div>
-              <div className="text-xs">STUDENT EDIT SYSTEM v2.4.1</div>
+              <div className="text-xs">STUDENT EDIT SYSTEM v0.0.1</div>
             </div>
             <div className="flex items-center gap-6 text-xs">
               <span>TIME: {currentTime}</span>
@@ -304,7 +304,7 @@ export default function EditStudentModal() {
         </div>
 
         {/* Sub Header */}
-        <div className="border-b border-green-400 p-3 bg-green-400/3 text-xs">
+        <div className="border-b border-gray-600 p-3 bg-gray-100/10 text-xs">
           <div className="flex items-center justify-between">
             <span>[EDITING STUDENT RECORD...]</span>
             <span>CONNECTION: SECURE | MODE: EDIT</span>
@@ -313,11 +313,11 @@ export default function EditStudentModal() {
 
         <div className="flex h-[calc(95vh-120px)]">
           {/* Left Panel - Photo and Basic Info */}
-          <div className="w-80 border-r-2 border-green-400 p-6">
+          <div className="w-80 border-r-2 border-gray-600 p-6">
             {/* Photo Frame */}
-            <div className="border-2 border-green-400 p-2 mb-6 bg-green-400/5 relative">
+            <div className="border-2 border-gray-600 p-2 mb-6 bg-gray-100/20 relative">
               <div className="text-xs mb-2 text-center">STUDENT PHOTOGRAPH</div>
-              <div className="w-full h-48 border border-green-400 bg-black flex items-center justify-center relative overflow-hidden">
+              <div className="w-full h-48 border border-gray-600 bg-gray-50 flex items-center justify-center relative overflow-hidden">
                 {formData.photo || completeStudentData.passportPhoto ? (
                   <img
                     src={formData.photo || completeStudentData.passportPhoto}
@@ -372,34 +372,34 @@ export default function EditStudentModal() {
 
                 {/* Hover overlay */}
                 <div
-                  className={`absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-lg pointer-events-none transition-opacity duration-200 ${
+                  className={`absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-none pointer-events-none transition-opacity duration-200 ${
                     isHovered || isUploadingPhoto ? "opacity-100" : "opacity-0"
                   }`}
                 >
                   {isUploadingPhoto ? (
                     <>
-                      <Loader2 className="w-8 h-8 animate-spin text-green-400 mr-2" />
-                      <div className="text-sm text-green-300 font-mono">
+                      <Loader2 className="w-8 h-8 animate-spin text-gray-600 mr-2" />
+                      <div className="text-sm text-gray-300 font-mono">
                         uploading photo...
                       </div>
                     </>
                   ) : (
                     <>
-                      <Upload className="w-8 h-8 text-green-400 mr-2" />
-                      <div className="text-sm text-green-300 font-mono">
+                      <Upload className="w-8 h-8 text-gray-600 mr-2" />
+                      <div className="text-sm text-gray-300 font-mono">
                         click to change
                       </div>
                     </>
                   )}
                 </div>
                 {/* Photo overlay effect */}
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-green-400/5 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-100/20 to-transparent pointer-events-none" />
               </div>
             </div>
 
             {/* Quick Info Panel */}
-            <div className="border border-green-400 p-3 bg-green-400/3">
-              <div className="text-xs mb-3 border-b border-green-400 pb-1">
+            <div className="border border-gray-600 p-3 bg-gray-100/10">
+              <div className="text-xs mb-3 border-b border-gray-600 pb-1">
                 CURRENT RECORD
               </div>
               <div className="space-y-2 text-xs">
@@ -408,7 +408,7 @@ export default function EditStudentModal() {
                 <div>CLASS: {completeStudentData.currentClass}</div>
                 <div>
                   STATUS:
-                  <span className="text-green-300">
+                  <span className="text-green-600">
                     ● {completeStudentData.status?.toUpperCase() || "ACTIVE"}
                   </span>
                 </div>
@@ -419,16 +419,16 @@ export default function EditStudentModal() {
           {/* Right Panel - Main Content */}
           <div className="flex-1 flex flex-col">
             {/* Tab Navigation */}
-            <div className="border-b border-green-400 p-4 bg-green-400/3">
+            <div className="border-b border-gray-600 p-4 bg-gray-100/10">
               <div className="flex gap-2 text-xs">
                 {["STUDENT", "GUARDIAN"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 border border-green-400 transition-all duration-200 ${
+                    className={`px-4 py-2 border border-gray-600 transition-all duration-200 ${
                       activeTab === tab
-                        ? "bg-green-400 text-black font-bold"
-                        : "bg-black hover:bg-green-400/10"
+                        ? "bg-gray-600 text-white font-bold"
+                        : "bg-gray-50 hover:bg-gray-100/20"
                     }`}
                   >
                     {tab} EDIT
@@ -441,7 +441,7 @@ export default function EditStudentModal() {
             <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
               {activeTab === "STUDENT" && (
                 <div>
-                  <div className="border-b border-green-400 mb-4 pb-2">
+                  <div className="border-b border-gray-600 mb-4 pb-2">
                     <div className="text-sm font-bold">STUDENT RECORD EDIT</div>
                     <div className="text-xs">MODIFY STUDENT DATA BELOW</div>
                   </div>
@@ -449,7 +449,7 @@ export default function EditStudentModal() {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1 text-xs font-mono">
                       {/* First Name and Student ID */}
-                      <div className="flex border-b border-green-400/20 py-2">
+                      <div className="flex border-b border-gray-600/20 py-2">
                         <div className="w-48 font-bold">FIRST NAME:</div>
                         <div className="flex-1">
                           <input
@@ -461,14 +461,14 @@ export default function EditStudentModal() {
                                 firstName: e.target.value,
                               })
                             }
-                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
                             placeholder="Enter first name"
                             required
                           />
                         </div>
                       </div>
 
-                      <div className="flex border-b border-green-400/20 py-2">
+                      <div className="flex border-b border-gray-600/20 py-2">
                         <div className="w-48 font-bold">SURNAME:</div>
                         <div className="flex-1">
                           <input
@@ -480,14 +480,14 @@ export default function EditStudentModal() {
                                 lastName: e.target.value,
                               })
                             }
-                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
                             placeholder="Enter surname"
                             required
                           />
                         </div>
                       </div>
 
-                      <div className="flex border-b border-green-400/20 py-2">
+                      <div className="flex border-b border-gray-600/20 py-2">
                         <div className="w-48 font-bold">STUDENT ID:</div>
                         <div className="flex-1">
                           <input
@@ -499,14 +499,14 @@ export default function EditStudentModal() {
                                 studentId: e.target.value,
                               })
                             }
-                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
                             placeholder="Enter student ID"
                             required
                           />
                         </div>
                       </div>
 
-                      <div className="flex border-b border-green-400/20 py-2">
+                      <div className="flex border-b border-gray-600/20 py-2">
                         <div className="w-48 font-bold">ADDRESS:</div>
                         <div className="flex-1">
                           <input
@@ -518,14 +518,14 @@ export default function EditStudentModal() {
                                 address: e.target.value,
                               })
                             }
-                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
                             placeholder="Enter address"
                             required
                           />
                         </div>
                       </div>
 
-                      <div className="flex border-b border-green-400/20 py-2">
+                      <div className="flex border-b border-gray-600/20 py-2">
                         <div className="w-48 font-bold">CLASS:</div>
                         <div className="flex-1">
                           <select
@@ -536,20 +536,17 @@ export default function EditStudentModal() {
                                 currentClass: e.target.value,
                               })
                             }
-                            className="w-full bg-black border border-green-400/30 px-2 py-1 text-green-400 focus:outline-none focus:border-green-400"
+                            className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600"
                             required
                           >
-                            <option
-                              value=""
-                              className="bg-black text-green-400"
-                            >
+                            <option value="" className="bg-white text-gray-800">
                               Select a class
                             </option>
                             {STUDENT_CLASSES.map((classOption) => (
                               <option
                                 key={classOption.value}
                                 value={classOption.value}
-                                className="bg-black text-green-400"
+                                className="bg-white text-gray-800"
                               >
                                 {classOption.label}
                               </option>
@@ -558,7 +555,7 @@ export default function EditStudentModal() {
                         </div>
                       </div>
 
-                      <div className="flex border-b border-green-400/20 py-2">
+                      <div className="flex border-b border-gray-600/20 py-2">
                         <div className="w-48 font-bold">GENDER:</div>
                         <div className="flex-1">
                           <select
@@ -569,30 +566,27 @@ export default function EditStudentModal() {
                                 gender: e.target.value,
                               })
                             }
-                            className="w-full bg-black border border-green-400/30 px-2 py-1 text-green-400 focus:outline-none focus:border-green-400"
+                            className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600"
                             required
                           >
-                            <option
-                              value=""
-                              className="bg-black text-green-400"
-                            >
+                            <option value="" className="bg-white text-gray-800">
                               Select gender
                             </option>
                             <option
                               value="Male"
-                              className="bg-black text-green-400"
+                              className="bg-white text-gray-800"
                             >
                               Male
                             </option>
                             <option
                               value="Female"
-                              className="bg-black text-green-400"
+                              className="bg-white text-gray-800"
                             >
                               Female
                             </option>
                             <option
                               value="Other"
-                              className="bg-black text-green-400"
+                              className="bg-white text-gray-800"
                             >
                               Other
                             </option>
@@ -600,7 +594,7 @@ export default function EditStudentModal() {
                         </div>
                       </div>
 
-                      <div className="flex border-b border-green-400/20 py-2">
+                      <div className="flex border-b border-gray-600/20 py-2">
                         <div className="w-48 font-bold">YEAR OF ADMISSION:</div>
                         <div className="flex-1">
                           <input
@@ -612,13 +606,13 @@ export default function EditStudentModal() {
                                 admissionDate: e.target.value,
                               })
                             }
-                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
                             required
                           />
                         </div>
                       </div>
 
-                      <div className="flex border-b border-green-400/20 py-2">
+                      <div className="flex border-b border-gray-600/20 py-2">
                         <div className="w-48 font-bold">STATE:</div>
                         <div className="flex-1">
                           <input
@@ -630,19 +624,19 @@ export default function EditStudentModal() {
                                 location: e.target.value,
                               })
                             }
-                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
                             placeholder="Enter state"
                             required
                           />
                         </div>
                       </div>
 
-                      <div className="flex border-b border-green-400/20 py-2">
+                      <div className="flex border-b border-gray-600/20 py-2">
                         <div className="w-48 font-bold">COUNTRY:</div>
                         <div>NIGERIA</div>
                       </div>
 
-                      <div className="flex border-b border-green-400/20 py-2">
+                      <div className="flex border-b border-gray-600/20 py-2">
                         <div className="w-48 font-bold">EMAIL:</div>
                         <div className="flex-1">
                           <input
@@ -654,13 +648,13 @@ export default function EditStudentModal() {
                                 parentEmail: e.target.value,
                               })
                             }
-                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
                             placeholder="Enter email"
                           />
                         </div>
                       </div>
 
-                      <div className="flex border-b border-green-400/20 py-2">
+                      <div className="flex border-b border-gray-600/20 py-2">
                         <div className="w-48 font-bold">PHONE:</div>
                         <div className="flex-1">
                           <input
@@ -672,7 +666,7 @@ export default function EditStudentModal() {
                                 parentPhone: e.target.value,
                               })
                             }
-                            className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
                             placeholder="Enter phone"
                             required
                           />
@@ -685,7 +679,7 @@ export default function EditStudentModal() {
 
               {activeTab === "GUARDIAN" && (
                 <div>
-                  <div className="border-b border-green-400 mb-4 pb-2">
+                  <div className="border-b border-gray-600 mb-4 pb-2">
                     <div className="text-sm font-bold">
                       GUARDIAN/PARENT RECORD EDIT
                     </div>
@@ -694,8 +688,8 @@ export default function EditStudentModal() {
 
                   <form className="space-y-6">
                     {/* Primary Guardian */}
-                    <div className="border border-green-400 p-4 bg-green-400/5">
-                      <div className="text-xs mb-3 font-bold border-b border-green-400 pb-1">
+                    <div className="border border-gray-600 p-4 bg-gray-100/20">
+                      <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
                         PRIMARY GUARDIAN EDIT
                       </div>
                       <div className="space-y-4 text-xs">
@@ -711,7 +705,7 @@ export default function EditStudentModal() {
                                   parentName: e.target.value,
                                 })
                               }
-                              className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
                               placeholder="Enter parent name"
                               required
                             />
@@ -728,30 +722,30 @@ export default function EditStudentModal() {
                                   relationshipToStudent: e.target.value,
                                 })
                               }
-                              className="w-full bg-black border border-green-400/30 px-2 py-1 text-green-400 focus:outline-none focus:border-green-400"
+                              className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600"
                               required
                             >
                               <option
                                 value=""
-                                className="bg-black text-green-400"
+                                className="bg-white text-gray-800"
                               >
                                 Select relationship
                               </option>
                               <option
                                 value="Father"
-                                className="bg-black text-green-400"
+                                className="bg-white text-gray-800"
                               >
                                 Father
                               </option>
                               <option
                                 value="Mother"
-                                className="bg-black text-green-400"
+                                className="bg-white text-gray-800"
                               >
                                 Mother
                               </option>
                               <option
                                 value="Guardian"
-                                className="bg-black text-green-400"
+                                className="bg-white text-gray-800"
                               >
                                 Guardian
                               </option>
@@ -770,7 +764,7 @@ export default function EditStudentModal() {
                                   parentPhone: e.target.value,
                                 })
                               }
-                              className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
                               placeholder="Enter parent phone"
                               required
                             />
@@ -788,7 +782,7 @@ export default function EditStudentModal() {
                                   parentEmail: e.target.value,
                                 })
                               }
-                              className="w-full bg-transparent border border-green-400/30 px-2 py-1 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-400"
+                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
                               placeholder="Enter parent email"
                             />
                           </div>
@@ -801,7 +795,7 @@ export default function EditStudentModal() {
             </div>
 
             {/* Command Bar */}
-            <div className="border-t-2 border-green-400 p-4 bg-green-400/5">
+            <div className="border-t-2 border-gray-600 p-4 bg-gray-100/20">
               <div className="flex items-center justify-between">
                 <div className="text-xs">
                   [EDIT SESSION ACTIVE] | [MODE: STUDENT-RECORD] | [STATUS:
@@ -812,7 +806,7 @@ export default function EditStudentModal() {
                   <button
                     onClick={handleSubmit}
                     disabled={updateStudentMutation.isPending}
-                    className="px-4 py-2 border border-green-400 bg-black hover:bg-green-400 hover:text-black transition-colors text-xs font-bold disabled:opacity-50"
+                    className="px-4 py-2 border border-gray-600 bg-gray-50 hover:bg-gray-600 hover:text-white transition-colors text-xs font-bold disabled:opacity-50"
                   >
                     {updateStudentMutation.isPending
                       ? "[UPDATING...]"
@@ -822,7 +816,7 @@ export default function EditStudentModal() {
                   <button
                     type="button"
                     onClick={() => setEditModalOpen(false)}
-                    className="px-4 py-2 border border-red-500 bg-black hover:bg-red-500 transition-colors text-xs font-bold"
+                    className="px-4 py-2 border border-red-500 bg-gray-50 hover:bg-red-500 transition-colors text-xs font-bold"
                   >
                     [CANCEL]
                   </button>
@@ -839,15 +833,15 @@ export default function EditStudentModal() {
           width: 12px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: black;
-          border: 1px solid #00ff00;
+          background: #f9fafb;
+          border: 1px solid #6b7280;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #00ff00;
-          border: 1px solid black;
+          background: #6b7280;
+          border: 1px solid #f9fafb;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #00cc00;
+          background: #4b5563;
         }
       `}</style>
 

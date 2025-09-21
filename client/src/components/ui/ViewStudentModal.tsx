@@ -195,13 +195,13 @@ export default function ViewStudentModal() {
 
   if (isLoadingStudent || !completeStudentData) {
     return (
-      <div className="fixed inset-0 bg-slate-900/95 flex items-center justify-center z-50 p-4">
-        <div className="w-full max-w-6xl bg-black border-4 border-green-400 font-mono text-green-400 shadow-2xl">
+      <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="w-full max-w-6xl bg-white border-4 border-gray-600 font-mono text-gray-800 shadow-2xl">
           <div className="flex flex-col items-center justify-center p-12">
             <div className="animate-pulse text-xs mb-4">
               [LOADING STUDENT DATA...]
             </div>
-            <Database className="w-8 h-8 animate-spin text-green-400" />
+            <Database className="w-8 h-8 animate-spin text-gray-600" />
           </div>
         </div>
       </div>
@@ -251,7 +251,7 @@ export default function ViewStudentModal() {
   );
 
   return (
-    <div className="fixed inset-0 bg-slate-900/95 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       {/* Retro CRT scanlines effect */}
       <div
         className="absolute inset-0 pointer-events-none opacity-10"
@@ -260,20 +260,20 @@ export default function ViewStudentModal() {
             0deg,
             transparent,
             transparent 2px,
-            rgba(0, 255, 0, 0.1) 2px,
-            rgba(0, 255, 0, 0.1) 4px
+            rgba(75, 85, 99, 0.1) 2px,
+            rgba(75, 85, 99, 0.1) 4px
           )`,
         }}
       />
 
       {/* Main Terminal Container */}
-      <div className="w-full max-w-6xl max-h-[95vh] bg-black border-4 border-green-400 font-mono text-green-400 shadow-2xl relative">
+      <div className="w-full max-w-6xl max-h-[95vh] bg-white border-4 border-gray-600 font-mono text-gray-800 shadow-2xl relative">
         {/* Terminal Header */}
-        <div className="border-b-2 border-green-400 p-4 bg-green-400/5">
+        <div className="border-b-2 border-gray-600 p-4 bg-gray-100/20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Terminal className="w-5 h-5" />
+                <Terminal className="w-5 h-5 text-gray-600" />
                 <span className="text-sm font-bold">
                   MY SCHOOL INTERNATIONAL SCHOOLS
                 </span>
@@ -289,7 +289,7 @@ export default function ViewStudentModal() {
         </div>
 
         {/* Sub Header */}
-        <div className="border-b border-green-400 p-3 bg-green-400/3 text-xs">
+        <div className="border-b border-gray-600 p-3 bg-gray-100/10 text-xs">
           <div className="flex items-center justify-between">
             <span>[ACCESSING STUDENT DATABASE...]</span>
             <span>CONNECTION: SECURE | STATUS: ONLINE</span>
@@ -298,11 +298,11 @@ export default function ViewStudentModal() {
 
         <div className="flex h-[calc(95vh-120px)]">
           {/* Left Panel - Photo and Basic Info */}
-          <div className="w-80 border-r-2 border-green-400 p-6">
+          <div className="w-80 border-r-2 border-gray-600 p-6">
             {/* Photo Frame */}
-            <div className="border-2 border-green-400 p-2 mb-6 bg-green-400/5">
+            <div className="border-2 border-gray-600 p-2 mb-6 bg-gray-100/20">
               <div className="text-xs mb-2 text-center">STUDENT PHOTOGRAPH</div>
-              <div className="w-full h-48 border border-green-400 bg-black flex items-center justify-center relative overflow-hidden">
+              <div className="w-full h-48 border border-gray-600 bg-gray-50 flex items-center justify-center relative overflow-hidden">
                 {completeStudentData.passportPhoto ? (
                   <img
                     src={completeStudentData.passportPhoto}
@@ -316,13 +316,13 @@ export default function ViewStudentModal() {
                   </div>
                 )}
                 {/* Photo overlay effect */}
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-green-400/5 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-100/20 to-transparent" />
               </div>
             </div>
 
             {/* Quick Info Panel */}
-            <div className="border border-green-400 p-3 bg-green-400/3">
-              <div className="text-xs mb-3 border-b border-green-400 pb-1">
+            <div className="border border-gray-600 p-3 bg-gray-100/10">
+              <div className="text-xs mb-3 border-b border-gray-600 pb-1">
                 QUICK ACCESS
               </div>
               <div className="space-y-2 text-xs">
@@ -334,8 +334,8 @@ export default function ViewStudentModal() {
                   <span
                     className={`ml-2 ${
                       completeStudentData.status === "active"
-                        ? "text-green-300 animate-pulse"
-                        : "text-red-400"
+                        ? "text-green-600 animate-pulse"
+                        : "text-red-600"
                     }`}
                   >
                     ● {completeStudentData.status?.toUpperCase() || "INACTIVE"}
@@ -348,16 +348,16 @@ export default function ViewStudentModal() {
           {/* Right Panel - Main Content */}
           <div className="flex-1 flex flex-col">
             {/* Tab Navigation */}
-            <div className="border-b border-green-400 p-4 bg-green-400/3">
+            <div className="border-b border-gray-600 p-4 bg-gray-100/10">
               <div className="flex gap-2 text-xs">
                 {["STUDENT", "GUARDIAN"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 border border-green-400 transition-all duration-200 ${
+                    className={`px-4 py-2 border border-gray-600 transition-all duration-200 ${
                       activeTab === tab
-                        ? "bg-green-400 text-black font-bold"
-                        : "bg-black hover:bg-green-400/10"
+                        ? "bg-gray-600 text-white font-bold"
+                        : "bg-gray-50 hover:bg-gray-100/20"
                     }`}
                   >
                     {tab}
@@ -370,7 +370,7 @@ export default function ViewStudentModal() {
             <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
               {activeTab === "STUDENT" && (
                 <div>
-                  <div className="border-b border-green-400 mb-4 pb-2">
+                  <div className="border-b border-gray-600 mb-4 pb-2">
                     <div className="text-sm font-bold">STUDENT RECORD DATA</div>
                     <div className="text-xs">CLASSIFICATION: CONFIDENTIAL</div>
                   </div>
@@ -379,7 +379,7 @@ export default function ViewStudentModal() {
                     {studentDetails.map((detail, index) => (
                       <div
                         key={index}
-                        className="flex border-b border-green-400/20 py-2"
+                        className="flex border-b border-gray-600/20 py-2"
                       >
                         <div className="w-48 font-bold">{detail.label}:</div>
                         <div className="flex-1">{detail.value}</div>
@@ -391,7 +391,7 @@ export default function ViewStudentModal() {
 
               {activeTab === "GUARDIAN" && (
                 <div>
-                  <div className="border-b border-green-400 mb-4 pb-2">
+                  <div className="border-b border-gray-600 mb-4 pb-2">
                     <div className="text-sm font-bold">
                       GUARDIAN/PARENT RECORDS
                     </div>
@@ -401,8 +401,8 @@ export default function ViewStudentModal() {
                   {linkedParent || completeStudentData.parentName ? (
                     <div className="space-y-6">
                       {/* Primary Guardian */}
-                      <div className="border border-green-400 p-4 bg-green-400/5">
-                        <div className="text-xs mb-3 font-bold border-b border-green-400 pb-1">
+                      <div className="border border-gray-600 p-4 bg-gray-100/20">
+                        <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
                           PRIMARY GUARDIAN
                         </div>
                         <div className="space-y-1 text-xs">
@@ -441,8 +441,8 @@ export default function ViewStudentModal() {
                             <div
                               className={
                                 linkedParent?.status === "active"
-                                  ? "text-green-300"
-                                  : "text-red-400"
+                                  ? "text-green-600"
+                                  : "text-red-600"
                               }
                             >
                               {linkedParent?.status?.toUpperCase() ||
@@ -454,8 +454,8 @@ export default function ViewStudentModal() {
 
                       {/* Emergency Contact */}
                       {completeStudentData.emergencyContact?.name && (
-                        <div className="border border-green-400 p-4 bg-green-400/5">
-                          <div className="text-xs mb-3 font-bold border-b border-green-400 pb-1">
+                        <div className="border border-gray-600 p-4 bg-gray-100/20">
+                          <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
                             EMERGENCY CONTACT
                           </div>
                           <div className="space-y-1 text-xs">
@@ -487,7 +487,7 @@ export default function ViewStudentModal() {
                       )}
                     </div>
                   ) : (
-                    <div className="text-center py-12 border border-green-400 bg-green-400/3">
+                    <div className="text-center py-12 border border-gray-600 bg-gray-100/10">
                       <div className="text-xs">
                         <div>NO GUARDIAN RECORDS</div>
                         <div>FOUND IN DATABASE</div>
@@ -499,7 +499,7 @@ export default function ViewStudentModal() {
             </div>
 
             {/* Command Bar */}
-            <div className="border-t-2 border-green-400 p-4 bg-green-400/5">
+            <div className="border-t-2 border-gray-600 p-4 bg-gray-100/20">
               <div className="flex items-center justify-between">
                 <div className="text-xs">
                   [RECORD ACCESSED] | [CLASSIFICATION: STUDENT-DATA] | [SESSION:
@@ -510,21 +510,21 @@ export default function ViewStudentModal() {
                   <button
                     onClick={handleDownloadPDF}
                     disabled={isDownloadingPDF}
-                    className="px-4 py-2 border border-green-400 bg-black hover:bg-green-400 hover:text-black transition-colors text-xs font-bold disabled:opacity-50"
+                    className="px-4 py-2 border border-gray-600 bg-gray-50 hover:bg-gray-600 hover:text-white transition-colors text-xs font-bold disabled:opacity-50"
                   >
                     {isDownloadingPDF ? "GENERATING..." : "[DOWNLOAD]"}
                   </button>
 
                   <button
                     onClick={handleEditStudent}
-                    className="px-4 py-2 border border-green-400 bg-black hover:bg-green-400 hover:text-black transition-colors text-xs font-bold"
+                    className="px-4 py-2 border border-gray-600 bg-gray-50 hover:bg-gray-600 hover:text-white transition-colors text-xs font-bold"
                   >
                     [EDIT]
                   </button>
 
                   <button
                     onClick={() => setViewModalOpen(false)}
-                    className="px-4 py-2 border border-green-400 bg-black hover:bg-red-500 hover:border-red-500 transition-colors text-xs font-bold"
+                    className="px-4 py-2 border border-gray-600 bg-gray-50 hover:bg-red-500 hover:border-red-500 transition-colors text-xs font-bold"
                   >
                     [CLOSE]
                   </button>
@@ -541,15 +541,15 @@ export default function ViewStudentModal() {
           width: 12px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: black;
-          border: 1px solid #00ff00;
+          background: #f9fafb;
+          border: 1px solid #6b7280;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #00ff00;
-          border: 1px solid black;
+          background: #6b7280;
+          border: 1px solid #f9fafb;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #00cc00;
+          background: #4b5563;
         }
       `}</style>
     </div>
