@@ -149,7 +149,9 @@ export default function UserTable() {
     );
   }
 
-  const users = data?.data || [];
+  const allUsers = data?.data || [];
+  // Filter out teachers as they are managed separately in teacher management
+  const users = allUsers.filter((user: User) => user.role !== "teacher");
   const pagination = data?.pagination || null;
 
   // Empty state

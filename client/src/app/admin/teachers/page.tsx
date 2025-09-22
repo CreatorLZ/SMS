@@ -9,6 +9,7 @@ import { useCreateTeacherMutation } from "@/hooks/useCreateTeacherMutation";
 import { useDeleteTeacherMutation } from "@/hooks/useDeleteTeacherMutation";
 import TeacherTable from "@/components/ui/TeacherTable";
 import CreateTeacherModal from "@/components/ui/CreateTeacherModal";
+import ViewUserModal from "@/components/ui/ViewUserModal";
 import EditTeacherModal from "@/components/ui/EditTeacherModal";
 import DeleteConfirmationModal from "@/components/ui/DeleteConfirmationModal";
 import { useTeacherManagementStore } from "@/store/teacherManagementStore";
@@ -25,11 +26,24 @@ export default function TeacherManagement() {
   const {
     isCreateModalOpen,
     isEditModalOpen,
+    isViewModalOpen,
     selectedTeacher,
+    selectedTeacherId,
     setCreateModalOpen,
     setEditModalOpen,
+    setViewModalOpen,
     setSelectedTeacher,
   } = useTeacherManagementStore();
+
+  const handleViewEdit = (teacherId: string) => {
+    setSelectedTeacher(null); // Clear any existing selection
+    setEditModalOpen(true);
+    // Find teacher by ID
+    const teacher = teachers?.find((t) => t._id === teacherId);
+    if (teacher) {
+      setSelectedTeacher(teacher);
+    }
+  };
 
   const [toastProps, setToastProps] = useState<{
     message: string;
@@ -53,26 +67,6 @@ export default function TeacherManagement() {
     } catch (error: any) {
       showToastMessage(
         error.response?.data?.message || "Failed to create teacher",
-        "error"
-      );
-    }
-  };
-
-  const handleUpdateTeacher = async (teacherData: any) => {
-    if (!selectedTeacher) return;
-
-    try {
-      await updateTeacherMutation.mutateAsync({
-        id: selectedTeacher._id,
-        ...teacherData,
-      });
-      showToastMessage("Teacher updated successfully", "success");
-      setEditModalOpen(false);
-      setSelectedTeacher(null);
-      refetch();
-    } catch (error: any) {
-      showToastMessage(
-        error.response?.data?.message || "Failed to update teacher",
         "error"
       );
     }
@@ -103,6 +97,10 @@ export default function TeacherManagement() {
   const handleCancelDelete = () => {
     setIsDeleteModalOpen(false);
     setTeacherToDelete(null);
+  };
+
+  const handleViewTeacher = (teacherId: string) => {
+    setViewModalOpen(true, teacherId);
   };
 
   const handleEditTeacher = (teacher: any) => {
@@ -257,6 +255,7 @@ export default function TeacherManagement() {
 
           <TeacherTable
             teachers={teachers || []}
+            onView={handleViewTeacher}
             onEdit={handleEditTeacher}
             onDelete={handleDeleteTeacher}
           />
@@ -268,15 +267,20 @@ export default function TeacherManagement() {
             isLoading={createTeacherMutation.isPending}
           />
 
+          <ViewUserModal
+            isOpen={isViewModalOpen}
+            userId={selectedTeacherId}
+            onClose={() => setViewModalOpen(false)}
+            onEdit={handleViewEdit}
+          />
+
           <EditTeacherModal
             isOpen={isEditModalOpen}
             onClose={() => {
               setEditModalOpen(false);
               setSelectedTeacher(null);
             }}
-            onSubmit={handleUpdateTeacher}
-            teacher={selectedTeacher}
-            isLoading={updateTeacherMutation.isPending}
+            teacherId={selectedTeacher?._id || ""}
           />
 
           <DeleteConfirmationModal

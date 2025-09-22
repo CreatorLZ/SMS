@@ -5,15 +5,39 @@ import { useUserManagementStore } from "@/store/userManagementStore";
 import { useAuthStore } from "@/store/authStore";
 import { X, Download, Edit, Terminal, Database } from "lucide-react";
 
-export default function ViewUserModal() {
+interface ViewUserModalProps {
+  isOpen?: boolean;
+  userId?: string | null;
+  onClose?: () => void;
+  onEdit?: (userId: string) => void;
+  onTeacherEdit?: (teacherId: string) => void;
+}
+
+export default function ViewUserModal({
+  isOpen,
+  userId,
+  onClose,
+  onEdit,
+}: ViewUserModalProps = {}) {
   const {
     isViewModalOpen,
     selectedUserId,
     setViewModalOpen,
     setEditModalOpen,
   } = useUserManagementStore();
+
+  // Use props if provided, otherwise use store state
+  const modalIsOpen = isOpen !== undefined ? isOpen : isViewModalOpen;
+  const currentUserId = userId !== undefined ? userId : selectedUserId;
+  const handleClose = onClose || (() => setViewModalOpen(false));
+  const handleEdit =
+    onEdit ||
+    ((userId: string) => {
+      setViewModalOpen(false);
+      setEditModalOpen(true, userId);
+    });
   const { data: userData, isLoading: isLoadingUser } = useUserQuery(
-    selectedUserId || ""
+    currentUserId || ""
   );
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const [activeTab, setActiveTab] = useState("USER");
@@ -61,8 +85,9 @@ export default function ViewUserModal() {
   };
 
   const handleEditUser = () => {
-    setViewModalOpen(false);
-    setEditModalOpen(true, selectedUserId);
+    if (currentUserId) {
+      handleEdit(currentUserId);
+    }
   };
 
   const getUserRoleIcon = (role: string) => {
@@ -99,7 +124,7 @@ export default function ViewUserModal() {
     }
   };
 
-  if (!isViewModalOpen || !selectedUserId) return null;
+  if (!modalIsOpen || !currentUserId) return null;
 
   if (isLoadingUser || !user) {
     return (
@@ -424,7 +449,7 @@ export default function ViewUserModal() {
                   </button>
 
                   <button
-                    onClick={() => setViewModalOpen(false)}
+                    onClick={() => handleClose()}
                     className="px-4 py-2 border border-gray-600 bg-gray-50 hover:bg-red-500 hover:border-red-500 transition-colors text-xs font-bold"
                   >
                     [CLOSE]

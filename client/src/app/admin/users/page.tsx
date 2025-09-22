@@ -187,19 +187,6 @@ export default function AdminUsersPage() {
                 </p>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Teachers</CardTitle>
-                <BookOpen className="h-4 w-4 text-purple-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-purple-600">
-                  {stats.teachers}
-                </div>
-                <p className="text-xs text-muted-foreground">Teaching staff</p>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Filters and Search */}
@@ -232,7 +219,6 @@ export default function AdminUsersPage() {
                     <option value="superadmin">Super Admin</option>
                   )}
                   <option value="admin">Admin</option>
-                  <option value="teacher">Teacher</option>
                   <option value="parent">Parent</option>
                 </select>
 

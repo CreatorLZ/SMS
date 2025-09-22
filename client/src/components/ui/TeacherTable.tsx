@@ -8,6 +8,7 @@ import { Toast } from "./toast";
 import {
   Edit,
   UserX,
+  Eye,
   BookOpen,
   GraduationCap,
   Users as UsersIcon,
@@ -29,12 +30,14 @@ interface Teacher {
 
 interface TeacherTableProps {
   teachers: Teacher[];
+  onView: (teacherId: string) => void;
   onEdit: (teacher: Teacher) => void;
   onDelete: (teacher: Teacher) => void;
 }
 
 export default function TeacherTable({
   teachers,
+  onView,
   onEdit,
   onDelete,
 }: TeacherTableProps) {
@@ -220,20 +223,18 @@ export default function TeacherTable({
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => onView(teacher._id)}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => onEdit(teacher)}
                         >
                           <Edit className="w-4 h-4 mr-1" />
                           Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(teacher)}
-                          loading={deleteTeacherMutation.isPending}
-                          loadingText="Deleting..."
-                        >
-                          <UserX className="w-4 h-4 mr-1" />
-                          Delete
                         </Button>
                       </div>
                     </td>
@@ -292,22 +293,20 @@ export default function TeacherTable({
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => onView(teacher._id)}
+                    className="w-full"
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    View
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => onEdit(teacher)}
                     className="w-full"
                   >
                     <Edit className="w-4 h-4 mr-2" />
                     Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(teacher)}
-                    loading={deleteTeacherMutation.isPending}
-                    loadingText="Deleting..."
-                    className="w-full"
-                  >
-                    <UserX className="w-4 h-4 mr-2" />
-                    Delete
                   </Button>
                 </div>
               </div>
