@@ -20,9 +20,15 @@ export const useUpdateTeacherMutation = () => {
       const response = await api.put(`/admin/teachers/${id}`, teacherData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (result, { id }) => {
+      // Invalidate teacher-related queries
       queryClient.invalidateQueries({ queryKey: ["teachers"] });
       queryClient.invalidateQueries({ queryKey: ["classrooms"] });
+
+      // Invalidate user-related queries since teachers are also users
+      // This ensures ViewUserModal updates when teacher data changes
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["user", id] }); // Individual user cache
     },
   });
 };

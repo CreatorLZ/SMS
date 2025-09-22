@@ -59,5 +59,25 @@ export const useStudentsQuery = (
       const response = await api.get(`/admin/students?${params.toString()}`);
       return response.data as StudentsResponse;
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh
+    gcTime: 10 * 60 * 1000, // 10 minutes - garbage collection after cache
+    refetchOnWindowFocus: true, // Real-time feel when tab gains focus
+    refetchOnReconnect: true, // Refetch when network reconnects
+    retry: (failureCount, error: any) => {
+      // Retry up to 3 times with exponential backoff
+      if (failureCount >= 3) return false;
+
+      // Don't retry on validation errors (4xx)
+      if (
+        error?.response?.status &&
+        error.response.status >= 400 &&
+        error.response.status < 500
+      ) {
+        return false;
+      }
+
+      return true;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };

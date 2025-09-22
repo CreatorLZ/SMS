@@ -96,18 +96,16 @@ export default function AdminUsersPage() {
         active: 0,
         inactive: 0,
         admins: 0,
-        teachers: 0,
         parents: 0,
       };
 
     const users = usersData.data;
     return {
-      total: usersData.pagination?.total || 0,
+      total: users.length,
       active: users.filter((u) => u.status === "active").length,
       inactive: users.filter((u) => u.status === "inactive").length,
       admins: users.filter((u) => u.role === "admin" || u.role === "superadmin")
         .length,
-      teachers: users.filter((u) => u.role === "teacher").length,
       parents: users.filter((u) => u.role === "parent").length,
     };
   }, [usersData]);
@@ -120,11 +118,11 @@ export default function AdminUsersPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
-                User Management
+                Staff & Parent Management
               </h1>
               <p className="text-muted-foreground">
-                Manage users, roles, and permissions for the school management
-                system.
+                Manage administrators, non-teaching staff, and parents for the
+                school management system.
               </p>
             </div>
             <Button
@@ -219,6 +217,7 @@ export default function AdminUsersPage() {
                     <option value="superadmin">Super Admin</option>
                   )}
                   <option value="admin">Admin</option>
+                  <option value="staff">Non-Teaching Staff</option>
                   <option value="parent">Parent</option>
                 </select>
 

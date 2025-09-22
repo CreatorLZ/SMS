@@ -155,15 +155,34 @@ export default function StudentTable() {
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 w-10 h-10">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-sm font-medium text-primary">
-                              {student.fullName.charAt(0).toUpperCase()}
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              (student as any).isOptimistic
+                                ? "bg-orange-100 animate-pulse"
+                                : "bg-primary/10"
+                            }`}
+                          >
+                            <span
+                              className={`text-sm font-medium ${
+                                (student as any).isOptimistic
+                                  ? "text-orange-600"
+                                  : "text-primary"
+                              }`}
+                            >
+                              {(student.fullName || "").charAt(0).toUpperCase()}
                             </span>
                           </div>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-foreground">
-                            {student.fullName}
+                          <div
+                            className={`text-sm font-medium text-foreground ${
+                              (student as any).isOptimistic
+                                ? "text-orange-600"
+                                : ""
+                            }`}
+                          >
+                            {student.fullName}{" "}
+                            {(student as any).isOptimistic && "(Saving...)"}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             ID: {student.studentId}
@@ -247,14 +266,31 @@ export default function StudentTable() {
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-sm font-medium text-primary">
-                      {student.fullName.charAt(0).toUpperCase()}
+                  <div
+                    className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                      (student as any).isOptimistic
+                        ? "bg-orange-100 animate-pulse"
+                        : "bg-primary/10"
+                    }`}
+                  >
+                    <span
+                      className={`text-sm font-medium ${
+                        (student as any).isOptimistic
+                          ? "text-orange-600"
+                          : "text-primary"
+                      }`}
+                    >
+                      {(student.fullName || "").charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div>
-                    <h3 className="font-medium text-foreground">
-                      {student.fullName}
+                    <h3
+                      className={`font-medium text-foreground ${
+                        (student as any).isOptimistic ? "text-orange-600" : ""
+                      }`}
+                    >
+                      {student.fullName}{" "}
+                      {(student as any).isOptimistic && "(Saving...)"}
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       ID: {student.studentId}

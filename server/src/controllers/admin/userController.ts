@@ -115,7 +115,10 @@ export const getUsers = async (req: Request, res: Response) => {
 
     let query: any = {};
 
-    // Add role filter
+    // Exclude teachers by default since they are managed separately in teacher management
+    query.role = { $ne: "teacher" };
+
+    // Add role filter (overrides default exclusion if specific role is requested)
     if (role && role !== "all") {
       query.role = role;
     }

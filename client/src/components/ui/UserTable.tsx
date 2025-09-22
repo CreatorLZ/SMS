@@ -95,6 +95,8 @@ export default function UserTable() {
         return <Shield className="w-3 h-3" />;
       case "teacher":
         return <BookOpen className="w-3 h-3" />;
+      case "staff":
+        return <UserCheck className="w-3 h-3" />;
       case "parent":
         return <UsersIcon className="w-3 h-3" />;
       default:
@@ -110,6 +112,8 @@ export default function UserTable() {
         return "bg-blue-100 text-blue-800 hover:bg-blue-100";
       case "teacher":
         return "bg-purple-100 text-purple-800 hover:bg-purple-100";
+      case "staff":
+        return "bg-cyan-100 text-cyan-800 hover:bg-cyan-100";
       case "parent":
         return "bg-green-100 text-green-800 hover:bg-green-100";
       default:
@@ -149,9 +153,7 @@ export default function UserTable() {
     );
   }
 
-  const allUsers = data?.data || [];
-  // Filter out teachers as they are managed separately in teacher management
-  const users = allUsers.filter((user: User) => user.role !== "teacher");
+  const users = data?.data || [];
   const pagination = data?.pagination || null;
 
   // Empty state
@@ -207,15 +209,34 @@ export default function UserTable() {
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 w-10 h-10">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-sm font-medium text-primary">
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              (user as any).isOptimistic
+                                ? "bg-orange-100 animate-pulse"
+                                : "bg-primary/10"
+                            }`}
+                          >
+                            <span
+                              className={`text-sm font-medium ${
+                                (user as any).isOptimistic
+                                  ? "text-orange-600"
+                                  : "text-primary"
+                              }`}
+                            >
                               {user.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-foreground">
-                            {user.name}
+                          <div
+                            className={`text-sm font-medium text-foreground ${
+                              (user as any).isOptimistic
+                                ? "text-orange-600"
+                                : ""
+                            }`}
+                          >
+                            {user.name}{" "}
+                            {(user as any).isOptimistic && "(Saving...)"}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {user.email}
@@ -453,7 +474,7 @@ export default function UserTable() {
                   pagination.page * (pagination.limit || 10),
                   pagination.total
                 )}{" "}
-                of {pagination.total} users
+                of {pagination.total} staff & parents
               </div>
 
               <div className="flex items-center gap-2">

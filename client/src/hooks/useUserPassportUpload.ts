@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 
 interface UseUserPassportUploadProps {
@@ -10,6 +11,7 @@ interface UseUserPassportUploadProps {
 export function useUserPassportUpload({ userId }: UseUserPassportUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string>("");
+  const queryClient = useQueryClient();
 
   const savePassportPhotoToBackend = async (photoUrl: string) => {
     try {
@@ -19,6 +21,11 @@ export function useUserPassportUpload({ userId }: UseUserPassportUploadProps) {
       await api.patch(`/admin/users/${userId}`, {
         passportPhoto: photoUrl,
       });
+
+      // Invalidate user-related queries so ViewUserModal updates
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["user", userId] });
+      queryClient.invalidateQueries({ queryKey: ["teachers"] }); // In case this affects teacher views too
 
       setIsUploading(false);
       return { success: true };
