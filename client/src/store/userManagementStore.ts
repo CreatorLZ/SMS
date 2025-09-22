@@ -3,6 +3,7 @@ import { create } from "zustand";
 interface UserManagementState {
   isCreateModalOpen: boolean;
   isEditModalOpen: boolean;
+  isViewModalOpen: boolean;
   isDeleteModalOpen: boolean;
   selectedUserId: string | null;
   roleFilter: string;
@@ -11,6 +12,7 @@ interface UserManagementState {
   currentPage: number;
   setCreateModalOpen: (open: boolean) => void;
   setEditModalOpen: (open: boolean, userId?: string | null) => void;
+  setViewModalOpen: (open: boolean, userId?: string | null) => void;
   setDeleteModalOpen: (open: boolean, userId?: string | null) => void;
   setSelectedUserId: (userId: string | null) => void;
   setRoleFilter: (role: string) => void;
@@ -22,6 +24,7 @@ interface UserManagementState {
 export const useUserManagementStore = create<UserManagementState>((set) => ({
   isCreateModalOpen: false,
   isEditModalOpen: false,
+  isViewModalOpen: false,
   isDeleteModalOpen: false,
   selectedUserId: null,
   roleFilter: "all",
@@ -32,6 +35,11 @@ export const useUserManagementStore = create<UserManagementState>((set) => ({
   setEditModalOpen: (open, userId = null) =>
     set({
       isEditModalOpen: open,
+      selectedUserId: userId,
+    }),
+  setViewModalOpen: (open, userId = null) =>
+    set({
+      isViewModalOpen: open,
       selectedUserId: userId,
     }),
   setDeleteModalOpen: (open, userId = null) =>

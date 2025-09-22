@@ -5,6 +5,7 @@ export interface User {
   _id: string;
   name: string;
   email: string;
+  phone?: string;
   role: "superadmin" | "admin" | "teacher" | "student" | "parent";
   status: "active" | "inactive";
   createdAt: string;
@@ -19,6 +20,8 @@ export interface User {
     name: string;
   }; // Populated classroom data for teachers
   subjectSpecialization?: string;
+  subjectSpecializations?: string[]; // For backward compatibility
+  passportPhoto?: string;
 }
 
 interface UsersResponse {

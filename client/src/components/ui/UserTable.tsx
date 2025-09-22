@@ -31,6 +31,7 @@ export default function UserTable() {
     currentPage,
     setCurrentPage,
     setEditModalOpen,
+    setViewModalOpen,
     setDeleteModalOpen,
   } = useUserManagementStore();
 
@@ -281,10 +282,10 @@ export default function UserTable() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setEditModalOpen(true, user._id)}
+                          onClick={() => setViewModalOpen(true, user._id)}
                         >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
                         </Button>
                         <Button
                           variant={
@@ -371,11 +372,11 @@ export default function UserTable() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setEditModalOpen(true, user._id)}
+                    onClick={() => setViewModalOpen(true, user._id)}
                     className="w-full"
                   >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
+                    <Eye className="w-4 h-4 mr-2" />
+                    View
                   </Button>
                   <Button
                     variant={

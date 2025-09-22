@@ -30,6 +30,7 @@ export default function CreateUserModal() {
     email: "",
     password: "",
     role: "parent",
+    phone: "",
     linkedStudentIds: [] as string[],
     subjectSpecialization: "",
     assignedClassId: "",
@@ -49,6 +50,7 @@ export default function CreateUserModal() {
         email: formData.email,
         password: formData.password,
         role: formData.role,
+        phone: formData.phone,
       };
 
       let submitData: typeof baseData & Record<string, any>;
@@ -79,6 +81,7 @@ export default function CreateUserModal() {
         email: "",
         password: "",
         role: "parent",
+        phone: "",
         linkedStudentIds: [],
         subjectSpecialization: "",
         assignedClassId: "",
@@ -96,6 +99,7 @@ export default function CreateUserModal() {
       ...formData,
       role,
       // Reset role-specific fields when role changes
+      phone: "",
       linkedStudentIds: [],
       subjectSpecialization: "",
       assignedClassId: "",
@@ -190,6 +194,26 @@ export default function CreateUserModal() {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <label
+                    htmlFor="phone"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Phone Number
+                  </label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
+                    placeholder="Enter phone number"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label
                     htmlFor="role"

@@ -6,9 +6,11 @@ export interface UpdateUserData {
   email?: string;
   role?: string;
   status?: string;
+  phone?: string;
   linkedStudentIds?: string[];
   subjectSpecialization?: string;
   assignedClassId?: string;
+  passportPhoto?: string;
 }
 
 export const useUpdateUserMutation = () => {

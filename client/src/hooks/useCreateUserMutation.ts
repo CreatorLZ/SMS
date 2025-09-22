@@ -6,6 +6,7 @@ interface CreateUserData {
   email: string;
   password: string;
   role: string;
+  phone?: string;
 }
 
 export const useCreateUserMutation = () => {

@@ -65,6 +65,16 @@ const userSchema = new Schema(
       enum: ["active", "inactive"],
       default: "active",
     },
+    passportPhoto: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    phone: {
+      type: String,
+      required: false,
+      trim: true,
+    },
   },
   {
     timestamps: true,

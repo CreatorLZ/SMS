@@ -5,6 +5,7 @@ import RoleGuard, { useRoleCheck } from "../../../components/ui/role-guard";
 import UserTable from "../../../components/ui/UserTable";
 import CreateUserModal from "../../../components/ui/CreateUserModal";
 import EditUserModal from "../../../components/ui/EditUserModal";
+import ViewUserModal from "../../../components/ui/ViewUserModal";
 import DeleteConfirmationModal from "../../../components/ui/DeleteConfirmationModal";
 import { useUserManagementStore } from "../../../store/userManagementStore";
 import { useDeleteUserMutation } from "../../../hooks/useDeleteUserMutation";
@@ -323,6 +324,7 @@ export default function AdminUsersPage() {
           {/* Modals */}
           <CreateUserModal />
           <EditUserModal />
+          <ViewUserModal />
 
           {/* Delete Confirmation Modal */}
           <DeleteConfirmationModal

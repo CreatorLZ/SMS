@@ -20,6 +20,7 @@ export const registerUser = async (req: Request, res: Response) => {
       email,
       password,
       role,
+      phone,
       studentId,
       currentClass,
       linkedStudentIds,
@@ -53,6 +54,7 @@ export const registerUser = async (req: Request, res: Response) => {
       email,
       password,
       role,
+      phone: phone || undefined,
       linkedStudentIds: role === "parent" ? linkedStudentIds : undefined,
       subjectSpecialization:
         role === "teacher" ? subjectSpecialization : undefined,
@@ -920,7 +922,7 @@ export const getUserById = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, email, role, status } = req.body;
+    const { name, email, role, status, phone, passportPhoto } = req.body;
 
     let { linkedStudentIds, subjectSpecialization, assignedClassId } = req.body;
 
@@ -1003,6 +1005,8 @@ export const updateUser = async (req: Request, res: Response) => {
         email,
         role,
         status,
+        phone: phone !== undefined ? phone : undefined,
+        passportPhoto: passportPhoto !== undefined ? passportPhoto : undefined,
         linkedStudentIds: role === "parent" ? linkedStudentIds : undefined,
         subjectSpecialization:
           role === "teacher" ? subjectSpecialization : undefined,
