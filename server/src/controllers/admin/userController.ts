@@ -761,6 +761,8 @@ export const updateTeacher = async (req: Request, res: Response) => {
       subjectSpecializations,
       subjectSpecialization,
       assignedClassId,
+      status,
+      phone,
     } = req.body;
 
     // Check if teacher exists
@@ -805,6 +807,8 @@ export const updateTeacher = async (req: Request, res: Response) => {
       name,
       email,
       assignedClassId,
+      status,
+      phone,
     };
 
     // Handle subject specializations - prefer array format but support both

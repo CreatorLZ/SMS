@@ -315,8 +315,14 @@ export default function EditUserModal() {
                 <div>ROLE: {currentUser.role?.toUpperCase()}</div>
                 <div>
                   STATUS:
-                  <span className="text-green-600">
-                    ● {currentUser.status?.toUpperCase() || "ACTIVE"}
+                  <span
+                    className={`ml-2 ${
+                      currentUser.status === "active"
+                        ? "text-green-600 animate-pulse"
+                        : "text-red-600"
+                    }`}
+                  >
+                    ● {currentUser.status?.toUpperCase() || "INACTIVE"}
                   </span>
                 </div>
               </div>

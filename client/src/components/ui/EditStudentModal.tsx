@@ -408,8 +408,14 @@ export default function EditStudentModal() {
                 <div>CLASS: {completeStudentData.currentClass}</div>
                 <div>
                   STATUS:
-                  <span className="text-green-600">
-                    ● {completeStudentData.status?.toUpperCase() || "ACTIVE"}
+                  <span
+                    className={`ml-2 ${
+                      completeStudentData.status === "active"
+                        ? "text-green-600 animate-pulse"
+                        : "text-red-600"
+                    }`}
+                  >
+                    ● {completeStudentData.status?.toUpperCase() || "INACTIVE"}
                   </span>
                 </div>
               </div>

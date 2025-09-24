@@ -301,16 +301,17 @@ export default function EditTeacherModal({
                 <div>NAME: {teacher.name}</div>
                 <div>ID: {teacher._id.slice(-8)}</div>
                 <div>ROLE: TEACHER</div>
+
                 <div>
                   STATUS:
                   <span
                     className={`ml-2 ${
-                      teacher.status === "active"
+                      formData.status === "active"
                         ? "text-green-600 animate-pulse"
                         : "text-red-600"
                     }`}
                   >
-                    ● {teacher.status?.toUpperCase() || "ACTIVE"}
+                    ● {formData.status?.toUpperCase() || "INACTIVE"}
                   </span>
                 </div>
               </div>
@@ -422,10 +423,16 @@ export default function EditTeacherModal({
                             className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600 font-mono text-xs"
                             required
                           >
-                            <option className="bg-white text-gray-800">
+                            <option
+                              value="active"
+                              className="bg-white text-gray-800"
+                            >
                               ACTIVE
                             </option>
-                            <option className="bg-white text-gray-800">
+                            <option
+                              value="inactive"
+                              className="bg-white text-gray-800"
+                            >
                               INACTIVE
                             </option>
                           </select>
