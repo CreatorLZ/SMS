@@ -10,6 +10,7 @@ import StudentProfile from "./StudentProfile";
 import ConfirmDialog from "./ConfirmDialog";
 import AssignSubjectsModal from "./AssignSubjectsModal";
 import SubjectDetailsModal from "./SubjectDetailsModal";
+import ReassignTeacherModal from "./ReassignTeacherModal";
 import {
   useMarkAttendance,
   useUpdateAttendance,
@@ -74,6 +75,10 @@ export default function ClassroomDetailView({
   const [showAssignSubjectsModal, setShowAssignSubjectsModal] = useState(false);
   const [showSubjectDetailsModal, setShowSubjectDetailsModal] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+
+  // Teacher reassignment state
+  const [showReassignTeacherModal, setShowReassignTeacherModal] =
+    useState(false);
 
   const { toast } = useToast();
   const markAttendance = useMarkAttendance();
@@ -460,10 +465,12 @@ export default function ClassroomDetailView({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {todayAttendance?.records?.filter(
-                (record) =>
-                  record.status === "present" || record.status === "late"
-              ).length || 0}
+              {todayAttendance && "records" in todayAttendance
+                ? todayAttendance.records.filter(
+                    (record) =>
+                      record.status === "present" || record.status === "late"
+                  ).length
+                : 0}
             </div>
             <p className="text-xs text-muted-foreground">Students present</p>
           </CardContent>
@@ -553,9 +560,19 @@ export default function ClassroomDetailView({
               {/* Teacher Information */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <UserCheck className="h-5 w-5" />
-                    <span>Class Teacher</span>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <UserCheck className="h-5 w-5" />
+                      <span>Class Teacher</span>
+                    </div>
+                    <Button
+                      onClick={() => setShowReassignTeacherModal(true)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      Reassign Teacher
+                    </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1032,6 +1049,14 @@ export default function ClassroomDetailView({
           isOpen={showSubjectDetailsModal}
           onClose={handleCloseSubjectDetails}
           subject={selectedSubject}
+        />
+      )}
+
+      {showReassignTeacherModal && (
+        <ReassignTeacherModal
+          isOpen={showReassignTeacherModal}
+          classroom={classroom}
+          onClose={() => setShowReassignTeacherModal(false)}
         />
       )}
     </div>

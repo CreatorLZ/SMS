@@ -714,7 +714,7 @@ export const getTeachers = async (req: Request, res: Response) => {
   try {
     const teachers = await User.find({ role: "teacher" })
       .select("-password -refreshTokens")
-      .populate("assignedClassId", "name");
+      .populate("assignedClasses", "name");
 
     res.json(teachers);
   } catch (error) {
@@ -734,7 +734,7 @@ export const getTeacherById = async (req: Request, res: Response) => {
 
     const teacher = await User.findOne({ _id: id, role: "teacher" })
       .select("-password -refreshTokens")
-      .populate("assignedClassId", "name");
+      .populate("assignedClasses", "name");
 
     if (!teacher) {
       return res.status(404).json({ message: "Teacher not found" });
@@ -760,9 +760,11 @@ export const updateTeacher = async (req: Request, res: Response) => {
       email,
       subjectSpecializations,
       subjectSpecialization,
-      assignedClassId,
+      assignedClassId, // Keep for backward compatibility
+      assignedClasses, // New multiple classrooms support
       status,
       phone,
+      passportPhoto,
     } = req.body;
 
     // Check if teacher exists
@@ -779,36 +781,80 @@ export const updateTeacher = async (req: Request, res: Response) => {
       }
     }
 
-    // Handle classroom reassignment
-    if (assignedClassId !== teacher.assignedClassId?.toString()) {
-      // Remove teacher from old classroom
-      if (teacher.assignedClassId) {
-        await Classroom.findByIdAndUpdate(teacher.assignedClassId, {
-          teacherId: null,
-        });
-      }
+    // Determine which classroom assignment format to use
+    let newAssignedClasses: string[] = [];
 
-      // Check if new classroom exists and is not already assigned
-      if (assignedClassId) {
-        const classroom = await Classroom.findById(assignedClassId);
-        if (!classroom) {
-          return res.status(400).json({ message: "Classroom not found" });
-        }
-        if (classroom.teacherId && classroom.teacherId.toString() !== id) {
-          return res
-            .status(400)
-            .json({ message: "Classroom already has a teacher assigned" });
-        }
+    if (
+      assignedClasses &&
+      Array.isArray(assignedClasses) &&
+      assignedClasses.length > 0
+    ) {
+      // New multi-classroom format - use this as the source of truth
+      newAssignedClasses = [...assignedClasses];
+    } else if (assignedClassId) {
+      // Single classroom format (backward compatibility) - convert to array
+      newAssignedClasses = [assignedClassId];
+    } else {
+      // No classroom assignment - empty array
+      newAssignedClasses = [];
+    }
+
+    // Validate all classrooms exist and are not already assigned to other teachers
+    for (const classroomId of newAssignedClasses) {
+      const classroom = await Classroom.findById(classroomId);
+      if (!classroom) {
+        return res
+          .status(400)
+          .json({ message: `Classroom ${classroomId} not found` });
+      }
+      // Allow reassignment if the classroom is currently assigned to this teacher
+      if (classroom.teacherId && classroom.teacherId.toString() !== id) {
+        return res.status(400).json({
+          message: `Classroom "${classroom.name}" already has a teacher assigned. Use classroom management to reassign.`,
+        });
       }
     }
 
-    // Prepare update data - handle subject specializations
+    // Handle classroom reassignments
+    // 1. Remove teacher from classrooms they're no longer assigned to
+    const currentAssignedClasses = teacher.assignedClasses || [];
+    const currentAssignedClassIds = currentAssignedClasses.map((c) =>
+      c.toString()
+    );
+
+    // If teacher had single classroom assignment, remove it
+    if (
+      teacher.assignedClassId &&
+      !currentAssignedClassIds.includes(teacher.assignedClassId.toString())
+    ) {
+      await Classroom.findByIdAndUpdate(teacher.assignedClassId, {
+        teacherId: null,
+      });
+    }
+
+    // Remove teacher from classrooms not in the new list
+    for (const currentClassId of currentAssignedClassIds) {
+      if (!newAssignedClasses.includes(currentClassId)) {
+        await Classroom.findByIdAndUpdate(currentClassId, {
+          teacherId: null,
+        });
+      }
+    }
+
+    // 2. Add teacher to new classrooms
+    for (const newClassId of newAssignedClasses) {
+      await Classroom.findByIdAndUpdate(newClassId, { teacherId: id });
+    }
+
+    // Prepare update data - handle subject specializations and classrooms
     const updateData: any = {
       name,
       email,
-      assignedClassId,
+      assignedClasses:
+        newAssignedClasses.length > 0 ? newAssignedClasses : undefined,
       status,
       phone,
+      passportPhoto: passportPhoto !== undefined ? passportPhoto : undefined,
     };
 
     // Handle subject specializations - prefer array format but support both
@@ -827,18 +873,18 @@ export const updateTeacher = async (req: Request, res: Response) => {
     // Update teacher
     const updatedTeacher = await User.findByIdAndUpdate(id, updateData, {
       new: true,
-    }).select("-password -refreshTokens");
-
-    // Update classroom's teacherId if assigned
-    if (assignedClassId) {
-      await Classroom.findByIdAndUpdate(assignedClassId, { teacherId: id });
-    }
+    })
+      .select("-password -refreshTokens")
+      .populate("assignedClasses", "name");
 
     // Create audit log
+    const classroomCount = newAssignedClasses.length;
     await AuditLog.create({
       userId: req.user?._id,
       actionType: "TEACHER_UPDATE",
-      description: `Updated teacher ${name} (${email})`,
+      description: `Updated teacher ${name} (${email}) with ${classroomCount} classroom${
+        classroomCount !== 1 ? "s" : ""
+      }`,
       targetId: id,
     });
 
@@ -901,6 +947,7 @@ export const getUserById = async (req: Request, res: Response) => {
     const user = await User.findById(id)
       .select("-password -refreshTokens")
       .populate("linkedStudentIds", "fullName studentId")
+      .populate("assignedClasses", "name")
       .populate("assignedClassId", "name");
 
     if (!user) {

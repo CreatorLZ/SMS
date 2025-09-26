@@ -10,6 +10,7 @@ export interface IUser extends Document {
   refreshTokens: string[];
   linkedStudentIds?: string[];
   assignedClassId?: string;
+  assignedClasses?: string[];
   subjectSpecializations?: string[];
   subjectSpecialization?: string; // Keep for backward compatibility
   status: "active" | "inactive";

@@ -620,6 +620,81 @@ export const getAttendanceComparison = async (req: Request, res: Response) => {
   }
 };
 
+// @desc    Reassign teacher to classroom
+// @route   PUT /api/admin/classrooms/:id/reassign-teacher
+// @access  Private/Admin
+export const reassignTeacher = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { teacherId } = req.body;
+
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Check if classroom exists
+    const classroom = await Classroom.findById(id);
+    if (!classroom) {
+      return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    // If teacherId is provided, validate the teacher exists and is a teacher
+    if (teacherId) {
+      const teacher = await User.findOne({ _id: teacherId, role: "teacher" });
+      if (!teacher) {
+        return res.status(404).json({ message: "Teacher not found" });
+      }
+    }
+
+    const oldTeacherId = classroom.teacherId?.toString();
+
+    // Update classroom with new teacher assignment
+    classroom.teacherId = teacherId || null;
+    await classroom.save();
+
+    // Update teacher's assigned classes
+    if (teacherId) {
+      // Add classroom to new teacher's assignedClasses
+      await User.findByIdAndUpdate(teacherId, {
+        $addToSet: { assignedClasses: id },
+      });
+    }
+
+    // Remove classroom from old teacher's assignedClasses if it exists
+    if (oldTeacherId && oldTeacherId !== teacherId) {
+      await User.findByIdAndUpdate(oldTeacherId, {
+        $pull: { assignedClasses: id },
+      });
+    }
+
+    // Get teacher name for audit log
+    let teacherName = "None";
+    if (teacherId) {
+      const teacher = await User.findById(teacherId);
+      teacherName = teacher?.name || "Unknown";
+    }
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user._id,
+      actionType: "CLASSROOM_TEACHER_REASSIGN",
+      description: `Reassigned teacher to classroom ${classroom.name}: ${teacherName}`,
+      targetId: classroom._id,
+    });
+
+    res.json({
+      message: `Teacher reassigned successfully to ${classroom.name}`,
+      classroom,
+    });
+  } catch (error: any) {
+    console.error("Error reassigning teacher:", error);
+    res.status(500).json({
+      message: "Failed to reassign teacher",
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Get recent activity for a classroom
 // @route   GET /api/admin/classrooms/:id/recent-activity
 // @access  Private/Admin/Teacher

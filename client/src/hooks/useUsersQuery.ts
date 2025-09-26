@@ -18,7 +18,11 @@ export interface User {
   assignedClassId?: {
     _id: string;
     name: string;
-  }; // Populated classroom data for teachers
+  }; // Populated classroom data for teachers (legacy)
+  assignedClasses?: {
+    _id: string;
+    name: string;
+  }[]; // Populated classroom data array for teachers
   subjectSpecialization?: string;
   subjectSpecializations?: string[]; // For backward compatibility
   passportPhoto?: string;

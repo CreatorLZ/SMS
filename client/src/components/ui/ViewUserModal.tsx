@@ -172,12 +172,6 @@ export default function ViewUserModal({
         user.subjectSpecialization ||
         "Not specified",
     },
-    {
-      label: "ASSIGNED CLASSROOM",
-      value: user.assignedClassId?.name
-        ? `Class ${user.assignedClassId.name}`
-        : "None assigned",
-    },
   ];
 
   const parentDetails = [
@@ -346,18 +340,67 @@ export default function ViewUserModal({
                   <div className="space-y-6">
                     {/* Role-specific details */}
                     {user.role === "teacher" && teacherDetails.length > 0 && (
-                      <div className="space-y-1 text-xs font-mono">
-                        {teacherDetails.map((detail, index) => (
-                          <div
-                            key={index}
-                            className="flex flex-col md:flex-row border-b border-gray-600/20 py-2"
-                          >
-                            <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
-                              {detail.label}:
+                      <div className="space-y-4">
+                        {/* Basic teacher details */}
+                        <div className="space-y-1 text-xs font-mono">
+                          {teacherDetails.map((detail, index) => (
+                            <div
+                              key={index}
+                              className="flex flex-col md:flex-row border-b border-gray-600/20 py-2"
+                            >
+                              <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
+                                {detail.label}:
+                              </div>
+                              <div className="flex-1">{detail.value}</div>
                             </div>
-                            <div className="flex-1">{detail.value}</div>
+                          ))}
+                        </div>
+
+                        {/* Assigned Classrooms - Full Display */}
+                        <div>
+                          <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
+                            ASSIGNED CLASSROOMS
                           </div>
-                        ))}
+                          <div className="flex flex-wrap gap-2">
+                            {user.assignedClasses &&
+                            user.assignedClasses.length > 0 ? (
+                              user.assignedClasses.map(
+                                (classroom: any, index: number) => (
+                                  <div
+                                    key={`classroom-${
+                                      classroom._id || `fallback-${index}`
+                                    }`}
+                                    className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full border border-green-200"
+                                  >
+                                    <Database className="w-3 h-3" />
+                                    <span className="font-medium">
+                                      {classroom.name}
+                                    </span>
+                                  </div>
+                                )
+                              )
+                            ) : user.assignedClassId ? (
+                              <div
+                                key={`single-classroom-${
+                                  user.assignedClassId._id || "single"
+                                }`}
+                                className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full border border-green-200"
+                              >
+                                <Database className="w-3 h-3" />
+                                <span className="font-medium">
+                                  {user.assignedClassId.name}
+                                </span>
+                              </div>
+                            ) : (
+                              <div
+                                key="no-classrooms"
+                                className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full"
+                              >
+                                No classrooms assigned
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     )}
 

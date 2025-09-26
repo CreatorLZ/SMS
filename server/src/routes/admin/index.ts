@@ -57,6 +57,7 @@ import {
   getSchoolDays,
   getAttendanceComparison,
   getRecentActivity,
+  reassignTeacher,
 } from "../../controllers/admin/classroomController";
 import attendanceRoutes from "./attendance.routes";
 import timetableRoutes from "./timetable.routes";
@@ -214,6 +215,12 @@ router.get(
   "/classrooms/:id/recent-activity",
   requireAnyPermission("classrooms.read", "attendance.read"),
   getRecentActivity
+);
+
+router.put(
+  "/classrooms/:id/reassign-teacher",
+  requirePermission("classrooms.assign_students"), // Same permission as student assignment
+  reassignTeacher
 );
 
 // Subject routes

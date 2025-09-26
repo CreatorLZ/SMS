@@ -6,7 +6,11 @@ interface UpdateTeacherData {
   email: string;
   subjectSpecializations?: string[];
   subjectSpecialization?: string; // Keep for backward compatibility
-  assignedClassId?: string;
+  assignedClassId?: string; // Keep for backward compatibility
+  assignedClasses?: string[]; // New multiple classrooms support
+  passportPhoto?: string;
+  phone?: string;
+  status?: string;
 }
 
 export const useUpdateTeacherMutation = () => {

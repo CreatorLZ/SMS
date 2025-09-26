@@ -57,7 +57,7 @@ export default function EditTeacherModal({
     status: "active",
     photo: "",
     subjectSpecializations: [] as string[],
-    assignedClassId: "",
+    assignedClasses: [] as string[],
   });
 
   const getSecurityLevel = (role: string) => {
@@ -97,6 +97,16 @@ export default function EditTeacherModal({
           ? [teacher.subjectSpecialization]
           : [];
 
+      // Handle classroom assignments - merge both old and new systems
+      const assignedClasses = [];
+      if (teacher.assignedClasses && teacher.assignedClasses.length > 0) {
+        // New system: use assignedClasses array
+        assignedClasses.push(...teacher.assignedClasses.map((c) => c._id));
+      } else if (teacher.assignedClassId?._id) {
+        // Old system: fallback to assignedClassId
+        assignedClasses.push(teacher.assignedClassId._id);
+      }
+
       setFormData({
         name: teacher.name || "",
         email: teacher.email || "",
@@ -104,7 +114,7 @@ export default function EditTeacherModal({
         status: teacher.status || "active",
         photo: teacher.passportPhoto || "",
         subjectSpecializations: subjects,
-        assignedClassId: teacher.assignedClassId?._id || "",
+        assignedClasses,
       });
     }
   }, [teacher]);
@@ -120,7 +130,10 @@ export default function EditTeacherModal({
         phone: formData.phone,
         status: formData.status,
         passportPhoto: formData.photo,
-        assignedClassId: formData.assignedClassId || undefined,
+        assignedClasses:
+          formData.assignedClasses.length > 0
+            ? formData.assignedClasses
+            : undefined,
         subjectSpecializations:
           formData.subjectSpecializations.length > 0
             ? formData.subjectSpecializations
@@ -477,32 +490,123 @@ export default function EditTeacherModal({
                         </div>
                       </div>
 
-                      <div className="flex border-b border-gray-600/20 py-2">
-                        <div className="w-48 font-bold">CLASS ASSIGNMENT:</div>
-                        <div className="flex-1">
-                          <select
-                            value={formData.assignedClassId}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                assignedClassId: e.target.value,
-                              })
-                            }
-                            className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600 font-mono text-xs"
-                          >
-                            <option value="" className="bg-white text-gray-800">
-                              No class assignment
-                            </option>
-                            {classrooms?.map((classroom) => (
-                              <option
-                                key={classroom._id}
-                                value={classroom._id}
-                                className="bg-white text-gray-800"
-                              >
-                                {classroom.name}
-                              </option>
-                            ))}
-                          </select>
+                      <div className="flex border-b border-gray-600/20 py-4">
+                        <div className="w-48 font-bold">CLASS ASSIGNMENTS:</div>
+                        <div className="flex-1 space-y-3">
+                          {/* Selected Classes Display */}
+                          {formData.assignedClasses.length > 0 && (
+                            <div>
+                              <div className="text-xs text-gray-600 mb-2">
+                                Currently Assigned (
+                                {formData.assignedClasses.length}):
+                              </div>
+                              <div className="flex flex-wrap gap-1 mb-3">
+                                {formData.assignedClasses.map((classId) => {
+                                  const classroom = classrooms?.find(
+                                    (c) => c._id === classId
+                                  );
+                                  return (
+                                    <div
+                                      key={classId}
+                                      className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full border border-green-200"
+                                    >
+                                      <Database className="w-3 h-3" />
+                                      <span>
+                                        {classroom?.name || "Unknown"}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setFormData({
+                                            ...formData,
+                                            assignedClasses:
+                                              formData.assignedClasses.filter(
+                                                (id) => id !== classId
+                                              ),
+                                          });
+                                        }}
+                                        className="ml-1 text-green-600 hover:text-green-800"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Available Unassigned Classrooms */}
+                          <div>
+                            <div className="text-xs text-gray-600 mb-2">
+                              Available Classes (No teacher assigned):
+                            </div>
+                            <div className="max-h-32 overflow-y-auto border border-gray-600/20 rounded bg-gray-50">
+                              {classrooms?.filter(
+                                (classroom) =>
+                                  // Only show classrooms that are not assigned to any teacher
+                                  !classroom.teacherId
+                              ).length === 0 ? (
+                                <div className="p-3 text-xs text-gray-500 bg-gray-100 rounded">
+                                  No unassigned classrooms available
+                                </div>
+                              ) : (
+                                <div className="p-2 space-y-1">
+                                  {classrooms
+                                    ?.filter(
+                                      (classroom) =>
+                                        // Only show classrooms that are not assigned to any teacher
+                                        !classroom.teacherId
+                                    )
+                                    .map((classroom) => {
+                                      const isSelected =
+                                        formData.assignedClasses.includes(
+                                          classroom._id
+                                        );
+                                      return (
+                                        <label
+                                          key={classroom._id}
+                                          className="flex items-center gap-2 p-2 hover:bg-gray-100 cursor-pointer text-xs"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={(e) => {
+                                              if (e.target.checked) {
+                                                setFormData({
+                                                  ...formData,
+                                                  assignedClasses: [
+                                                    ...formData.assignedClasses,
+                                                    classroom._id,
+                                                  ],
+                                                });
+                                              } else {
+                                                setFormData({
+                                                  ...formData,
+                                                  assignedClasses:
+                                                    formData.assignedClasses.filter(
+                                                      (id) =>
+                                                        id !== classroom._id
+                                                    ),
+                                                });
+                                              }
+                                            }}
+                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                          />
+                                          <Database className="w-3 h-3 text-gray-600" />
+                                          <span>{classroom.name}</span>
+                                        </label>
+                                      );
+                                    })}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Note: Only classrooms without assigned teachers
+                              are shown for new assignments. Use classroom
+                              management to reassign existing teachers.
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
