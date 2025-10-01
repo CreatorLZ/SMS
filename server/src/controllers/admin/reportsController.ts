@@ -141,28 +141,46 @@ export const getAttendanceReport = async (req: Request, res: Response) => {
       })
     );
 
-    const topPerformers = studentList
+    const topPerformersRaw = studentList
       .sort((a, b) => b.attendanceRate - a.attendanceRate)
       .slice(0, 5);
 
-    const lowPerformers = studentList
+    const lowPerformersRaw = studentList
       .filter((s) => s.attendanceRate < 80)
       .sort((a, b) => a.attendanceRate - b.attendanceRate)
       .slice(0, 5);
 
+    // Get student names
+    const studentIds = [
+      ...new Set([
+        ...topPerformersRaw.map((p) => p.studentId),
+        ...lowPerformersRaw.map((p) => p.studentId),
+      ]),
+    ];
+    const students = await Student.find({ _id: { $in: studentIds } }).select(
+      "fullName"
+    );
+    const studentMap = students.reduce((map, s) => {
+      map[String((s as any)._id)] = s.fullName;
+      return map;
+    }, {} as { [key: string]: string });
+
+    const topPerformers = topPerformersRaw.map((p) => ({
+      name: studentMap[p.studentId] || "Unknown",
+      rate: Math.round(p.attendanceRate * 100) / 100,
+    }));
+
+    const lowPerformers = lowPerformersRaw.map((p) => ({
+      name: studentMap[p.studentId] || "Unknown",
+      rate: Math.round(p.attendanceRate * 100) / 100,
+    }));
+
     res.json({
-      period: { start, end, type: period },
-      summary: {
-        totalDays,
-        averageAttendance: Math.round(averageAttendance * 100) / 100,
-        totalPresent,
-        totalAbsent,
-        totalLate,
-        totalStudents,
-      },
+      totalDays,
+      averageAttendance: Math.round(averageAttendance * 100) / 100,
+      attendanceTrend: 0, // TODO: calculate trend
       topPerformers,
       lowPerformers,
-      attendanceRecords,
     });
   } catch (error: any) {
     console.error("Error generating attendance report:", error);
@@ -241,9 +259,16 @@ export const getStudentReport = async (req: Request, res: Response) => {
       })
     );
 
+    // Calculate active students (those with attendance records)
+    const activeStudents = studentReports.filter(
+      (report) => report.attendance.totalDays > 0
+    ).length;
+
     res.json({
       totalStudents: students.length,
-      studentReports,
+      activeStudents,
+      newEnrollments: 0, // TODO: calculate based on creation date
+      studentGrowth: 0, // TODO: calculate growth rate
     });
   } catch (error: any) {
     console.error("Error generating student report:", error);
@@ -305,9 +330,20 @@ export const getTeacherReport = async (req: Request, res: Response) => {
       })
     );
 
+    const activeTeachers = teacherReports.filter(
+      (report) => report.classrooms > 0
+    ).length;
+    const averageWorkload =
+      teacherReports.length > 0
+        ? teacherReports.reduce((sum, r) => sum + r.averageWorkload, 0) /
+          teacherReports.length
+        : 0;
+
     res.json({
       totalTeachers: teachers.length,
-      teacherReports,
+      activeTeachers,
+      averageWorkload: Math.round(averageWorkload * 100) / 100,
+      teacherUtilization: 0, // TODO: calculate utilization
     });
   } catch (error: any) {
     console.error("Error generating teacher report:", error);
@@ -401,9 +437,25 @@ export const getClassroomReport = async (req: Request, res: Response) => {
       })
     );
 
+    const totalClasses = classrooms.length;
+    const averageClassSize =
+      classroomReports.length > 0
+        ? classroomReports.reduce((sum, r) => sum + r.students, 0) /
+          classroomReports.length
+        : 0;
+    const utilizationRate =
+      classroomReports.length > 0
+        ? classroomReports.reduce(
+            (sum, r) => sum + r.attendance.averageAttendance,
+            0
+          ) / classroomReports.length
+        : 0;
+
     res.json({
-      totalClassrooms: classrooms.length,
-      classroomReports,
+      totalClasses,
+      averageClassSize: Math.round(averageClassSize * 100) / 100,
+      utilizationRate: Math.round(utilizationRate * 100) / 100,
+      scheduleEfficiency: 0, // TODO: calculate schedule efficiency
     });
   } catch (error: any) {
     console.error("Error generating classroom report:", error);

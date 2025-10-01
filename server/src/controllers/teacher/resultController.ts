@@ -3,6 +3,7 @@ import { Student } from "../../models/Student";
 import { Classroom } from "../../models/Classroom";
 import { AuditLog } from "../../models/AuditLog";
 import { Term } from "../../models/Term";
+import mongoose from "mongoose";
 
 // @desc    Submit or update student results
 // @route   POST /api/teacher/results
@@ -42,11 +43,42 @@ export const submitResults = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate scores
+    // Validate scores - new assessment structure
     for (const score of scores) {
-      if (score.score < 0 || score.score > 100) {
+      const { assessments, totalScore } = score;
+      const calculatedTotal =
+        (assessments.ca1 || 0) +
+        (assessments.ca2 || 0) +
+        (assessments.exam || 0);
+
+      // Validate individual assessment components
+      if (assessments.ca1 < 0 || assessments.ca1 > 20) {
         return res.status(400).json({
-          message: "Scores must be between 0 and 100",
+          message: "CA1 scores must be between 0 and 20",
+        });
+      }
+      if (assessments.ca2 < 0 || assessments.ca2 > 20) {
+        return res.status(400).json({
+          message: "CA2 scores must be between 0 and 20",
+        });
+      }
+      if (assessments.exam < 0 || assessments.exam > 60) {
+        return res.status(400).json({
+          message: "Exam scores must be between 0 and 60",
+        });
+      }
+
+      // Validate total score matches calculation
+      if (totalScore !== calculatedTotal) {
+        return res.status(400).json({
+          message: "Total score must equal CA1 + CA2 + Exam",
+        });
+      }
+
+      // Ensure total is within valid range
+      if (totalScore < 0 || totalScore > 100) {
+        return res.status(400).json({
+          message: "Total scores must be between 0 and 100",
         });
       }
     }
@@ -169,6 +201,97 @@ export const getTeacherClassrooms = async (req: Request, res: Response) => {
       .populate("students", "fullName studentId");
 
     res.json(classrooms);
+  } catch (error: any) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Get students for a specific classroom (teacher access)
+// @route   GET /api/teacher/results/students
+// @access  Private/Teacher
+export const getClassroomStudents = async (req: Request, res: Response) => {
+  try {
+    const teacherId = req.user?._id;
+    const { classId, search, page = 1, limit = 10 } = req.query;
+
+    if (!classId) {
+      return res.status(400).json({ message: "classId is required" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(classId as string)) {
+      return res.status(400).json({ message: "Invalid classId format" });
+    }
+
+    if (!teacherId) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: teacher ID missing" });
+    }
+
+    // Verify teacher has access to this classroom
+    const classroom = await Classroom.findOne({
+      _id: classId,
+      teacherId,
+    }).lean();
+
+    if (!classroom) {
+      return res.status(403).json({
+        message: "You don't have permission to view students in this classroom",
+      });
+    }
+
+    // Validate classroom.students is an array and not corrupted
+    if (!Array.isArray(classroom.students) || classroom.students.length === 0) {
+      return res.json({
+        students: [],
+        total: 0,
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          pages: 0,
+        },
+      });
+    }
+
+    // Build query for students
+    const query: any = { _id: { $in: classroom.students } };
+
+    // Add search filter if provided
+    if (search) {
+      query.$or = [
+        { fullName: { $regex: search, $options: "i" } },
+        { studentId: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Fetch students with pagination
+    const [students, total] = await Promise.all([
+      Student.find(query)
+        .select("fullName studentId firstName lastName gender currentClass _id")
+        .sort({ fullName: 1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Student.countDocuments(query),
+    ]);
+
+    const totalPages = Math.ceil(total / limitNum);
+
+    res.json({
+      students,
+      total,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: totalPages,
+      },
+    });
   } catch (error: any) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

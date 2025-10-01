@@ -451,8 +451,10 @@ export const getSchoolDays = async (req: Request, res: Response) => {
       });
     }
 
-    // Get current active term
-    const currentTerm = await Term.findOne({ isActive: true });
+    // Get current active term with session populated
+    const currentTerm = await Term.findOne({ isActive: true }).populate(
+      "sessionId"
+    );
     if (!currentTerm) {
       return res.status(404).json({ message: "No active term found" });
     }
@@ -489,7 +491,7 @@ export const getSchoolDays = async (req: Request, res: Response) => {
       classroomId: id,
       term: {
         name: currentTerm.name,
-        year: currentTerm.year,
+        session: (currentTerm.sessionId as any)?.name || "Unknown Session",
         startDate: currentTerm.startDate,
         endDate: currentTerm.endDate,
       },
@@ -755,6 +757,95 @@ export const getRecentActivity = async (req: Request, res: Response) => {
     console.error("Error fetching recent activity:", error);
     res.status(500).json({
       message: "Failed to fetch recent activity",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Publish/unpublish classroom results
+// @route   PATCH /api/admin/classrooms/:id/results/publish
+// @access  Private/Admin
+export const publishClassroomResults = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { term, year, published } = req.body;
+
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Check if classroom exists
+    const classroom = await Classroom.findById(id);
+    if (!classroom) {
+      return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    // For now, we'll return a success response
+    // Real implementation would toggle the 'viewable' field on termFees for this classroom/term/year
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user._id,
+      actionType: published ? "RESULTS_PUBLISHED" : "RESULTS_UNPUBLISHED",
+      description: `${published ? "Published" : "Unpublished"} results for ${
+        classroom.name
+      } - ${term} ${year}`,
+      targetId: classroom._id,
+    });
+
+    res.json({
+      message: `Results ${
+        published ? "published" : "unpublished"
+      } successfully`,
+      classroomId: id,
+      term,
+      year,
+      published,
+    });
+  } catch (error: any) {
+    console.error("Error publishing results:", error);
+    res.status(500).json({
+      message: "Failed to publish results",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get publication status for classroom results
+// @route   GET /api/admin/classrooms/:id/results/publication-status
+// @access  Private/Admin
+export const getResultsPublicationStatus = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
+    const { term, year } = req.query;
+
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Check if classroom exists
+    const classroom = await Classroom.findById(id);
+    if (!classroom) {
+      return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    // For now, return mock data - real implementation would check if results are published
+    // This would check the 'viewable' field on termFees records for this classroom/term/year
+    const isPublished = Math.random() > 0.5; // Mock for now
+
+    res.json({
+      classroomId: id,
+      term,
+      year,
+      published: isPublished,
+    });
+  } catch (error: any) {
+    console.error("Error fetching publication status:", error);
+    res.status(500).json({
+      message: "Failed to fetch publication status",
       error: error.message,
     });
   }

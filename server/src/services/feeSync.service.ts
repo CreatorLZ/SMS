@@ -37,7 +37,13 @@ export async function syncStudentFeesForClassroomBatched(
   const feeStructures = await FeeStructure.find({
     classroomId,
     isActive: true,
-  }).populate("termId", "name year");
+  }).populate({
+    path: "termId",
+    populate: {
+      path: "sessionId",
+      select: "name",
+    },
+  });
   if (!feeStructures || feeStructures.length === 0) {
     return { operationId, created, updated, attempted, errors };
   }
@@ -57,12 +63,12 @@ export async function syncStudentFeesForClassroomBatched(
       if (!term) continue;
 
       const termName = term.name;
-      const year = term.year;
+      const sessionName = (term.sessionId as any)?.name || "Unknown Session";
       const amount = fs.amount ?? 0;
 
       // Check if student already has this fee
       const hasTerm = student.termFees?.some(
-        (t: any) => t.term === termName && t.year === year
+        (t: any) => t.term === termName && t.session === sessionName
       );
 
       if (!hasTerm) {
@@ -72,13 +78,13 @@ export async function syncStudentFeesForClassroomBatched(
             filter: {
               _id: student._id,
               "termFees.term": { $ne: termName },
-              "termFees.year": { $ne: year },
+              "termFees.session": { $ne: sessionName },
             },
             update: {
               $push: {
                 termFees: {
                   term: termName,
-                  year,
+                  session: sessionName,
                   paid: false,
                   pinCode: generatePinCode(),
                   viewable: false,
@@ -97,7 +103,7 @@ export async function syncStudentFeesForClassroomBatched(
       } else {
         // Update existing fee amount if changed
         const existingFee = student.termFees.find(
-          (t: any) => t.term === termName && t.year === year
+          (t: any) => t.term === termName && t.session === sessionName
         );
 
         if (existingFee && existingFee.amount !== amount) {
@@ -106,7 +112,7 @@ export async function syncStudentFeesForClassroomBatched(
               filter: {
                 _id: student._id,
                 "termFees.term": termName,
-                "termFees.year": year,
+                "termFees.session": sessionName,
               },
               update: {
                 $set: {
@@ -128,7 +134,7 @@ export async function syncStudentFeesForClassroomBatched(
               filter: {
                 _id: student._id,
                 "termFees.term": termName,
-                "termFees.year": year,
+                "termFees.session": sessionName,
               },
               update: {
                 $set: {
@@ -276,7 +282,7 @@ export async function removeDuplicateStudentFees(userId?: string): Promise<{
       const toRemove: string[] = [];
 
       student.termFees.forEach((fee: any, index: number) => {
-        const key = `${fee.term}-${fee.year}`;
+        const key = `${fee.term}-${fee.session || fee.year}`;
         if (!seenTerms.has(key)) {
           seenTerms.set(key, []);
         }
@@ -305,10 +311,10 @@ export async function removeDuplicateStudentFees(userId?: string): Promise<{
       // Remove duplicates if any found
       if (toRemove.length > 0) {
         try {
-          // Simpler approach: remove all duplicate entries by term/year
+          // Simpler approach: remove all duplicate entries by term/session
           const removeConditions = toRemove.map((index) => {
             const fee = student.termFees[parseInt(index)];
-            return { term: fee.term, year: fee.year };
+            return { term: fee.term, session: fee.session };
           });
 
           await Student.updateOne(
@@ -372,14 +378,22 @@ export async function backfillMissingFees(userId?: string): Promise<{
     // Get all active fee structures
     const feeStructures = await FeeStructure.find({ isActive: true })
       .populate("classroomId", "_id")
-      .populate("termId", "name year startDate endDate");
+      .populate({
+        path: "termId",
+        populate: {
+          path: "sessionId",
+          select: "name",
+        },
+      });
 
     // Create fee structure lookup
     const feeStructureMap = new Map<string, any>();
     feeStructures.forEach((fs) => {
-      const key = `${(fs.classroomId as any)._id}-${(fs.termId as any).name}-${
-        (fs.termId as any).year
-      }`;
+      const sessionName =
+        (fs.termId as any).sessionId?.name || "Unknown Session";
+      const key = `${(fs.classroomId as any)._id}-${
+        (fs.termId as any).name
+      }-${sessionName}`;
       feeStructureMap.set(key, fs);
     });
 
@@ -399,19 +413,20 @@ export async function backfillMissingFees(userId?: string): Promise<{
 
         const term = fs.termId as any;
         const termEnd = new Date(term.endDate);
+        const sessionName = term.sessionId?.name || "Unknown Session";
 
         // Skip if student wasn't enrolled during this term
         if (admissionDate > termEnd) return;
 
-        const feeKey = `${term.name}-${term.year}`;
+        const feeKey = `${term.name}-${sessionName}`;
         const hasFee = student.termFees.some(
-          (fee: any) => fee.term === term.name && fee.year === term.year
+          (fee: any) => fee.term === term.name && fee.session === sessionName
         );
 
         if (!hasFee) {
           missingFees.push({
             term: term.name,
-            year: term.year,
+            session: sessionName,
             amount: fs.amount,
             feeStructureId: fs._id,
           });
@@ -430,13 +445,13 @@ export async function backfillMissingFees(userId?: string): Promise<{
               filter: {
                 _id: student._id,
                 "termFees.term": { $ne: missingFee.term },
-                "termFees.year": { $ne: missingFee.year },
+                "termFees.session": { $ne: missingFee.session },
               },
               update: {
                 $push: {
                   termFees: {
                     term: missingFee.term,
-                    year: missingFee.year,
+                    session: missingFee.session,
                     paid: false,
                     pinCode: generatePinCode(),
                     viewable: false,

@@ -9,6 +9,7 @@ import {
   getStudentResults,
   getClassroomDetails,
   getTeacherClassrooms,
+  getClassroomStudents,
 } from "../../controllers/teacher/resultController";
 
 const router = express.Router();
@@ -23,6 +24,7 @@ router.get("/attendance", getAttendanceHistory);
 // Results routes
 router.post("/results", submitResults);
 router.get("/results/:studentId", getStudentResults);
+router.get("/results/students", getClassroomStudents);
 
 // Classroom routes
 router.get("/classroom", getClassroomDetails);

@@ -3,8 +3,17 @@ import { User } from "../../models/User";
 import { Student } from "../../models/Student";
 import { Classroom } from "../../models/Classroom";
 import { AuditLog } from "../../models/AuditLog";
+import GradingScale from "../../models/GradingScale";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import * as XLSX from "xlsx";
+import { submitResults } from "../teacher/resultController";
+import multer from "multer";
+
+// Extend Request interface for multer file uploads
+interface MulterRequest extends Request {
+  file?: Express.Multer.File;
+}
 import {
   generateStudentId,
   isStudentIdAvailable,
@@ -102,6 +111,28 @@ export const registerUser = async (req: Request, res: Response) => {
       success: false,
       message: "Server error",
       error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+// @desc    Get grading scales
+// @route   GET /api/admin/grading-scales
+// @access  Private/Admin/Teacher
+export const getGradingScales = async (req: Request, res: Response) => {
+  try {
+    const gradingScales = await GradingScale.find({})
+      .sort({ min: -1 }) // Sort by min score descending (A first)
+      .select("-__v"); // Exclude version field
+
+    res.json({
+      scales: gradingScales,
+      total: gradingScales.length,
+    });
+  } catch (error: any) {
+    console.error("Error fetching grading scales:", error);
+    res.status(500).json({
+      message: "Failed to fetch grading scales",
+      error: error.message,
     });
   }
 };
@@ -618,6 +649,308 @@ export const toggleStudentStatus = async (req: Request, res: Response) => {
     res.status(500).json({
       message: "Server error",
       error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+// @desc    Download Excel template for bulk results upload
+// @route   GET /api/admin/results/template
+// @access  Private/Admin/Teacher
+export const downloadResultsTemplate = async (req: Request, res: Response) => {
+  try {
+    const { classroomId } = req.query;
+
+    if (!classroomId) {
+      return res.status(400).json({ message: "Classroom ID is required" });
+    }
+
+    // Get classroom and subjects
+    const classroom = await Classroom.findById(classroomId).populate(
+      "subjects"
+    );
+    if (!classroom) {
+      return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    // Get students in the classroom
+    const students = await Student.find({ currentClass: classroomId })
+      .select("studentId fullName firstName lastName")
+      .sort({ studentId: 1 });
+
+    if (students.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No students found in this classroom" });
+    }
+
+    // Create Excel template data
+    const templateData: any[] = [];
+
+    // Add header row
+    const headerRow: any = {
+      "Student ID": "",
+      "Student Name": "",
+    };
+
+    // Add subject columns for each assessment type
+    classroom.subjects.forEach((subject: any) => {
+      headerRow[`${subject.name} - CA1 (20)`] = "";
+      headerRow[`${subject.name} - CA2 (20)`] = "";
+      headerRow[`${subject.name} - Exam (60)`] = "";
+    });
+
+    // Add comment column
+    headerRow["Comment"] = "";
+
+    templateData.push(headerRow);
+
+    // Add sample data rows for each student
+    students.forEach((student) => {
+      const studentRow: any = {
+        "Student ID": student.studentId,
+        "Student Name":
+          student.fullName || `${student.firstName} ${student.lastName}`,
+      };
+
+      // Add empty columns for each subject assessment
+      classroom.subjects.forEach((subject: any) => {
+        studentRow[`${subject.name} - CA1 (20)`] = "";
+        studentRow[`${subject.name} - CA2 (20)`] = "";
+        studentRow[`${subject.name} - Exam (60)`] = "";
+      });
+
+      studentRow["Comment"] = "";
+      templateData.push(studentRow);
+    });
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(templateData);
+
+    // Set column widths
+    const colWidths = [
+      { wch: 12 }, // Student ID
+      { wch: 25 }, // Student Name
+    ];
+
+    // Add widths for each subject (3 columns per subject)
+    classroom.subjects.forEach(() => {
+      colWidths.push({ wch: 15 }, { wch: 15 }, { wch: 15 });
+    });
+
+    colWidths.push({ wch: 30 }); // Comment
+
+    ws["!cols"] = colWidths;
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, "Results Template");
+
+    // Generate buffer
+    const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+
+    // Set headers for file download
+    const filename = `results_template_${classroom.name.replace(
+      /\s+/g,
+      "_"
+    )}.xlsx`;
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+    res.send(buffer);
+  } catch (error: any) {
+    console.error("Error generating Excel template:", error);
+    res.status(500).json({
+      message: "Failed to generate Excel template",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Upload bulk results from Excel file
+// @route   POST /api/admin/results/bulk-upload
+// @access  Private/Admin/Teacher
+export const uploadBulkResults = async (req: MulterRequest, res: Response) => {
+  try {
+    const { classroomId, term, year } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ message: "Excel file is required" });
+    }
+
+    if (!classroomId || !term || !year) {
+      return res.status(400).json({
+        message: "Classroom ID, term, and year are required",
+      });
+    }
+
+    // Parse Excel file
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+    if (jsonData.length < 2) {
+      return res.status(400).json({
+        message:
+          "Excel file must contain at least a header row and one data row",
+      });
+    }
+
+    // Get classroom and subjects for validation
+    const classroom = await Classroom.findById(classroomId).populate(
+      "subjects"
+    );
+    if (!classroom) {
+      return res.status(404).json({ message: "Classroom not found" });
+    }
+
+    const subjectNames = classroom.subjects.map((s: any) => s.name);
+
+    // Process each row (skip header)
+    const results: any[] = [];
+    const errors: string[] = [];
+
+    for (let i = 1; i < jsonData.length; i++) {
+      const row = jsonData[i] as any;
+
+      const studentId = row["Student ID"];
+      const studentName = row["Student Name"];
+
+      if (!studentId) {
+        errors.push(`Row ${i + 1}: Missing Student ID`);
+        continue;
+      }
+
+      // Find student
+      const student = await Student.findOne({ studentId });
+      if (!student) {
+        errors.push(`Row ${i + 1}: Student with ID ${studentId} not found`);
+        continue;
+      }
+
+      // Check if student is in the correct classroom
+      if (student.currentClass.toString() !== classroomId) {
+        errors.push(
+          `Row ${i + 1}: Student ${studentId} is not in the selected classroom`
+        );
+        continue;
+      }
+
+      // Parse subject scores
+      const scores: any[] = [];
+      let hasValidScores = false;
+
+      subjectNames.forEach((subjectName) => {
+        const ca1Key = `${subjectName} - CA1 (20)`;
+        const ca2Key = `${subjectName} - CA2 (20)`;
+        const examKey = `${subjectName} - Exam (60)`;
+
+        const ca1 = parseFloat(row[ca1Key]) || 0;
+        const ca2 = parseFloat(row[ca2Key]) || 0;
+        const exam = parseFloat(row[examKey]) || 0;
+
+        // Validate score ranges
+        if (ca1 > 20)
+          errors.push(`Row ${i + 1}: ${subjectName} CA1 score exceeds 20`);
+        if (ca2 > 20)
+          errors.push(`Row ${i + 1}: ${subjectName} CA2 score exceeds 20`);
+        if (exam > 60)
+          errors.push(`Row ${i + 1}: ${subjectName} Exam score exceeds 60`);
+
+        if (ca1 > 0 || ca2 > 0 || exam > 0) {
+          hasValidScores = true;
+        }
+
+        scores.push({
+          subject: subjectName,
+          assessments: { ca1, ca2, exam },
+          totalScore: ca1 + ca2 + exam,
+        });
+      });
+
+      if (!hasValidScores) {
+        errors.push(
+          `Row ${i + 1}: No valid scores found for student ${studentId}`
+        );
+        continue;
+      }
+
+      results.push({
+        studentId: student._id,
+        scores,
+        comment: row["Comment"] || "",
+      });
+    }
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors found in uploaded file",
+        errors,
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(400).json({
+        message: "No valid results found in uploaded file",
+      });
+    }
+
+    // Save results directly to database (bypassing controller validation since we already validated)
+    const savePromises = results.map(async (result) => {
+      const student = await Student.findById(result.studentId);
+      if (!student) throw new Error(`Student not found: ${result.studentId}`);
+
+      const resultIndex = student.results.findIndex(
+        (r) => r.term === term && r.year === year
+      );
+
+      if (resultIndex > -1) {
+        // Update existing result
+        student.results[resultIndex] = {
+          term,
+          year,
+          scores: result.scores,
+          comment: result.comment,
+          updatedBy: req.user?._id as any,
+          updatedAt: new Date(),
+        };
+      } else {
+        // Add new result
+        student.results.push({
+          term,
+          year,
+          scores: result.scores,
+          comment: result.comment,
+          updatedBy: req.user?._id as any,
+          updatedAt: new Date(),
+        });
+      }
+
+      await student.save();
+      return result;
+    });
+
+    await Promise.all(savePromises);
+
+    // Create audit log
+    await AuditLog.create({
+      userId: req.user?._id,
+      actionType: "RESULTS_BULK_UPLOAD",
+      description: `Bulk uploaded results for ${results.length} students in ${classroom.name}`,
+      targetId: classroomId,
+    });
+
+    res.json({
+      message: `Successfully uploaded results for ${results.length} students`,
+      uploadedCount: results.length,
+    });
+  } catch (error: any) {
+    console.error("Error processing bulk upload:", error);
+    res.status(500).json({
+      message: "Failed to process bulk upload",
+      error: error.message,
     });
   }
 };

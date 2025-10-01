@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCreateTermMutation } from "@/hooks/useCreateTermMutation";
 import { useTermManagementStore } from "@/store/termManagementStore";
+import { useSessionsQuery } from "@/hooks/useSessionsQuery";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
@@ -9,9 +10,10 @@ import { Calendar, X } from "lucide-react";
 export default function CreateTermModal() {
   const { isCreateModalOpen, setCreateModalOpen } = useTermManagementStore();
   const createTermMutation = useCreateTermMutation();
+  const { data: sessions, isLoading: sessionsLoading } = useSessionsQuery();
   const [formData, setFormData] = useState({
     name: "1st" as "1st" | "2nd" | "3rd",
-    year: new Date().getFullYear(),
+    sessionId: "",
     startDate: "",
     endDate: "",
   });
@@ -20,8 +22,8 @@ export default function CreateTermModal() {
     e.preventDefault();
 
     // Client-side validation
-    if (!formData.year) {
-      alert("Year is required");
+    if (!formData.sessionId) {
+      alert("Session is required");
       return;
     }
 
@@ -41,7 +43,7 @@ export default function CreateTermModal() {
       setCreateModalOpen(false);
       setFormData({
         name: "1st",
-        year: new Date().getFullYear(),
+        sessionId: "",
         startDate: "",
         endDate: "",
       });
@@ -104,21 +106,30 @@ export default function CreateTermModal() {
 
               <div className="space-y-2">
                 <label
-                  htmlFor="year"
+                  htmlFor="session"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Year *
+                  Academic Session *
                 </label>
-                <Input
-                  id="year"
-                  type="number"
-                  value={formData.year}
+                <select
+                  id="session"
+                  value={formData.sessionId}
                   onChange={(e) =>
-                    setFormData({ ...formData, year: parseInt(e.target.value) })
+                    setFormData({ ...formData, sessionId: e.target.value })
                   }
-                  placeholder="Enter year"
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   required
-                />
+                  disabled={sessionsLoading}
+                >
+                  <option value="">
+                    {sessionsLoading ? "Loading sessions..." : "Select Session"}
+                  </option>
+                  {sessions?.map((session) => (
+                    <option key={session._id} value={session._id}>
+                      {session.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-2">

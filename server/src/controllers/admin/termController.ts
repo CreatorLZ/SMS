@@ -7,22 +7,25 @@ import { AuditLog } from "../../models/AuditLog";
 // @access  Private/Admin
 export const createTerm = async (req: Request, res: Response) => {
   try {
-    const { name, year, startDate, endDate, holidays } = req.body;
+    const { name, sessionId, startDate, endDate, holidays } = req.body;
 
     const term = await Term.create({
       name,
-      year,
+      sessionId,
       startDate,
       endDate,
       holidays: holidays || [],
       isActive: false,
     });
 
+    // Populate session data for audit log
+    await term.populate("sessionId");
+
     // Create audit log
     await AuditLog.create({
       userId: req.user?._id,
       actionType: "TERM_CREATE",
-      description: `Created new term: ${name} ${year}`,
+      description: `Created new term: ${name} ${(term.sessionId as any).name}`,
       targetId: term._id,
     });
 
@@ -89,11 +92,16 @@ export const activateTerm = async (req: Request, res: Response) => {
       }
     }
 
+    // Populate session data for audit log
+    await term.populate("sessionId");
+
     // Create audit log
     await AuditLog.create({
       userId: req.user?._id,
       actionType: "TERM_ACTIVATE",
-      description: `Activated term: ${term.name} ${term.year}${
+      description: `Activated term: ${term.name} ${
+        (term.sessionId as any).name
+      }${
         feeStructuresUpdated.modifiedCount > 0
           ? ` and synced fees for ${feeStructuresUpdated.modifiedCount} fee structures`
           : ""
@@ -118,7 +126,7 @@ export const activateTerm = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const updateTerm = async (req: Request, res: Response) => {
   try {
-    const { name, year, startDate, endDate, holidays } = req.body;
+    const { name, sessionId, startDate, endDate, holidays } = req.body;
 
     const term = await Term.findById(req.params.id);
 
@@ -126,33 +134,36 @@ export const updateTerm = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Term not found" });
     }
 
-    // Check if new term name/year combination conflicts with existing term
-    if ((name && name !== term.name) || (year && year !== term.year)) {
+    // Check if new term name/sessionId combination conflicts with existing term
+    if (
+      (name && name !== term.name) ||
+      (sessionId && sessionId !== term.sessionId.toString())
+    ) {
       const existingTerm = await Term.findOne({
         name: name || term.name,
-        year: year || term.year,
+        sessionId: sessionId || term.sessionId,
         _id: { $ne: req.params.id },
       });
       if (existingTerm) {
         return res.status(400).json({
-          message: `Term "${name || term.name} ${
-            year || term.year
-          }" already exists`,
+          message: `Term "${
+            name || term.name
+          }" already exists for this session`,
         });
       }
     }
 
     const updatedTerm = await Term.findByIdAndUpdate(
       req.params.id,
-      { name, year, startDate, endDate, holidays },
+      { name, sessionId, startDate, endDate, holidays },
       { new: true, runValidators: true }
-    );
+    ).populate("sessionId");
 
     // Create audit log
     await AuditLog.create({
       userId: req.user?._id,
       actionType: "TERM_UPDATE",
-      description: `Updated term: ${term.name} ${term.year}`,
+      description: `Updated term: ${term.name} ${(term.sessionId as any).name}`,
       targetId: term._id,
     });
 
@@ -183,11 +194,16 @@ export const deactivateTerm = async (req: Request, res: Response) => {
     term.isActive = false;
     await term.save();
 
+    // Populate session data for audit log
+    await term.populate("sessionId");
+
     // Create audit log
     await AuditLog.create({
       userId: req.user?._id,
       actionType: "TERM_DEACTIVATE",
-      description: `Deactivated term: ${term.name} ${term.year}`,
+      description: `Deactivated term: ${term.name} ${
+        (term.sessionId as any).name
+      }`,
       targetId: term._id,
     });
 
@@ -202,7 +218,9 @@ export const deactivateTerm = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const getTerms = async (req: Request, res: Response) => {
   try {
-    const terms = await Term.find().sort({ year: -1, name: 1 });
+    const terms = await Term.find()
+      .populate("sessionId")
+      .sort({ "sessionId.startYear": -1, name: 1 });
     res.json(terms);
   } catch (error: any) {
     res.status(500).json({ message: "Server error", error: error.message });

@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import {
   protect,
   authorize,
@@ -23,6 +24,9 @@ import {
   updateTeacher,
   deleteTeacher,
   getAuditLogs,
+  getGradingScales,
+  downloadResultsTemplate,
+  uploadBulkResults,
 } from "../../controllers/admin/userController";
 import {
   createTerm,
@@ -31,6 +35,15 @@ import {
   deactivateTerm,
   getTerms,
 } from "../../controllers/admin/termController";
+import {
+  createSession,
+  activateSession,
+  updateSession,
+  deactivateSession,
+  getSessions,
+  getSessionById,
+  deleteSession,
+} from "../../controllers/admin/sessionController";
 import {
   createSubject,
   getSubjects,
@@ -58,11 +71,34 @@ import {
   getAttendanceComparison,
   getRecentActivity,
   reassignTeacher,
+  publishClassroomResults,
+  getResultsPublicationStatus,
 } from "../../controllers/admin/classroomController";
 import attendanceRoutes from "./attendance.routes";
 import timetableRoutes from "./timetable.routes";
 import reportsRoutes from "./reports.routes";
 import feesRoutes from "./fees.routes";
+
+// Configure multer for Excel file uploads
+const upload = multer({
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept only Excel files
+    const allowedMimes = [
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel.sheet.macroEnabled.12",
+    ];
+
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only Excel files are allowed"));
+    }
+  },
+});
 
 const router = express.Router();
 
@@ -162,6 +198,34 @@ router.patch(
   deactivateTerm
 );
 
+// Session routes
+router
+  .route("/sessions")
+  .post(requirePermission("terms.create"), createSession)
+  .get(requirePermission("terms.read"), getSessions);
+
+router
+  .route("/sessions/:id")
+  .put(requirePermission("terms.update"), updateSession);
+
+router.patch(
+  "/sessions/:id/activate",
+  requirePermission("terms.activate"),
+  activateSession
+);
+
+router.patch(
+  "/sessions/:id/deactivate",
+  requirePermission("terms.update"),
+  deactivateSession
+);
+
+router.delete(
+  "/sessions/:id",
+  requirePermission("terms.delete"),
+  deleteSession
+);
+
 // Classroom routes
 router
   .route("/classrooms")
@@ -223,6 +287,19 @@ router.put(
   reassignTeacher
 );
 
+// Results publication routes
+router.patch(
+  "/classrooms/:id/results/publish",
+  requirePermission("students.update"),
+  publishClassroomResults
+);
+
+router.get(
+  "/classrooms/:id/results/publication-status",
+  requirePermission("students.read"),
+  getResultsPublicationStatus
+);
+
 // Subject routes
 router
   .route("/subjects")
@@ -264,6 +341,27 @@ router.get(
   "/classrooms/:id/available-subjects",
   requirePermission("classrooms.read"),
   getAvailableSubjects
+);
+
+// Grading scales route
+router.get(
+  "/grading-scales",
+  authorize("admin", "superadmin", "teacher"),
+  getGradingScales
+);
+
+// Excel template and bulk upload routes
+router.get(
+  "/results/template",
+  requirePermission("students.update"),
+  downloadResultsTemplate
+);
+
+router.post(
+  "/results/bulk-upload",
+  requirePermission("students.update"),
+  upload.single("excelFile"),
+  uploadBulkResults
 );
 
 // Teacher routes

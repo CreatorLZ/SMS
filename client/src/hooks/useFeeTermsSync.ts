@@ -7,7 +7,7 @@ interface SyncTermResult {
   term: {
     _id: string;
     name: string;
-    year: number;
+    session: string;
   };
   stats: {
     totalFeeStructures: number;
@@ -40,7 +40,7 @@ export const useFeeTermsSync = () => {
     onSuccess: (data: SyncTermResult) => {
       toast({
         title: "✅ Term Fee Sync Complete",
-        description: `${data.term.name} ${data.term.year}: ${data.stats.syncedStudents} students synced`,
+        description: `${data.term.name} ${data.term.session}: ${data.stats.syncedStudents} students synced`,
       });
 
       // Invalidate queries to refresh data

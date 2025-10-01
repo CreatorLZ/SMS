@@ -3,7 +3,7 @@ import api from "@/lib/api";
 
 interface CreateTermData {
   name: "1st" | "2nd" | "3rd";
-  year: number;
+  sessionId: string;
   startDate: string;
   endDate: string;
   holidays?: {

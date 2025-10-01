@@ -47,7 +47,7 @@ export function useAttendanceReport(
       const params = new URLSearchParams({ period });
       if (classroomId) params.append("classroomId", classroomId);
 
-      const response = await api.get(`/api/admin/reports/attendance?${params}`);
+      const response = await api.get(`/admin/reports/attendance?${params}`);
       return response.data as AttendanceReport;
     },
     enabled: true,
@@ -64,7 +64,7 @@ export function useStudentReport(
       const params = new URLSearchParams({ period });
       if (classroomId) params.append("classroomId", classroomId);
 
-      const response = await api.get(`/api/admin/reports/students?${params}`);
+      const response = await api.get(`/admin/reports/students?${params}`);
       return response.data as StudentReport;
     },
     enabled: true,
@@ -78,7 +78,7 @@ export function useTeacherReport(
     queryKey: ["reports", "teachers", period],
     queryFn: async () => {
       const response = await api.get(
-        `/api/admin/reports/teachers?period=${period}`
+        `/admin/reports/teachers?period=${period}`
       );
       return response.data as TeacherReport;
     },
@@ -96,7 +96,7 @@ export function useClassroomReport(
       const params = new URLSearchParams({ period });
       if (classroomId) params.append("classroomId", classroomId);
 
-      const response = await api.get(`/api/admin/reports/classrooms?${params}`);
+      const response = await api.get(`/admin/reports/classrooms?${params}`);
       return response.data as ClassroomReport;
     },
     enabled: true,
@@ -109,9 +109,7 @@ export function useOverallReport(
   return useQuery({
     queryKey: ["reports", "overall", period],
     queryFn: async () => {
-      const response = await api.get(
-        `/api/admin/reports/overall?period=${period}`
-      );
+      const response = await api.get(`/admin/reports/overall?period=${period}`);
       return response.data as OverallReport;
     },
     enabled: true,

@@ -16,6 +16,7 @@ import "./models/Attendance";
 import "./models/AuditLog";
 import "./models/Term";
 import "./models/Timetable";
+import "./models/GradingScale";
 
 // Import routes
 import authRoutes from "./routes/auth.routes";

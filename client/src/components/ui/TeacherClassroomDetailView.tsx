@@ -34,6 +34,8 @@ import {
   ArrowLeft,
   BarChart3,
   Clock,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 
 interface TeacherClassroomDetailViewProps {
@@ -261,10 +263,12 @@ export default function TeacherClassroomDetailView({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {todayAttendance?.records?.filter(
-                (record) =>
-                  record.status === "present" || record.status === "late"
-              ).length || 0}
+              {todayAttendance && "records" in todayAttendance
+                ? todayAttendance.records.filter(
+                    (record: any) =>
+                      record.status === "present" || record.status === "late"
+                  ).length
+                : 0}
             </div>
             <p className="text-xs text-muted-foreground">Students present</p>
           </CardContent>
@@ -559,7 +563,6 @@ export default function TeacherClassroomDetailView({
         )}
       </div>
 
-      {/* Modals */}
       {showStudentProfileModal && selectedStudentId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4">

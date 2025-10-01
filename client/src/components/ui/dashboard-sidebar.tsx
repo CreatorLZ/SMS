@@ -178,11 +178,11 @@ const getNavItems = (userRole?: string): NavItem[] => {
       roles: ["teacher"],
     },
     {
-      href: "/teacher/grades",
-      label: "Grades",
+      href: "/teacher/results",
+      label: "Results",
       icon: GraduationCap,
       color: "cyan",
-      tooltip: "Enter Grades",
+      tooltip: "Manage Results",
       roles: ["teacher"],
     },
     {

@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export interface ITerm extends Document {
   name: "1st" | "2nd" | "3rd";
-  year: number;
+  sessionId: mongoose.Types.ObjectId;
   startDate: Date;
   endDate: Date;
   isActive: boolean;
@@ -20,9 +20,10 @@ const termSchema = new Schema(
       enum: ["1st", "2nd", "3rd"],
       required: [true, "Term name is required"],
     },
-    year: {
-      type: Number,
-      required: [true, "Year is required"],
+    sessionId: {
+      type: Schema.Types.ObjectId,
+      ref: "Session",
+      required: [true, "Session is required"],
     },
     startDate: {
       type: Date,
@@ -58,8 +59,8 @@ const termSchema = new Schema(
   }
 );
 
-// Create compound unique index for term and year
-termSchema.index({ name: 1, year: 1 }, { unique: true });
+// Create compound unique index for term and session
+termSchema.index({ name: 1, sessionId: 1 }, { unique: true });
 
 // Add validation to ensure endDate is after startDate
 termSchema.pre("save", function (next) {

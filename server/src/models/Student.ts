@@ -31,7 +31,7 @@ export interface IStudent extends Document {
 
   termFees: {
     term: "1st" | "2nd" | "3rd";
-    year: number;
+    session: string;
     paid: boolean;
     pinCode: string;
     viewable: boolean;
@@ -52,7 +52,12 @@ export interface IStudent extends Document {
     year: number;
     scores: {
       subject: string;
-      score: number;
+      assessments: {
+        ca1: number; // 0-20 marks
+        ca2: number; // 0-20 marks
+        exam: number; // 0-60 marks
+      };
+      totalScore: number; // Auto-calculated: ca1 + ca2 + exam
     }[];
     comment: string;
     updatedBy: Schema.Types.ObjectId;
@@ -183,9 +188,9 @@ const studentSchema = new Schema(
           enum: ["1st", "2nd", "3rd"],
           required: [true, "Term is required"],
         },
-        year: {
-          type: Number,
-          required: [true, "Year is required"],
+        session: {
+          type: String,
+          required: [true, "Session is required"],
         },
         paid: {
           type: Boolean,
@@ -237,11 +242,34 @@ const studentSchema = new Schema(
               type: String,
               required: [true, "Subject is required"],
             },
-            score: {
+            assessments: {
+              ca1: {
+                type: Number,
+                required: true,
+                min: [0, "CA1 score cannot be less than 0"],
+                max: [20, "CA1 score cannot be more than 20"],
+                default: 0,
+              },
+              ca2: {
+                type: Number,
+                required: true,
+                min: [0, "CA2 score cannot be less than 0"],
+                max: [20, "CA2 score cannot be more than 20"],
+                default: 0,
+              },
+              exam: {
+                type: Number,
+                required: true,
+                min: [0, "Exam score cannot be less than 0"],
+                max: [60, "Exam score cannot be more than 60"],
+                default: 0,
+              },
+            },
+            totalScore: {
               type: Number,
-              required: [true, "Score is required"],
-              min: [0, "Score cannot be less than 0"],
-              max: [100, "Score cannot be more than 100"],
+              required: true,
+              min: [0, "Total score cannot be less than 0"],
+              max: [100, "Total score cannot be more than 100"],
             },
           },
         ],

@@ -9,7 +9,7 @@ import { AuditLog } from "../../models/AuditLog";
 // @access  Public
 export const verifyAndGetResults = async (req: Request, res: Response) => {
   try {
-    const { studentId, pinCode, term, year } = req.body;
+    const { studentId, pinCode, term, session } = req.body;
 
     const student = await Student.findOne({ studentId });
     if (!student) {
@@ -18,7 +18,7 @@ export const verifyAndGetResults = async (req: Request, res: Response) => {
 
     // Find the term fee record
     const termFee = student.termFees.find(
-      (fee) => fee.term === term && fee.year === year
+      (fee) => fee.term === term && fee.session === session
     );
 
     if (!termFee) {
@@ -42,7 +42,8 @@ export const verifyAndGetResults = async (req: Request, res: Response) => {
 
     // Get results for the specified term
     const results = student.results.find(
-      (result) => result.term === term && result.year === year
+      (result) =>
+        result.term === term && result.year === parseInt(session.split("/")[0])
     );
 
     if (!results) {
@@ -55,7 +56,7 @@ export const verifyAndGetResults = async (req: Request, res: Response) => {
     await AuditLog.create({
       userId: req.user?._id || null,
       actionType: "RESULT_VIEW",
-      description: `Results viewed for student ${student.fullName} (${term} ${year})`,
+      description: `Results viewed for student ${student.fullName} (${term} ${session})`,
       targetId: student._id,
     });
 

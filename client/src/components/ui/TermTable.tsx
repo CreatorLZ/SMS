@@ -124,7 +124,7 @@ export default function TermTable({
                     </td>
                     <td className="px-6 py-4">
                       <Badge variant="outline">
-                        {term.year}/{term.year + 1}
+                        {(term as any).sessionId?.name || "Unknown Session"}
                       </Badge>
                     </td>
                     <td className="px-6 py-4 text-sm text-muted-foreground">
@@ -214,7 +214,7 @@ export default function TermTable({
                       {term.name} Term
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      {term.year}/{term.year + 1}
+                      {(term as any).sessionId?.name || "Unknown Session"}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge

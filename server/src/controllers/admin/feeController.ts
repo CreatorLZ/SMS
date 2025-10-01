@@ -84,7 +84,9 @@ export const createFeeStructure = async (req: Request, res: Response) => {
     }
 
     // Create audit log
-    let description = `Created fee structure for ${classroom.name} - ${term.name} ${term.year}: ₦${amount}`;
+    let description = `Created fee structure for ${classroom.name} - ${
+      term.name
+    } ${(term.sessionId as any)?.name || "Unknown Session"}: ₦${amount}`;
     if (syncResult) {
       description += ` and synced ${
         syncResult.created + syncResult.updated
@@ -235,14 +237,15 @@ export const previewDeleteFeeStructure = async (
     }
 
     const termName = (feeStructure.termId as any)?.name;
-    const termYear = (feeStructure.termId as any)?.year;
+    const termSession =
+      (feeStructure.termId as any)?.sessionId?.name || "Unknown Session";
     const classroomId = (feeStructure.classroomId as any)?._id;
 
     // Count affected students
     const studentsAffected = await Student.countDocuments({
       classroomId: classroomId,
       "termFees.term": termName,
-      "termFees.year": termYear,
+      "termFees.session": termSession,
     });
 
     // Count affected termFees entries
@@ -260,7 +263,7 @@ export const previewDeleteFeeStructure = async (
                     cond: {
                       $and: [
                         { $eq: ["$$tf.term", termName] },
-                        { $eq: ["$$tf.year", termYear] },
+                        { $eq: ["$$tf.session", termSession] },
                       ],
                     },
                   },
@@ -276,7 +279,7 @@ export const previewDeleteFeeStructure = async (
       feeStructure: {
         _id: feeStructure._id,
         classroom: (feeStructure.classroomId as any)?.name,
-        term: `${termName} ${termYear}`,
+        term: `${termName} ${termSession}`,
         amount: feeStructure.amount,
       },
       impact: {
@@ -318,25 +321,26 @@ export const confirmDeleteFeeStructure = async (
     }
 
     const termName = (feeStructure.termId as any)?.name;
-    const termYear = (feeStructure.termId as any)?.year;
+    const termSession =
+      (feeStructure.termId as any)?.sessionId?.name || "Unknown Session";
     const classroomId = (feeStructure.classroomId as any)?._id;
 
     // Generate CSV export of affected data
     const affectedStudents = await Student.find({
       classroomId: classroomId,
       "termFees.term": termName,
-      "termFees.year": termYear,
+      "termFees.session": termSession,
     }).select("fullName studentId termFees");
 
     const csvData = affectedStudents.map((student) => {
       const termFee = student.termFees.find(
-        (tf) => tf.term === termName && tf.year === termYear
+        (tf) => tf.term === termName && tf.session === termSession
       );
       return {
         studentId: student.studentId,
         fullName: student.fullName,
         term: termFee?.term,
-        year: termFee?.year,
+        session: termFee?.session,
         amount: termFee?.amount,
         paid: termFee?.paid,
         paymentDate: termFee?.paymentDate,
@@ -355,11 +359,11 @@ export const confirmDeleteFeeStructure = async (
       {
         classroomId: classroomId,
         "termFees.term": termName,
-        "termFees.year": termYear,
+        "termFees.session": termSession,
       },
       {
         $pull: {
-          termFees: { term: termName, year: termYear },
+          termFees: { term: termName, session: termSession },
         },
       }
     );
@@ -439,7 +443,7 @@ export const deleteFeeStructure = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const markFeePaid = async (req: Request, res: Response) => {
   try {
-    const { term, year, paymentMethod, receiptNumber } = req.body;
+    const { term, session, paymentMethod, receiptNumber } = req.body;
 
     const student = await Student.findById(req.params.studentId);
     if (!student) {
@@ -448,7 +452,7 @@ export const markFeePaid = async (req: Request, res: Response) => {
 
     // Find the term fee record
     const termFeeIndex = student.termFees.findIndex(
-      (fee) => fee.term === term && fee.year === year
+      (fee) => fee.term === term && fee.session === session
     );
 
     if (termFeeIndex === -1) {
@@ -476,7 +480,7 @@ export const markFeePaid = async (req: Request, res: Response) => {
     await AuditLog.create({
       userId: req.user?._id,
       actionType: "FEE_PAYMENT",
-      description: `Marked fee as paid for ${student.fullName} (${term} ${year}) - Receipt: ${finalReceiptNumber}`,
+      description: `Marked fee as paid for ${student.fullName} (${term} ${session}) - Receipt: ${finalReceiptNumber}`,
       targetId: student._id,
     });
 
@@ -520,7 +524,7 @@ export const getStudentFees = async (req: Request, res: Response) => {
     // Filter out fees that don't have corresponding fee structures
     const filteredTermFees = student.termFees.filter((fee) => {
       const feeKey = `${(student.classroomId as any)?._id}-${fee.term}-${
-        fee.year
+        fee.session
       }`;
       return feeStructureMap.has(feeKey);
     });
@@ -545,9 +549,13 @@ export const getStudentFees = async (req: Request, res: Response) => {
         // Skip if student wasn't enrolled during this term
         if (admissionDate > termEnd) continue;
 
-        const feeKey = `${term.name}-${term.year}`;
+        const feeKey = `${term.name}-${
+          (term.sessionId as any)?.name || "Unknown Session"
+        }`;
         const hasFee = filteredTermFees.some(
-          (fee) => fee.term === term.name && fee.year === term.year
+          (fee) =>
+            fee.term === term.name &&
+            fee.session === (term.sessionId as any)?.name
         );
 
         // Auto-repair: Create missing fee record
@@ -559,7 +567,7 @@ export const getStudentFees = async (req: Request, res: Response) => {
 
           repairedFees.push({
             term: term.name,
-            year: term.year,
+            session: (term.sessionId as any)?.name || "Unknown Session",
             paid: false,
             pinCode: generatePinCode(),
             viewable: false,
@@ -573,19 +581,19 @@ export const getStudentFees = async (req: Request, res: Response) => {
       // Check for amount mismatches and repair
       for (const fee of filteredTermFees) {
         const feeKey = `${(student.classroomId as any)._id}-${fee.term}-${
-          fee.year
+          fee.session
         }`;
         const feeStructure = feeStructureMap.get(feeKey);
 
         if (feeStructure && fee.amount !== feeStructure.amount) {
           console.log(
-            `Auto-repairing fee amount for student ${student.fullName}: ${fee.term} ${fee.year} - ${fee.amount} -> ${feeStructure.amount}`
+            `Auto-repairing fee amount for student ${student.fullName}: ${fee.term} ${fee.session} - ${fee.amount} -> ${feeStructure.amount}`
           );
           inconsistenciesFound = true;
 
           // Find and update the fee in repairedFees
           const index = repairedFees.findIndex(
-            (f) => f.term === fee.term && f.year === fee.year
+            (f) => f.term === fee.term && f.session === fee.session
           );
           if (index !== -1) {
             repairedFees[index] = {
@@ -669,15 +677,15 @@ export const getArrears = async (req: Request, res: Response) => {
         let unpaidFees = student.termFees.filter((fee) => {
           // Only include fees that have a corresponding fee structure
           const feeKey = `${(student.classroomId as any)?._id}-${fee.term}-${
-            fee.year
+            fee.session
           }`;
           return !fee.paid && feeStructureMap.has(feeKey);
         });
 
-        // Filter by specific term/year if provided
+        // Filter by specific term/session if provided
         if (term && year) {
           unpaidFees = unpaidFees.filter(
-            (fee) => fee.term === term && fee.year === parseInt(year as string)
+            (fee) => fee.term === term && fee.session === year
           );
         }
 
@@ -885,13 +893,17 @@ export const syncTermsFees = async (req: Request, res: Response) => {
   try {
     const { termId } = req.params;
 
-    // Validate term exists
-    const term = await Term.findById(termId);
+    // Validate term exists with session populated
+    const term = await Term.findById(termId).populate("sessionId");
     if (!term) {
       return res.status(404).json({ message: "Term not found" });
     }
 
-    console.log(`Starting fee sync for term: ${term.name} ${term.year}`);
+    console.log(
+      `Starting fee sync for term: ${term.name} ${
+        (term.sessionId as any)?.name || "Unknown Session"
+      }`
+    );
 
     const startTime = Date.now();
 
@@ -901,7 +913,13 @@ export const syncTermsFees = async (req: Request, res: Response) => {
       isActive: true,
     })
       .populate("classroomId", "_id")
-      .populate("termId", "name year");
+      .populate({
+        path: "termId",
+        populate: {
+          path: "sessionId",
+          select: "name",
+        },
+      });
 
     if (feeStructures.length === 0) {
       return res.json({
@@ -911,7 +929,9 @@ export const syncTermsFees = async (req: Request, res: Response) => {
     }
 
     console.log(
-      `Found ${feeStructures.length} fee structures for term ${term.name} ${term.year}`
+      `Found ${feeStructures.length} fee structures for term ${term.name} ${
+        (term.sessionId as any)?.name || "Unknown Session"
+      }`
     );
 
     let totalSyncedStudents = 0;
@@ -932,7 +952,9 @@ export const syncTermsFees = async (req: Request, res: Response) => {
 
       try {
         console.log(
-          `Syncing classroom ${classroomId} for term ${term.name} ${term.year}`
+          `Syncing classroom ${classroomId} for term ${term.name} ${
+            (term.sessionId as any)?.name || "Unknown Session"
+          }`
         );
 
         const result = await syncStudentFeesForClassroomBatched(
@@ -972,16 +994,20 @@ export const syncTermsFees = async (req: Request, res: Response) => {
     await AuditLog.create({
       userId: req.user?._id,
       actionType: "FEE_STRUCTURE_UPDATE",
-      description: `Term fee sync completed: ${term.name} ${term.year} - ${totalSyncedStudents} students synced, ${totalFeesProcessed} fees processed in ${duration}ms`,
+      description: `Term fee sync completed: ${term.name} ${
+        (term.sessionId as any)?.name || "Unknown Session"
+      } - ${totalSyncedStudents} students synced, ${totalFeesProcessed} fees processed in ${duration}ms`,
       targetId: term._id,
     });
 
     res.json({
-      message: `Term fee synchronization completed for ${term.name} ${term.year}`,
+      message: `Term fee synchronization completed for ${term.name} ${
+        (term.sessionId as any)?.name || "Unknown Session"
+      }`,
       term: {
         _id: term._id,
         name: term.name,
-        year: term.year,
+        session: (term.sessionId as any)?.name || "Unknown Session",
       },
       stats: {
         totalFeeStructures: feeStructures.length,
@@ -1172,9 +1198,13 @@ export const getFeeHealthCheck = async (req: Request, res: Response) => {
         // Skip if student wasn't enrolled during this term
         if (admissionDate > termEnd) continue;
 
-        const feeKey = `${term.name}-${term.year}`;
+        const feeKey = `${term.name}-${
+          (term.sessionId as any)?.name || "Unknown Session"
+        }`;
         const hasFee = student.termFees.some(
-          (fee) => fee.term === term.name && fee.year === term.year
+          (fee) =>
+            fee.term === term.name &&
+            fee.session === (term.sessionId as any)?.name
         );
 
         if (!hasFee) {
@@ -1200,13 +1230,13 @@ export const getFeeHealthCheck = async (req: Request, res: Response) => {
       // Check for extra fees (fees without corresponding fee structures)
       const extraFees = [];
       for (const fee of student.termFees) {
-        const feeKey = `${classroomId}-${fee.term}-${fee.year}`;
+        const feeKey = `${classroomId}-${fee.term}-${fee.session}`;
         if (!feeStructureMap.has(feeKey)) {
           // Check if student was enrolled during this term
           const term = feeStructures.find(
             (fs) =>
               (fs.termId as any).name === fee.term &&
-              (fs.termId as any).year === fee.year
+              (fs.termId as any).sessionId?.name === fee.session
           );
           if (term) {
             const termEnd = new Date((term.termId as any).endDate);
