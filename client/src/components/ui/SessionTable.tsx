@@ -8,6 +8,7 @@ import {
   CheckCircle,
   XCircle,
   GraduationCap,
+  MoreHorizontal,
 } from "lucide-react";
 import { Session } from "../../hooks/useSessionsQuery";
 
@@ -159,6 +160,14 @@ export default function SessionTable({
                           )}
                           {session.isActive ? "Deactivate" : "Activate"}
                         </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => onDelete(session)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -229,6 +238,15 @@ export default function SessionTable({
                       <CheckCircle className="w-4 h-4 mr-2" />
                     )}
                     {session.isActive ? "Deactivate" : "Activate"}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => onDelete(session)}
+                    className="w-full"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
                   </Button>
                 </div>
               </div>

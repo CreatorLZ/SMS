@@ -30,11 +30,18 @@ interface TabsTriggerProps {
   value: string;
   children: React.ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
-export function TabsTrigger({ value, children, className }: TabsTriggerProps) {
+export function TabsTrigger({
+  value,
+  children,
+  className,
+  onClick,
+}: TabsTriggerProps) {
   return (
     <button
+      onClick={onClick}
       className={`px-4 py-2 text-sm font-medium rounded-md transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-200 ${
         className || ""
       }`}

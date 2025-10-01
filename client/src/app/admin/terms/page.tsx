@@ -42,13 +42,11 @@ export default function AdminTermsPage() {
   const {
     searchQuery,
     statusFilter,
-    yearFilter,
     setCreateModalOpen,
     setEditModalOpen,
     setDeleteModalOpen,
     setSearchQuery,
     setStatusFilter,
-    setYearFilter,
     resetFilters,
   } = useTermManagementStore();
 
@@ -84,28 +82,21 @@ export default function AdminTermsPage() {
     setShowToast(true);
   };
 
-  // Calculate statistics
-  const stats = useMemo(() => {
-    if (!terms) return { total: 0, active: 0, inactive: 0, years: 0 };
+  // Calculate term statistics
+  const termStats = useMemo(() => {
+    if (!terms) return { total: 0, active: 0, inactive: 0 };
 
     const active = terms.filter((term) => term.isActive).length;
     const inactive = terms.length - active;
-
-    // Get unique sessions
-    const uniqueSessions = new Set(
-      terms.map((term) => (term as any).sessionId?.name).filter(Boolean)
-    );
-    const years = uniqueSessions.size;
 
     return {
       total: terms.length,
       active,
       inactive,
-      years,
     };
   }, [terms]);
 
-  // Calculate session statistics
+  // Calculate session statistics for sessions tab
   const sessionStats = useMemo(() => {
     if (!sessions) return { total: 0, active: 0, inactive: 0 };
 
@@ -136,22 +127,9 @@ export default function AdminTermsPage() {
         (statusFilter === "active" && term.isActive) ||
         (statusFilter === "inactive" && !term.isActive);
 
-      const matchesSession = !yearFilter || sessionName === yearFilter;
-
-      return matchesSearch && matchesStatus && matchesSession;
+      return matchesSearch && matchesStatus;
     });
-  }, [terms, searchQuery, statusFilter, yearFilter]);
-
-  // Get unique sessions for filter dropdown
-  const availableSessions = useMemo(() => {
-    if (!terms) return [];
-    const sessions = [
-      ...new Set(
-        terms.map((term) => (term as any).sessionId?.name).filter(Boolean)
-      ),
-    ].sort();
-    return sessions;
-  }, [terms]);
+  }, [terms, searchQuery, statusFilter]);
 
   const handleActivate = async (termId: string) => {
     try {
@@ -268,162 +246,109 @@ export default function AdminTermsPage() {
     setStatusFilter(value);
   };
 
-  const handleYearFilterChange = (value: string) => {
-    setYearFilter(value);
-  };
-
   return (
     <RoleGuard allowed={["admin", "superadmin"]}>
       <DashboardLayout>
         <div className="space-y-6 max-w-full overflow-hidden">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Term Management
-              </h1>
-              <p className="text-muted-foreground">
-                Manage academic terms, track active periods, and organize school
-                calendar
-              </p>
-            </div>
-            <Button
-              onClick={() => setCreateModalOpen(true)}
-              className="w-full sm:w-auto"
-              size="lg"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Term
-            </Button>
-          </div>
-
-          {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Terms
-                </CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <p className="text-xs text-muted-foreground">
-                  Academic periods
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Terms
-                </CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {stats.active}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Currently running
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Sessions
-                </CardTitle>
-                <GraduationCap className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {sessionStats.total}
-                </div>
-                <p className="text-xs text-muted-foreground">Academic years</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Sessions
-                </CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {sessionStats.active}
-                </div>
-                <p className="text-xs text-muted-foreground">Current year</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Inactive Terms
-                </CardTitle>
-                <XCircle className="h-4 w-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  {stats.inactive}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Completed or upcoming
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Academic Sessions
-                </CardTitle>
-                <GraduationCap className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.years}</div>
-                <p className="text-xs text-muted-foreground">
-                  Sessions covered
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
           {/* Tabs for Terms and Sessions */}
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger
-                value="terms"
-                className={
-                  activeTab === "terms"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : ""
-                }
-              >
-                Academic Terms
-              </TabsTrigger>
-              <TabsTrigger
-                value="sessions"
-                className={
-                  activeTab === "sessions"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : ""
-                }
-              >
-                Academic Sessions
-              </TabsTrigger>
-            </TabsList>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger
+              value="terms"
+              className={
+                activeTab === "terms" ? "bg-white text-gray-900 shadow-sm" : ""
+              }
+              onClick={() => setActiveTab("terms")}
+            >
+              Academic Terms
+            </TabsTrigger>
+            <TabsTrigger
+              value="sessions"
+              className={
+                activeTab === "sessions"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : ""
+              }
+              onClick={() => setActiveTab("sessions")}
+            >
+              Academic Sessions
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="terms" className="space-y-6">
+          {activeTab === "terms" && (
+            <div className="space-y-6">
+              {/* Header for Terms */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight">
+                    Academic Terms
+                  </h1>
+                  <p className="text-muted-foreground">
+                    Manage academic terms, track active periods, and organize
+                    school calendar
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setCreateModalOpen(true)}
+                  className="w-full sm:w-auto"
+                  size="lg"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Term
+                </Button>
+              </div>
+
+              {/* Term Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Terms
+                    </CardTitle>
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{termStats.total}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Academic periods
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Active Terms
+                    </CardTitle>
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">
+                      {termStats.active}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Currently running
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Inactive Terms
+                    </CardTitle>
+                    <XCircle className="h-4 w-4 text-red-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-600">
+                      {termStats.inactive}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Completed or upcoming
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
               {/* Term Filters and Search */}
               <Card>
                 <CardHeader>
@@ -454,23 +379,7 @@ export default function AdminTermsPage() {
                       <option value="inactive">Inactive</option>
                     </select>
 
-                    <select
-                      value={yearFilter}
-                      onChange={(e) => handleYearFilterChange(e.target.value)}
-                      className={cn(
-                        "flex h-10 w-full sm:w-32 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                        "appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzY5NzM4NSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+')] bg-no-repeat bg-right-3 bg-center"
-                      )}
-                    >
-                      <option value="">All Sessions</option>
-                      {availableSessions.map((session) => (
-                        <option key={session} value={session}>
-                          {session}
-                        </option>
-                      ))}
-                    </select>
-
-                    {(searchQuery || statusFilter || yearFilter) && (
+                    {(searchQuery || statusFilter) && (
                       <Button
                         variant="outline"
                         onClick={resetFilters}
@@ -482,7 +391,7 @@ export default function AdminTermsPage() {
                   </div>
 
                   {/* Active Filters Display */}
-                  {(searchQuery || statusFilter || yearFilter) && (
+                  {(searchQuery || statusFilter) && (
                     <div className="flex flex-wrap gap-2 mt-4">
                       {searchQuery && (
                         <Badge
@@ -514,21 +423,6 @@ export default function AdminTermsPage() {
                           </button>
                         </Badge>
                       )}
-                      {yearFilter && (
-                        <Badge
-                          variant="secondary"
-                          className="flex items-center gap-1"
-                        >
-                          Session: {yearFilter}
-                          <button
-                            type="button"
-                            onClick={() => handleYearFilterChange("")}
-                            className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
-                          >
-                            ×
-                          </button>
-                        </Badge>
-                      )}
                     </div>
                   )}
                 </CardContent>
@@ -540,23 +434,83 @@ export default function AdminTermsPage() {
                 onEdit={handleEdit}
                 isLoading={isLoading}
               />
-            </TabsContent>
+            </div>
+          )}
 
-            <TabsContent value="sessions" className="space-y-6">
-              {/* Session Header with Create Button */}
-              <div className="flex justify-between items-center">
+          {activeTab === "sessions" && (
+            <div className="space-y-6">
+              {/* Header for Sessions */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <h2 className="text-2xl font-semibold tracking-tight">
+                  <h1 className="text-3xl font-bold tracking-tight">
                     Academic Sessions
-                  </h2>
+                  </h1>
                   <p className="text-muted-foreground">
                     Manage academic years for result management
                   </p>
                 </div>
-                <Button onClick={() => setShowCreateSessionModal(true)}>
+                <Button
+                  onClick={() => setShowCreateSessionModal(true)}
+                  className="w-full sm:w-auto"
+                  size="lg"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Session
                 </Button>
+              </div>
+
+              {/* Session Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Sessions
+                    </CardTitle>
+                    <GraduationCap className="h-4 w-4 text-blue-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {sessionStats.total}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Academic years
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Active Sessions
+                    </CardTitle>
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">
+                      {sessionStats.active}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Current year
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Inactive Sessions
+                    </CardTitle>
+                    <XCircle className="h-4 w-4 text-red-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-600">
+                      {sessionStats.inactive}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Completed or upcoming
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Session Table */}
@@ -568,8 +522,8 @@ export default function AdminTermsPage() {
                 onDeactivate={handleDeactivateSession}
                 isLoading={sessionsLoading}
               />
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
 
           {/* Modals */}
           <CreateTermModal />
