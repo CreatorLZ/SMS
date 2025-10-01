@@ -59,7 +59,7 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Header with Back Button */}
-      <div className="flex items-center justify-between">
+      {/* <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button
             onClick={onBack}
@@ -79,11 +79,11 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
             </p>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Selected Context Display */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-0">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">Class</p>
