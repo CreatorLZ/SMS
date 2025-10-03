@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,7 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
   onBack,
 }) => {
   const [activeTab, setActiveTab] = useState("enter-results");
+  const router = useRouter();
   const { selectedClass, selectedSession, selectedTerm } =
     useResultsManagementStore();
 
@@ -163,8 +165,10 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
                     students={studentsResponse.students}
                     pagination={studentsResponse.pagination}
                     onEnterResults={(studentId) => {
-                      // Handle entering results for individual student
-                      console.log("Enter results for student:", studentId);
+                      // Navigate to the enter results page
+                      router.push(
+                        `/teacher/results/enter/${studentId}?classId=${selectedClass}&session=${selectedSession}&term=${selectedTerm}`
+                      );
                     }}
                   />
                 ) : (
