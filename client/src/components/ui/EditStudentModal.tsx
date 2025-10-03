@@ -108,9 +108,20 @@ export default function EditStudentModal() {
 
   const { user } = useAuthStore();
 
-  // Results data
+  // Results data - only query when we have a valid studentId
   const { data: studentResults, isLoading: resultsLoading } = useStudentResults(
     selectedStudentId || ""
+  );
+
+  // Memoize whether results should be shown (only when studentId is valid)
+  const shouldLoadResults =
+    selectedStudentId && /^[0-9a-fA-F]{24}$/.test(selectedStudentId);
+
+  // Debug logging for selectedStudentId
+  console.log(
+    "EditStudentModal - selectedStudentId:",
+    selectedStudentId,
+    typeof selectedStudentId
   );
 
   const [formInitialized, setFormInitialized] = useState(false);
@@ -866,14 +877,14 @@ export default function EditStudentModal() {
                                   <div className="flex-1">
                                     <span
                                       className={`font-bold ${
-                                        score.score >= 70
+                                        score.totalScore >= 70
                                           ? "text-green-600"
-                                          : score.score >= 50
+                                          : score.totalScore >= 50
                                           ? "text-yellow-600"
                                           : "text-red-600"
                                       }`}
                                     >
-                                      {score.score}/100
+                                      {score.totalScore}/100
                                     </span>
                                   </div>
                                 </div>
@@ -889,7 +900,7 @@ export default function EditStudentModal() {
                                 <span className="font-bold text-lg">
                                   {Math.round(
                                     result.scores.reduce(
-                                      (sum, s) => sum + s.score,
+                                      (sum, s) => sum + s.totalScore,
                                       0
                                     ) / result.scores.length
                                   )}
@@ -918,14 +929,14 @@ export default function EditStudentModal() {
                                   className={`font-bold text-lg ${
                                     Math.round(
                                       result.scores.reduce(
-                                        (sum, s) => sum + s.score,
+                                        (sum, s) => sum + s.totalScore,
                                         0
                                       ) / result.scores.length
                                     ) >= 70
                                       ? "text-green-600"
                                       : Math.round(
                                           result.scores.reduce(
-                                            (sum, s) => sum + s.score,
+                                            (sum, s) => sum + s.totalScore,
                                             0
                                           ) / result.scores.length
                                         ) >= 50
@@ -935,28 +946,28 @@ export default function EditStudentModal() {
                                 >
                                   {Math.round(
                                     result.scores.reduce(
-                                      (sum, s) => sum + s.score,
+                                      (sum, s) => sum + s.totalScore,
                                       0
                                     ) / result.scores.length
                                   ) >= 70
                                     ? "A"
                                     : Math.round(
                                         result.scores.reduce(
-                                          (sum, s) => sum + s.score,
+                                          (sum, s) => sum + s.totalScore,
                                           0
                                         ) / result.scores.length
                                       ) >= 60
                                     ? "B"
                                     : Math.round(
                                         result.scores.reduce(
-                                          (sum, s) => sum + s.score,
+                                          (sum, s) => sum + s.totalScore,
                                           0
                                         ) / result.scores.length
                                       ) >= 50
                                     ? "C"
                                     : Math.round(
                                         result.scores.reduce(
-                                          (sum, s) => sum + s.score,
+                                          (sum, s) => sum + s.totalScore,
                                           0
                                         ) / result.scores.length
                                       ) >= 40

@@ -21,6 +21,17 @@ export const useTeacherResultsStudentsQuery = (
   page: number,
   options?: { enabled?: boolean }
 ) => {
+  // Debug logging
+  console.log("useTeacherResultsStudentsQuery called with:", {
+    session,
+    term,
+    classId,
+    classIdType: typeof classId,
+    search,
+    page,
+    enabled: (options?.enabled ?? true) && !!classId,
+  });
+
   return useQuery<TeacherStudentsResponse>({
     queryKey: [
       "teacher-results-students",
@@ -37,10 +48,31 @@ export const useTeacherResultsStudentsQuery = (
         page: page.toString(),
         limit: "10",
       });
-      const response = await api.get(
-        `/teacher/results/students?${params.toString()}`
-      );
-      return response.data as TeacherStudentsResponse;
+
+      const fullUrl = `/teacher/results/students?${params.toString()}`;
+      console.log("DEBUG: Making API request to:", fullUrl);
+      console.log("DEBUG: Parameters:", {
+        classId,
+        classIdType: typeof classId,
+        classIdLength: classId?.length,
+        search,
+        page,
+        session,
+        term,
+      });
+
+      try {
+        const response = await api.get(fullUrl);
+        console.log("DEBUG: API response received:", response.data);
+        return response.data as TeacherStudentsResponse;
+      } catch (error: any) {
+        console.error("DEBUG: API request failed:", {
+          url: fullUrl,
+          error: error.response?.data || error.message,
+          status: error.response?.status,
+        });
+        throw error;
+      }
     },
     enabled: (options?.enabled ?? true) && !!classId,
   });

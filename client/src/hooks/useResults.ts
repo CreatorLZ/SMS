@@ -38,14 +38,34 @@ export function useUnlockResults() {
 
 // Get student results (for teachers/admins)
 export function useStudentResults(studentId: string) {
+  // Debug logging
+  console.log("useStudentResults called with:", {
+    studentId,
+    studentIdType: typeof studentId,
+    isValidObjectId: /^[0-9a-fA-F]{24}$/.test(studentId),
+  });
+
   return useQuery<StudentResult[]>({
     queryKey: ["student-results", studentId],
     queryFn: async () => {
+      // Validate studentId before making API call
+      if (
+        !studentId ||
+        studentId === "students" ||
+        !/^[0-9a-fA-F]{24}$/.test(studentId)
+      ) {
+        console.error(
+          "Invalid studentId provided to useStudentResults:",
+          studentId
+        );
+        throw new Error("Invalid student ID format");
+      }
+
       const res = await api.get(`/teacher/results/${studentId}`);
       const data = res.data as { results?: StudentResult[] };
       return data.results || [];
     },
-    enabled: !!studentId,
+    enabled: !!studentId && /^[0-9a-fA-F]{24}$/.test(studentId),
   });
 }
 

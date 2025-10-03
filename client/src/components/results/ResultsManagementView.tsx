@@ -44,6 +44,15 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
       { enabled: !!selectedClass && !!selectedSession && !!selectedTerm }
     );
 
+  // Debug logging for selectedClass
+  console.log(
+    "ResultsManagementView - selectedClass:",
+    selectedClass,
+    typeof selectedClass
+  );
+  console.log("ResultsManagementView - selectedSession:", selectedSession);
+  console.log("ResultsManagementView - selectedTerm:", selectedTerm);
+
   const selectedClassroom = classrooms?.find((c) => c._id === selectedClass);
   const selectedTermData = terms?.find((t) => t.name === selectedTerm);
   const selectedSessionData = sessions?.find((s) => s.name === selectedSession);

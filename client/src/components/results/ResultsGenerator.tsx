@@ -52,6 +52,30 @@ const ResultsGenerator: React.FC = () => {
       return;
     }
 
+    // Debug logging
+    console.log(
+      "ResultsGenerator - formData.class:",
+      formData.class,
+      typeof formData.class
+    );
+    console.log(
+      "ResultsGenerator - Available classrooms:",
+      classrooms?.map((c) => ({ id: c._id, name: c.name }))
+    );
+
+    // Validate that the selected class exists in the classrooms list
+    const selectedClassroom = classrooms?.find((c) => c._id === formData.class);
+    if (!selectedClassroom) {
+      console.error(
+        "Selected class not found in classrooms list:",
+        formData.class
+      );
+      alert(
+        "Selected class is not valid. Please select a class from the list."
+      );
+      return;
+    }
+
     // Set the selections in the store
     setSelectedClass(formData.class);
     setSelectedSession(formData.session);

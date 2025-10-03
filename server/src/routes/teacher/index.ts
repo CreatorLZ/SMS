@@ -23,8 +23,8 @@ router.get("/attendance", getAttendanceHistory);
 
 // Results routes
 router.post("/results", submitResults);
-router.get("/results/:studentId", getStudentResults);
 router.get("/results/students", getClassroomStudents);
+router.get("/results/:studentId", getStudentResults);
 
 // Classroom routes
 router.get("/classroom", getClassroomDetails);

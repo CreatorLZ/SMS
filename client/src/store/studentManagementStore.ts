@@ -40,11 +40,17 @@ export const useStudentManagementStore = create<StudentManagementState>(
         isViewModalOpen: open,
         selectedStudentId: studentId,
       }),
-    setEditModalOpen: (open, studentId = null) =>
+    setEditModalOpen: (open, studentId = null) => {
+      console.log("setEditModalOpen called with:", {
+        open,
+        studentId,
+        studentIdType: typeof studentId,
+      });
       set({
         isEditModalOpen: open,
         selectedStudentId: studentId,
-      }),
+      });
+    },
     setSearchQuery: (query) => set({ searchQuery: query, currentPage: 1 }),
     setClassFilter: (classId) => set({ classFilter: classId, currentPage: 1 }),
     setCurrentPage: (page) => set({ currentPage: page }),

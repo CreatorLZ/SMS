@@ -12,10 +12,29 @@ export const submitResults = async (req: Request, res: Response) => {
   try {
     const { studentId, term, year, scores, comment } = req.body;
     const teacherId = req.user?._id;
+
+    // Debug logging
+    console.log("submitResults called with:", {
+      studentId,
+      studentIdType: typeof studentId,
+      teacherId,
+      term,
+      year,
+    });
+
     if (!teacherId) {
       return res
         .status(401)
         .json({ message: "Unauthorized: teacher ID missing" });
+    }
+
+    if (!studentId) {
+      return res.status(400).json({ message: "studentId is required" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      console.error(`ERROR: Invalid studentId format: ${studentId}`);
+      return res.status(400).json({ message: "Invalid studentId format" });
     }
 
     // Verify teacher has access to this student
@@ -141,6 +160,22 @@ export const getStudentResults = async (req: Request, res: Response) => {
     const { studentId } = req.params;
     const teacherId = req.user?._id;
 
+    // Debug logging
+    console.log("getStudentResults called with:", {
+      studentId,
+      studentIdType: typeof studentId,
+      teacherId,
+    });
+
+    if (!studentId) {
+      return res.status(400).json({ message: "studentId is required" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      console.error(`ERROR: Invalid studentId format: ${studentId}`);
+      return res.status(400).json({ message: "Invalid studentId format" });
+    }
+
     // Verify teacher has access to this student
     const classroom = await Classroom.findOne({
       teacherId,
@@ -214,11 +249,34 @@ export const getClassroomStudents = async (req: Request, res: Response) => {
     const teacherId = req.user?._id;
     const { classId, search, page = 1, limit = 10 } = req.query;
 
+    // Debug logging to identify where the issue is coming from
+    console.log("DEBUG: getClassroomStudents called with:", {
+      classId,
+      classIdType: typeof classId,
+      classIdLength: (classId as string)?.length,
+      teacherId,
+      search,
+      page,
+      limit,
+      fullUrl: req.originalUrl,
+      method: req.method,
+    });
+
     if (!classId) {
       return res.status(400).json({ message: "classId is required" });
     }
 
+    // Check if classId is the problematic "students" string
+    if (classId === "students") {
+      console.error("ERROR: classId is 'students' string instead of ObjectId");
+      return res.status(400).json({
+        message:
+          "Invalid classId: received 'students' string instead of classroom ID",
+      });
+    }
+
     if (!mongoose.Types.ObjectId.isValid(classId as string)) {
+      console.error(`ERROR: Invalid classId format: ${classId}`);
       return res.status(400).json({ message: "Invalid classId format" });
     }
 
@@ -232,7 +290,7 @@ export const getClassroomStudents = async (req: Request, res: Response) => {
     const classroom = await Classroom.findOne({
       _id: classId,
       teacherId,
-    }).lean();
+    });
 
     if (!classroom) {
       return res.status(403).json({
@@ -240,22 +298,8 @@ export const getClassroomStudents = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate classroom.students is an array and not corrupted
-    if (!Array.isArray(classroom.students) || classroom.students.length === 0) {
-      return res.json({
-        students: [],
-        total: 0,
-        pagination: {
-          page: 1,
-          limit: 10,
-          total: 0,
-          pages: 0,
-        },
-      });
-    }
-
-    // Build query for students
-    const query: any = { _id: { $in: classroom.students } };
+    // Build query for students using classroomId (direct ObjectId relationship)
+    const query: any = { classroomId: classId };
 
     // Add search filter if provided
     if (search) {
