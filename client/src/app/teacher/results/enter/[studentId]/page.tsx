@@ -267,8 +267,16 @@ export default function EnterStudentResultsPage() {
               {/* Domain Traits */}
               <div className="bg-white border border-gray-300 rounded-lg">
                 <div className="bg-gray-200 px-4 py-2 border-b border-gray-300 rounded-t-lg">
-                  <h3 className="text-base font-bold text-gray-700">
-                    🏁 Domain Traits
+                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 text-gray-700"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M6 2a2 2 0 0 0-2 2v18l8-5 8 5V4a2 2 0 0 0-2-2H6z" />
+                    </svg>
+                    Domain Traits
                   </h3>
                 </div>
                 <div className="p-4 space-y-4">
@@ -433,8 +441,16 @@ export default function EnterStudentResultsPage() {
               {/* Info/Comments */}
               <div className="bg-white border border-gray-300 rounded-lg">
                 <div className="bg-gray-200 px-4 py-2 border-b border-gray-300 rounded-t-lg">
-                  <h3 className="text-sm font-semibold text-gray-700">
-                    🏁 Info/Comments
+                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 text-gray-700"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M6 2a2 2 0 0 0-2 2v18l8-5 8 5V4a2 2 0 0 0-2-2H6z" />
+                    </svg>
+                    Info/Comments
                   </h3>
                 </div>
                 <div className="p-4">
