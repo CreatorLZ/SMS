@@ -229,7 +229,7 @@ export default function EnterStudentResultsPage() {
                       <td className="py-3 px-2">
                         <Input
                           type="number"
-                          className="text-center h-9 bg-white border-gray-300"
+                          className="text-center h-9 bg-white border-gray-300 rounded-none"
                           value={scores[subject]?.ca1 || ""}
                           onChange={(e) =>
                             handleScoreChange(subject, "ca1", e.target.value)
@@ -239,7 +239,7 @@ export default function EnterStudentResultsPage() {
                       <td className="py-3 px-2">
                         <Input
                           type="number"
-                          className="text-center h-9 bg-white border-gray-300"
+                          className="text-center h-9 bg-white border-gray-300 rounded-none"
                           value={scores[subject]?.ca2 || ""}
                           onChange={(e) =>
                             handleScoreChange(subject, "ca2", e.target.value)
@@ -249,7 +249,7 @@ export default function EnterStudentResultsPage() {
                       <td className="py-3 px-2">
                         <Input
                           type="number"
-                          className="text-center h-9 bg-white border-gray-300"
+                          className="text-center h-9 bg-white border-gray-300 rounded-none"
                           value={scores[subject]?.exam || ""}
                           onChange={(e) =>
                             handleScoreChange(subject, "exam", e.target.value)
@@ -298,7 +298,7 @@ export default function EnterStudentResultsPage() {
                           }))
                         }
                       >
-                        <SelectTrigger className="h-9 bg-white border-gray-300">
+                        <SelectTrigger className="h-9 bg-white border-gray-300 rounded-none">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -331,7 +331,7 @@ export default function EnterStudentResultsPage() {
                             }))
                           }
                         >
-                          <SelectTrigger className="h-9 bg-white border-gray-300">
+                          <SelectTrigger className="h-9 bg-white border-gray-300 rounded-none">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -360,7 +360,7 @@ export default function EnterStudentResultsPage() {
                             }))
                           }
                         >
-                          <SelectTrigger className="h-9 bg-white border-gray-300">
+                          <SelectTrigger className="h-9 bg-white border-gray-300 rounded-none">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -389,7 +389,7 @@ export default function EnterStudentResultsPage() {
                             }))
                           }
                         >
-                          <SelectTrigger className="h-9 bg-white border-gray-300">
+                          <SelectTrigger className="h-9 bg-white border-gray-300 rounded-none">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -418,7 +418,7 @@ export default function EnterStudentResultsPage() {
                             }))
                           }
                         >
-                          <SelectTrigger className="h-9 bg-white border-gray-300">
+                          <SelectTrigger className="h-9 bg-white border-gray-300 rounded-none">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -470,7 +470,7 @@ export default function EnterStudentResultsPage() {
                         </td>
                         <td className="py-3 px-2">
                           <Input
-                            className="h-9 bg-white border-gray-300"
+                            className="h-9 bg-white border-gray-300 rounded-none"
                             value={comments.teacher}
                             onChange={(e) =>
                               setComments((prev) => ({
@@ -487,7 +487,7 @@ export default function EnterStudentResultsPage() {
                         </td>
                         <td className="py-3 px-2">
                           <Input
-                            className="h-9 bg-white border-gray-300"
+                            className="h-9 bg-white border-gray-300 rounded-none"
                             value={comments.houseMaster}
                             onChange={(e) =>
                               setComments((prev) => ({
@@ -505,7 +505,7 @@ export default function EnterStudentResultsPage() {
                         <td className="py-3 px-2">
                           <Input
                             type="date"
-                            className="h-9 bg-white border-gray-300"
+                            className="h-9 bg-white border-gray-300 rounded-none"
                             value={comments.nextTermBegins}
                             onChange={(e) =>
                               setComments((prev) => ({
@@ -523,7 +523,7 @@ export default function EnterStudentResultsPage() {
                         <td className="py-3 px-2">
                           <Input
                             type="date"
-                            className="h-9 bg-white border-gray-300"
+                            className="h-9 bg-white border-gray-300 rounded-none"
                             value={comments.thisTermEnds}
                             onChange={(e) =>
                               setComments((prev) => ({
