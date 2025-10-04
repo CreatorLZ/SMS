@@ -194,79 +194,99 @@ export default function EnterStudentResultsPage() {
           {/* Main Content */}
           <div className="grid grid-cols-[1fr_400px] gap-6">
             {/* Left Column - Subjects */}
-            <div className="bg-white border border-gray-300 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4">Subject Scores</h3>
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-300">
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700 text-sm">
-                      Subjects
-                    </th>
-                    <th className="text-center py-3 px-2 font-semibold text-gray-700 text-sm w-32">
-                      1st CA Score
-                    </th>
-                    <th className="text-center py-3 px-2 font-semibold text-gray-700 text-sm w-32">
-                      2nd CA Score
-                    </th>
-                    <th className="text-center py-3 px-2 font-semibold text-gray-700 text-sm w-32">
-                      Exam Score
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subjects.map((subject, index) => (
-                    <tr
-                      key={subject}
-                      className={
-                        index !== subjects.length - 1
-                          ? "border-b border-gray-200"
-                          : ""
-                      }
-                    >
-                      <td className="py-3 px-2 text-gray-700 text-sm">
-                        {subject}
-                      </td>
-                      <td className="py-3 px-2">
-                        <Input
-                          type="number"
-                          className="text-center h-9 bg-white border-gray-300 rounded-none"
-                          value={scores[subject]?.ca1 || ""}
-                          onChange={(e) =>
-                            handleScoreChange(subject, "ca1", e.target.value)
-                          }
-                        />
-                      </td>
-                      <td className="py-3 px-2">
-                        <Input
-                          type="number"
-                          className="text-center h-9 bg-white border-gray-300 rounded-none"
-                          value={scores[subject]?.ca2 || ""}
-                          onChange={(e) =>
-                            handleScoreChange(subject, "ca2", e.target.value)
-                          }
-                        />
-                      </td>
-                      <td className="py-3 px-2">
-                        <Input
-                          type="number"
-                          className="text-center h-9 bg-white border-gray-300 rounded-none"
-                          value={scores[subject]?.exam || ""}
-                          onChange={(e) =>
-                            handleScoreChange(subject, "exam", e.target.value)
-                          }
-                        />
-                      </td>
+            <div className="bg-white border border-gray-300">
+              <div className="bg-gray-200 px-4 py-2 border-b border-gray-300">
+                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 text-gray-700"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  Subject Scores
+                </h3>
+              </div>
+              <div className="p-4">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-300">
+                      <th className="text-left py-3 px-2 font-semibold text-gray-700 text-sm">
+                        Subjects
+                      </th>
+                      <th className="text-center py-3 px-2 font-semibold text-gray-700 text-sm w-32">
+                        1st CA Score
+                      </th>
+                      <th className="text-center py-3 px-2 font-semibold text-gray-700 text-sm w-32">
+                        2nd CA Score
+                      </th>
+                      <th className="text-center py-3 px-2 font-semibold text-gray-700 text-sm w-32">
+                        Exam Score
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {subjects.map((subject, index) => (
+                      <tr
+                        key={subject}
+                        className={
+                          index !== subjects.length - 1
+                            ? "border-b border-gray-200"
+                            : ""
+                        }
+                      >
+                        <td className="py-3 px-2 text-gray-700 text-sm">
+                          {subject}
+                        </td>
+                        <td className="py-3 px-2">
+                          <Input
+                            type="number"
+                            className="text-center h-9 bg-white border-gray-300 rounded-none"
+                            value={scores[subject]?.ca1 || ""}
+                            onChange={(e) =>
+                              handleScoreChange(subject, "ca1", e.target.value)
+                            }
+                          />
+                        </td>
+                        <td className="py-3 px-2">
+                          <Input
+                            type="number"
+                            className="text-center h-9 bg-white border-gray-300 rounded-none"
+                            value={scores[subject]?.ca2 || ""}
+                            onChange={(e) =>
+                              handleScoreChange(subject, "ca2", e.target.value)
+                            }
+                          />
+                        </td>
+                        <td className="py-3 px-2">
+                          <Input
+                            type="number"
+                            className="text-center h-9 bg-white border-gray-300 rounded-none"
+                            value={scores[subject]?.exam || ""}
+                            onChange={(e) =>
+                              handleScoreChange(subject, "exam", e.target.value)
+                            }
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* Right Column - Domain Traits and Info */}
             <div className="space-y-6">
               {/* Domain Traits */}
-              <div className="bg-white border border-gray-300 rounded-lg">
-                <div className="bg-gray-200 px-4 py-2 border-b border-gray-300 rounded-t-lg">
+              <div className="bg-white border border-gray-300">
+                <div className="bg-gray-200 px-4 py-2 border-b border-gray-300">
                   <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -439,8 +459,8 @@ export default function EnterStudentResultsPage() {
               </div>
 
               {/* Info/Comments */}
-              <div className="bg-white border border-gray-300 rounded-lg">
-                <div className="bg-gray-200 px-4 py-2 border-b border-gray-300 rounded-t-lg">
+              <div className="bg-white border border-gray-300">
+                <div className="bg-gray-200 px-4 py-2 border-b border-gray-300">
                   <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
