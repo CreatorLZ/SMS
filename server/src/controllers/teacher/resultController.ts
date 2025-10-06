@@ -3,6 +3,7 @@ import { Student } from "../../models/Student";
 import { Classroom } from "../../models/Classroom";
 import { AuditLog } from "../../models/AuditLog";
 import { Term } from "../../models/Term";
+import SessionModel from "../../models/Session";
 import mongoose from "mongoose";
 
 // @desc    Submit or update student results
@@ -49,10 +50,18 @@ export const submitResults = async (req: Request, res: Response) => {
       });
     }
 
+    // Find the session by startYear
+    const session = await SessionModel.findOne({ startYear: year });
+    if (!session) {
+      return res.status(400).json({
+        message: "Invalid session year",
+      });
+    }
+
     // Verify term exists and is active
     const termExists = await Term.findOne({
       name: term,
-      year,
+      sessionId: session._id,
       isActive: true,
     });
 
@@ -247,7 +256,15 @@ export const getTeacherClassrooms = async (req: Request, res: Response) => {
 export const getClassroomStudents = async (req: Request, res: Response) => {
   try {
     const teacherId = req.user?._id;
-    const { classId, search, page = 1, limit = 10 } = req.query;
+    const {
+      classId,
+      search,
+      page = 1,
+      limit = 10,
+      hasResults,
+      term,
+      year,
+    } = req.query;
 
     // Debug logging to identify where the issue is coming from
     console.log("DEBUG: getClassroomStudents called with:", {
@@ -301,6 +318,28 @@ export const getClassroomStudents = async (req: Request, res: Response) => {
     // Build query for students using classroomId (direct ObjectId relationship)
     const query: any = { classroomId: classId };
 
+    // Add filter for students who have results if requested
+    if (hasResults === "true" && term && year) {
+      query.results = {
+        $elemMatch: {
+          term: term,
+          year: parseInt(year as string),
+        },
+      };
+    } else if (hasResults === "false" && term && year) {
+      // Filter students who do NOT have results for the specified term and year
+      query.$nor = [
+        {
+          results: {
+            $elemMatch: {
+              term: term,
+              year: parseInt(year as string),
+            },
+          },
+        },
+      ];
+    }
+
     // Add search filter if provided
     if (search) {
       query.$or = [
@@ -335,6 +374,53 @@ export const getClassroomStudents = async (req: Request, res: Response) => {
         total,
         pages: totalPages,
       },
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Get subjects for a specific classroom (teacher access)
+// @route   GET /api/teacher/classrooms/:classroomId/subjects
+// @access  Private/Teacher
+export const getClassroomSubjects = async (req: Request, res: Response) => {
+  try {
+    const teacherId = req.user?._id;
+    const { classroomId } = req.params;
+
+    if (!classroomId) {
+      return res.status(400).json({ message: "classroomId is required" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(classroomId)) {
+      return res.status(400).json({ message: "Invalid classroomId format" });
+    }
+
+    if (!teacherId) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: teacher ID missing" });
+    }
+
+    // Verify teacher has access to this classroom
+    const classroom = await Classroom.findOne({
+      _id: classroomId,
+      teacherId,
+    }).populate("subjects", "name category level isActive");
+
+    if (!classroom) {
+      return res.status(403).json({
+        message:
+          "You don't have permission to view subjects for this classroom",
+      });
+    }
+
+    res.json({
+      classroom: {
+        _id: classroom._id,
+        name: classroom.name,
+      },
+      subjects: classroom.subjects,
     });
   } catch (error: any) {
     res.status(500).json({ message: "Server error", error: error.message });

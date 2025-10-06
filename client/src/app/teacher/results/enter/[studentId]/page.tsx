@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import DashboardLayout from "@/components/ui/dashboard-layout";
 import RoleGuard from "@/components/ui/role-guard";
@@ -17,18 +17,9 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Save, X } from "lucide-react";
 import { useStudent } from "@/hooks/useStudents";
 import { useTeacherClassroomsQuery } from "@/hooks/useTeacherClassroomsQuery";
-
-const subjects = [
-  "Physics",
-  "Chemistry",
-  "Commerce",
-  "Mathematics",
-  "Economics",
-  "Biology",
-  "Government",
-  "Accounting",
-  "Computer",
-];
+import { useTeacherClassroomSubjectsQuery } from "@/hooks/useClassroomSubjectsQuery";
+import { useSubmitResult, useStudentResults } from "@/hooks/useResults";
+import { useSessionsQuery } from "@/hooks/useSessionsQuery";
 
 const ratingOptions = [
   { value: "1", label: "1. Exceptional" },
@@ -49,6 +40,14 @@ export default function EnterStudentResultsPage() {
 
   const { data: student, isLoading: studentLoading } = useStudent(studentId);
   const { data: classrooms } = useTeacherClassroomsQuery();
+  const { data: sessions } = useSessionsQuery();
+  const { data: classroomSubjects, isLoading: subjectsLoading } =
+    useTeacherClassroomSubjectsQuery(classId || "");
+  const { data: existingResults, isLoading: resultsLoading } =
+    useStudentResults(studentId);
+  const submitResult = useSubmitResult();
+
+  const subjects = classroomSubjects?.subjects.map((s) => s.name) || [];
 
   const selectedClassroom = classrooms?.find((c) => c._id === classId);
 
@@ -71,6 +70,95 @@ export default function EnterStudentResultsPage() {
 
   const [isSaving, setIsSaving] = useState(false);
 
+  // Local storage helpers
+  const getStorageKey = () => {
+    if (!studentId || !session || !term) return null;
+    return `results-${studentId}-${session}-${term}`;
+  };
+
+  const saveToLocalStorage = (data: any) => {
+    try {
+      const key = getStorageKey();
+      if (key) {
+        localStorage.setItem(key, JSON.stringify(data));
+      }
+    } catch (error) {
+      console.warn("Failed to save to localStorage:", error);
+    }
+  };
+
+  const loadFromLocalStorage = () => {
+    try {
+      const key = getStorageKey();
+      if (key) {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : null;
+      }
+    } catch (error) {
+      console.warn("Failed to load from localStorage:", error);
+    }
+    return null;
+  };
+
+  const clearLocalStorage = () => {
+    try {
+      const key = getStorageKey();
+      if (key) {
+        localStorage.removeItem(key);
+      }
+    } catch (error) {
+      console.warn("Failed to clear localStorage:", error);
+    }
+  };
+
+  // Load data from server first, then localStorage as fallback
+  useEffect(() => {
+    if (existingResults && existingResults.length > 0 && session && term) {
+      // Find the result for the current session and term
+      const currentResult = existingResults.find(
+        (result) =>
+          result.term === term &&
+          result.year === parseInt(session.split("/")[0])
+      );
+
+      if (currentResult) {
+        // Populate scores from server data
+        const serverScores: Record<
+          string,
+          { ca1: string; ca2: string; exam: string }
+        > = {};
+        currentResult.scores.forEach((score) => {
+          serverScores[score.subject] = {
+            ca1: score.assessments.ca1.toString(),
+            ca2: score.assessments.ca2.toString(),
+            exam: score.assessments.exam.toString(),
+          };
+        });
+        setScores(serverScores);
+
+        // Populate comments from server data
+        setComments((prev) => ({
+          ...prev,
+          teacher: currentResult.comment || "",
+        }));
+      }
+    } else {
+      // Fallback to localStorage if no server data
+      const savedData = loadFromLocalStorage();
+      if (savedData) {
+        if (savedData.scores) setScores(savedData.scores);
+        if (savedData.domainTraits) setDomainTraits(savedData.domainTraits);
+        if (savedData.comments) setComments(savedData.comments);
+      }
+    }
+  }, [existingResults, session, term, studentId]);
+
+  // Save data to localStorage whenever it changes
+  useEffect(() => {
+    const dataToSave = { scores, domainTraits, comments };
+    saveToLocalStorage(dataToSave);
+  }, [scores, domainTraits, comments]);
+
   const handleScoreChange = (
     subject: string,
     field: "ca1" | "ca2" | "exam",
@@ -88,20 +176,55 @@ export default function EnterStudentResultsPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // TODO: Implement save logic using the existing API
-      console.log("Saving results for student:", studentId, {
-        scores,
-        domainTraits,
-        comments,
-        session,
-        term,
-        classId,
+      if (!session || !term) {
+        throw new Error("Session and term are required");
+      }
+
+      // Find the session data to get the year
+      const sessionData = sessions?.find((s) => s.name === session);
+      if (!sessionData) {
+        throw new Error("Session not found");
+      }
+
+      // Transform scores into the expected format
+      const transformedScores = subjects.map((subject) => {
+        const subjectScores = scores[subject] || {
+          ca1: "0",
+          ca2: "0",
+          exam: "0",
+        };
+        const ca1 = parseFloat(subjectScores.ca1) || 0;
+        const ca2 = parseFloat(subjectScores.ca2) || 0;
+        const exam = parseFloat(subjectScores.exam) || 0;
+        const totalScore = ca1 + ca2 + exam;
+
+        return {
+          subject,
+          assessments: {
+            ca1,
+            ca2,
+            exam,
+          },
+          totalScore,
+        };
       });
+
+      // Submit the results
+      await submitResult(studentId, {
+        term,
+        year: sessionData.startYear,
+        scores: transformedScores,
+        comment: comments.teacher || "",
+      });
+
+      // Clear localStorage after successful save
+      clearLocalStorage();
 
       // Navigate back to results management
       router.push("/teacher/results");
     } catch (error) {
       console.error("Error saving results:", error);
+      // TODO: Show error message to user
     } finally {
       setIsSaving(false);
     }
@@ -111,12 +234,18 @@ export default function EnterStudentResultsPage() {
     router.push("/teacher/results");
   };
 
-  if (studentLoading) {
+  if (studentLoading || subjectsLoading || resultsLoading) {
     return (
       <RoleGuard allowed={["teacher"]}>
         <DashboardLayout>
           <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-muted-foreground">Loading student data...</div>
+            <div className="text-muted-foreground">
+              {studentLoading
+                ? "Loading student data..."
+                : subjectsLoading
+                ? "Loading subjects..."
+                : "Loading existing results..."}
+            </div>
           </div>
         </DashboardLayout>
       </RoleGuard>
@@ -233,7 +362,7 @@ export default function EnterStudentResultsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {subjects.map((subject, index) => (
+                    {subjects.map((subject: string, index: number) => (
                       <tr
                         key={subject}
                         className={

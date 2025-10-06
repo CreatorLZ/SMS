@@ -21,16 +21,41 @@ interface Pagination {
   pages: number;
 }
 
+interface ActionButton {
+  text: string;
+  icon: React.ComponentType<{ className?: string }>;
+  onClick: (studentId: string) => void;
+  variant?: "default" | "outline" | "secondary";
+}
+
 interface ResultsStudentTableProps {
   students: Student[];
   pagination?: Pagination;
-  onEnterResults: (studentId: string) => void;
+  onEnterResults?: (studentId: string) => void; // Keep for backward compatibility
+  actions?: ActionButton[];
+  buttonText?: string; // Keep for backward compatibility
+  buttonIcon?: React.ComponentType<{ className?: string }>; // Keep for backward compatibility
 }
 
 export default function ResultsStudentTable({
   students,
   onEnterResults,
+  actions,
+  buttonText = "Enter Results",
+  buttonIcon: ButtonIcon = UserCheck,
 }: ResultsStudentTableProps) {
+  // Support both old and new prop patterns
+  const actionButtons =
+    actions ||
+    (onEnterResults
+      ? [
+          {
+            text: buttonText,
+            icon: ButtonIcon,
+            onClick: onEnterResults,
+          },
+        ]
+      : []);
   const { searchQuery, setSearchQuery } = useResultsManagementStore();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -41,7 +66,11 @@ export default function ResultsStudentTable({
   const [focusedRowIndex, setFocusedRowIndex] = useState<number | null>(null);
 
   const handleEnterResults = (studentId: string) => {
-    onEnterResults(studentId);
+    if (actionButtons.length > 0) {
+      actionButtons[0].onClick(studentId); // Use first action for backward compatibility
+    } else if (onEnterResults) {
+      onEnterResults(studentId);
+    }
   };
 
   // Keyboard navigation handler
@@ -167,20 +196,30 @@ export default function ResultsStudentTable({
                   {student.gender || "Not specified"}
                 </Badge>
               </div>
-              <Button
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEnterResults(student._id);
-                }}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                aria-label={`Enter results for ${
-                  student.fullName || `${student.firstName} ${student.lastName}`
-                }`}
-              >
-                <UserCheck className="h-4 w-4 mr-2" aria-hidden="true" />
-                Enter Results
-              </Button>
+              <div className="flex gap-2">
+                {actionButtons.map((action, actionIndex) => {
+                  const ActionIcon = action.icon;
+                  return (
+                    <Button
+                      key={actionIndex}
+                      size="sm"
+                      variant={action.variant || "default"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        action.onClick(student._id);
+                      }}
+                      className="flex-1"
+                      aria-label={`${action.text} for ${
+                        student.fullName ||
+                        `${student.firstName} ${student.lastName}`
+                      }`}
+                    >
+                      <ActionIcon className="h-4 w-4 mr-2" aria-hidden="true" />
+                      {action.text}
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
           ))
         )}
@@ -286,21 +325,33 @@ export default function ResultsStudentTable({
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right" role="cell">
-                    <Button
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEnterResults(student._id);
-                      }}
-                      className="bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-300"
-                      aria-label={`Enter results for ${
-                        student.fullName ||
-                        `${student.firstName} ${student.lastName}`
-                      }`}
-                    >
-                      <UserCheck className="h-4 w-4 mr-2" aria-hidden="true" />
-                      Enter Results
-                    </Button>
+                    <div className="flex gap-2 justify-end">
+                      {actionButtons.map((action, actionIndex) => {
+                        const ActionIcon = action.icon;
+                        return (
+                          <Button
+                            key={actionIndex}
+                            size="sm"
+                            variant={action.variant || "default"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              action.onClick(student._id);
+                            }}
+                            className="focus:ring-2 focus:ring-blue-300"
+                            aria-label={`${action.text} for ${
+                              student.fullName ||
+                              `${student.firstName} ${student.lastName}`
+                            }`}
+                          >
+                            <ActionIcon
+                              className="h-4 w-4 mr-2"
+                              aria-hidden="true"
+                            />
+                            {action.text}
+                          </Button>
+                        );
+                      })}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

@@ -10,6 +10,7 @@ import {
   getClassroomDetails,
   getTeacherClassrooms,
   getClassroomStudents,
+  getClassroomSubjects,
 } from "../../controllers/teacher/resultController";
 
 const router = express.Router();
@@ -29,5 +30,6 @@ router.get("/results/:studentId", getStudentResults);
 // Classroom routes
 router.get("/classroom", getClassroomDetails);
 router.get("/classrooms", getTeacherClassrooms);
+router.get("/classrooms/:classroomId/subjects", getClassroomSubjects);
 
 export default router;

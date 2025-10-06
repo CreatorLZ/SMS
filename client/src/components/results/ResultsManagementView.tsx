@@ -10,14 +10,21 @@ import {
   Eye,
   Download,
   Table,
+  Edit,
 } from "lucide-react";
+import ViewResultsModal from "./ViewResultsModal";
 import { useResultsManagementStore } from "../../store/resultsManagementStore";
 import { useTeacherClassroomsQuery } from "../../hooks/useTeacherClassroomsQuery";
 import { useTermsQuery } from "../../hooks/useTermsQuery";
 import { useSessionsQuery } from "../../hooks/useSessionsQuery";
+import { useStudentResults } from "../../hooks/useResults";
 import ResultsStudentTable from "./ResultsStudentTable";
 import ExcelBulkUpload from "./ExcelBulkUpload";
-import { useTeacherResultsStudentsQuery } from "../../hooks/useTeacherResultsStudentsQuery";
+import {
+  useTeacherResultsStudentsQuery,
+  useTeacherResultsStudentsWithResultsQuery,
+  useTeacherResultsStudentsWithoutResultsQuery,
+} from "../../hooks/useTeacherResultsStudentsQuery";
 
 interface ResultsManagementViewProps {
   onBack: () => void;
@@ -27,24 +34,69 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
   onBack,
 }) => {
   const [activeTab, setActiveTab] = useState("enter-results");
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedStudentForView, setSelectedStudentForView] = useState<{
+    id: string;
+    name: string;
+    results: any[];
+  } | null>(null);
+  const [viewingStudentId, setViewingStudentId] = useState<string | null>(null);
   const router = useRouter();
   const { selectedClass, selectedSession, selectedTerm } =
     useResultsManagementStore();
+
+  // Extract year from session (e.g., "2024/2025" -> 2024)
+  const sessionYear = selectedSession
+    ? parseInt(selectedSession.split("/")[0])
+    : new Date().getFullYear();
+
+  const { data: studentResults } = useStudentResults(viewingStudentId || "");
+
+  // Update the selected student results when they load
+  React.useEffect(() => {
+    if (studentResults && selectedStudentForView && viewingStudentId) {
+      setSelectedStudentForView((prev) =>
+        prev
+          ? {
+              ...prev,
+              results: Array.isArray(studentResults)
+                ? studentResults
+                : [studentResults],
+            }
+          : null
+      );
+    }
+  }, [studentResults, viewingStudentId]); // Removed selectedStudentForView from dependencies
 
   const { data: classrooms } = useTeacherClassroomsQuery();
   const { data: terms } = useTermsQuery();
   const { data: sessions } = useSessionsQuery();
 
-  // Get students for the selected class
+  // Get students for the selected class who don't have results yet
   const { data: studentsResponse, isLoading: studentsLoading } =
-    useTeacherResultsStudentsQuery(
+    useTeacherResultsStudentsWithoutResultsQuery(
       selectedSession,
       selectedTerm,
       selectedClass,
       "",
       1,
+      sessionYear,
       { enabled: !!selectedClass && !!selectedSession && !!selectedTerm }
     );
+
+  // Get students with results for the selected class/session/term
+  const {
+    data: studentsWithResultsResponse,
+    isLoading: studentsWithResultsLoading,
+  } = useTeacherResultsStudentsWithResultsQuery(
+    selectedSession,
+    selectedTerm,
+    selectedClass,
+    "",
+    1,
+    sessionYear,
+    { enabled: !!selectedClass && !!selectedSession && !!selectedTerm }
+  );
 
   // Debug logging for selectedClass
   console.log(
@@ -58,6 +110,23 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
   const selectedClassroom = classrooms?.find((c) => c._id === selectedClass);
   const selectedTermData = terms?.find((t) => t.name === selectedTerm);
   const selectedSessionData = sessions?.find((s) => s.name === selectedSession);
+
+  const handleViewResults = (studentId: string) => {
+    // Find the student details
+    const student = studentsWithResultsResponse?.students.find(
+      (s) => s._id === studentId
+    );
+
+    if (student) {
+      setViewingStudentId(studentId);
+      setSelectedStudentForView({
+        id: student.studentId,
+        name: student.fullName || `${student.firstName} ${student.lastName}`,
+        results: [], // Will be updated when studentResults loads
+      });
+      setViewModalOpen(true);
+    }
+  };
 
   const tabs = [
     { value: "enter-results", label: "Enter Results", icon: FileText },
@@ -208,14 +277,49 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
               <CardHeader>
                 <CardTitle>View Entered Results</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  View and review results that have already been entered
+                  View and edit results that have already been entered
                 </p>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Eye className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                  <p>Results viewing functionality will be implemented here</p>
-                </div>
+                {studentsWithResultsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-muted-foreground">
+                      Loading students with results...
+                    </div>
+                  </div>
+                ) : studentsWithResultsResponse?.students ? (
+                  <ResultsStudentTable
+                    students={studentsWithResultsResponse.students}
+                    pagination={studentsWithResultsResponse.pagination}
+                    actions={[
+                      {
+                        text: "View Results",
+                        icon: Eye,
+                        onClick: handleViewResults,
+                        variant: "outline",
+                      },
+                      {
+                        text: "Edit Results",
+                        icon: Edit,
+                        onClick: (studentId) => {
+                          // Navigate to the enter results page for editing
+                          router.push(
+                            `/teacher/results/enter/${studentId}?classId=${selectedClass}&session=${selectedSession}&term=${selectedTerm}`
+                          );
+                        },
+                        variant: "default",
+                      },
+                    ]}
+                  />
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Eye className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                    <p>
+                      No students with entered results found for the selected
+                      criteria
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -257,6 +361,24 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
           )}
         </div>
       </div>
+
+      {/* View Results Modal */}
+      {selectedStudentForView && (
+        <ViewResultsModal
+          isOpen={viewModalOpen}
+          onClose={() => {
+            setViewModalOpen(false);
+            setSelectedStudentForView(null);
+            setViewingStudentId(null);
+          }}
+          studentName={selectedStudentForView.name}
+          studentId={selectedStudentForView.id}
+          results={selectedStudentForView.results}
+          session={selectedSession}
+          term={selectedTerm}
+          className={selectedClassroom?.name || ""}
+        />
+      )}
     </div>
   );
 };
