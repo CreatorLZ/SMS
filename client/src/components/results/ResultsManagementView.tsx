@@ -42,8 +42,15 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
   } | null>(null);
   const [viewingStudentId, setViewingStudentId] = useState<string | null>(null);
   const router = useRouter();
-  const { selectedClass, selectedSession, selectedTerm } =
-    useResultsManagementStore();
+  const {
+    selectedClass,
+    selectedSession,
+    selectedTerm,
+    searchQuery,
+    currentPage,
+    setSearchQuery,
+    setCurrentPage,
+  } = useResultsManagementStore();
 
   // Extract year from session (e.g., "2024/2025" -> 2024)
   const sessionYear = selectedSession
@@ -78,8 +85,8 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
       selectedSession,
       selectedTerm,
       selectedClass,
-      "",
-      1,
+      searchQuery,
+      currentPage,
       sessionYear,
       { enabled: !!selectedClass && !!selectedSession && !!selectedTerm }
     );
@@ -92,8 +99,8 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
     selectedSession,
     selectedTerm,
     selectedClass,
-    "",
-    1,
+    searchQuery,
+    currentPage,
     sessionYear,
     { enabled: !!selectedClass && !!selectedSession && !!selectedTerm }
   );
@@ -126,6 +133,10 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
       });
       setViewModalOpen(true);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   const tabs = [
@@ -233,6 +244,8 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
                   <ResultsStudentTable
                     students={studentsResponse.students}
                     pagination={studentsResponse.pagination}
+                    currentPage={currentPage}
+                    onPageChange={handlePageChange}
                     onEnterResults={(studentId) => {
                       // Navigate to the enter results page
                       router.push(
@@ -291,6 +304,8 @@ const ResultsManagementView: React.FC<ResultsManagementViewProps> = ({
                   <ResultsStudentTable
                     students={studentsWithResultsResponse.students}
                     pagination={studentsWithResultsResponse.pagination}
+                    currentPage={currentPage}
+                    onPageChange={handlePageChange}
                     actions={[
                       {
                         text: "View Results",

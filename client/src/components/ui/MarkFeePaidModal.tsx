@@ -55,7 +55,7 @@ export default function MarkFeePaidModal({
       await markFeePaid({
         studentId: student._id,
         term: fee.term,
-        year: fee.year,
+        session: fee.session,
         paymentMethod: formData.paymentMethod || "cash",
         receiptNumber: formData.receiptNumber,
       });
@@ -128,7 +128,7 @@ export default function MarkFeePaidModal({
                           Term & Year
                         </div>
                         <div className="font-semibold">
-                          {fee.term} {fee.year}
+                          {fee.term} {fee.session}
                         </div>
                       </div>
                       <div className="space-y-1">

@@ -60,6 +60,18 @@ export default function CreateFeeStructureModal({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const formatCurrency = (amount: string) => {
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount === 0) return "₦0";
+
+    return new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(numAmount);
+  };
+
   if (!open) return null;
 
   return (
@@ -124,6 +136,11 @@ export default function CreateFeeStructureModal({
               step="0.01"
               required
             />
+            {formData.amount && (
+              <p className="text-sm text-muted-foreground font-medium">
+                {formatCurrency(formData.amount)}
+              </p>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">

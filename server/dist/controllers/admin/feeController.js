@@ -25,7 +25,7 @@ const generatePinCode = () => {
 // @route   POST /api/admin/fees/structures
 // @access  Private/Admin
 const createFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     try {
         const { classroomId, termId, amount } = req.body;
         // Validate classroom exists
@@ -77,7 +77,7 @@ const createFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0, funct
             });
         }
         // Create audit log
-        let description = `Created fee structure for ${classroom.name} - ${term.name} ${term.year}: ₦${amount}`;
+        let description = `Created fee structure for ${classroom.name} - ${term.name} ${((_g = term.sessionId) === null || _g === void 0 ? void 0 : _g.name) || "Unknown Session"}: ₦${amount}`;
         if (syncResult) {
             description += ` and synced ${syncResult.created + syncResult.updated} student fees`;
         }
@@ -85,7 +85,7 @@ const createFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0, funct
             description += ` (term is inactive - no sync performed)`;
         }
         yield AuditLog_1.AuditLog.create({
-            userId: (_g = req.user) === null || _g === void 0 ? void 0 : _g._id,
+            userId: (_h = req.user) === null || _h === void 0 ? void 0 : _h._id,
             actionType: "FEE_STRUCTURE_UPDATE",
             description,
             targetId: feeStructure._id,
@@ -122,7 +122,13 @@ const getFeeStructures = (req, res) => __awaiter(void 0, void 0, void 0, functio
             filter.termId = termId;
         const feeStructures = yield FeeStructure_1.FeeStructure.find(Object.assign(Object.assign({}, filter), { isActive: true }))
             .populate("classroomId", "name")
-            .populate("termId", "name year")
+            .populate({
+            path: "termId",
+            populate: {
+                path: "sessionId",
+                select: "name",
+            },
+        })
             .populate("createdBy", "name")
             .populate("updatedBy", "name")
             .sort({ createdAt: -1 });
@@ -142,7 +148,13 @@ const updateFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0, funct
         const { amount } = req.body;
         const feeStructure = yield FeeStructure_1.FeeStructure.findById(req.params.id)
             .populate("classroomId", "name")
-            .populate("termId", "name year");
+            .populate({
+            path: "termId",
+            populate: {
+                path: "sessionId",
+                select: "name",
+            },
+        });
         if (!feeStructure) {
             return res.status(404).json({ message: "Fee structure not found" });
         }
@@ -194,11 +206,17 @@ exports.updateFeeStructure = updateFeeStructure;
 // @route   GET /api/admin/fees/structures/:id/preview-delete
 // @access  Private/Admin
 const previewDeleteFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     try {
         const feeStructure = yield FeeStructure_1.FeeStructure.findById(req.params.id)
             .populate("classroomId", "name")
-            .populate("termId", "name year");
+            .populate({
+            path: "termId",
+            populate: {
+                path: "sessionId",
+                select: "name",
+            },
+        });
         if (!feeStructure) {
             return res.status(404).json({ message: "Fee structure not found" });
         }
@@ -208,16 +226,16 @@ const previewDeleteFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0
                 .json({ message: "Fee structure is already deleted" });
         }
         const termName = (_a = feeStructure.termId) === null || _a === void 0 ? void 0 : _a.name;
-        const termYear = (_b = feeStructure.termId) === null || _b === void 0 ? void 0 : _b.year;
-        const classroomId = (_c = feeStructure.classroomId) === null || _c === void 0 ? void 0 : _c._id;
+        const termSession = ((_c = (_b = feeStructure.termId) === null || _b === void 0 ? void 0 : _b.sessionId) === null || _c === void 0 ? void 0 : _c.name) || "Unknown Session";
+        const classroomId = (_d = feeStructure.classroomId) === null || _d === void 0 ? void 0 : _d._id;
         // Count affected students
         const studentsAffected = yield Student_1.Student.countDocuments({
             classroomId: classroomId,
             "termFees.term": termName,
-            "termFees.year": termYear,
+            "termFees.session": termSession,
         });
         // Count affected termFees entries
-        const termFeesCount = ((_d = (yield Student_1.Student.aggregate([
+        const termFeesCount = ((_e = (yield Student_1.Student.aggregate([
             { $match: { classroomId: classroomId } },
             {
                 $project: {
@@ -229,7 +247,7 @@ const previewDeleteFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0
                                 cond: {
                                     $and: [
                                         { $eq: ["$$tf.term", termName] },
-                                        { $eq: ["$$tf.year", termYear] },
+                                        { $eq: ["$$tf.session", termSession] },
                                     ],
                                 },
                             },
@@ -238,12 +256,12 @@ const previewDeleteFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0
                 },
             },
             { $group: { _id: null, total: { $sum: "$count" } } },
-        ]))[0]) === null || _d === void 0 ? void 0 : _d.total) || 0;
+        ]))[0]) === null || _e === void 0 ? void 0 : _e.total) || 0;
         res.json({
             feeStructure: {
                 _id: feeStructure._id,
-                classroom: (_e = feeStructure.classroomId) === null || _e === void 0 ? void 0 : _e.name,
-                term: `${termName} ${termYear}`,
+                classroom: (_f = feeStructure.classroomId) === null || _f === void 0 ? void 0 : _f.name,
+                term: `${termName} ${termSession}`,
                 amount: feeStructure.amount,
             },
             impact: {
@@ -261,7 +279,7 @@ exports.previewDeleteFeeStructure = previewDeleteFeeStructure;
 // @route   POST /api/admin/fees/structures/:id/confirm-delete
 // @access  Private/Admin
 const confirmDeleteFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     try {
         const { confirm } = req.body;
         if (!confirm) {
@@ -269,7 +287,13 @@ const confirmDeleteFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0
         }
         const feeStructure = yield FeeStructure_1.FeeStructure.findById(req.params.id)
             .populate("classroomId", "name")
-            .populate("termId", "name year");
+            .populate({
+            path: "termId",
+            populate: {
+                path: "sessionId",
+                select: "name",
+            },
+        });
         if (!feeStructure) {
             return res.status(404).json({ message: "Fee structure not found" });
         }
@@ -279,21 +303,21 @@ const confirmDeleteFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0
                 .json({ message: "Fee structure is already deleted" });
         }
         const termName = (_a = feeStructure.termId) === null || _a === void 0 ? void 0 : _a.name;
-        const termYear = (_b = feeStructure.termId) === null || _b === void 0 ? void 0 : _b.year;
-        const classroomId = (_c = feeStructure.classroomId) === null || _c === void 0 ? void 0 : _c._id;
+        const termSession = ((_c = (_b = feeStructure.termId) === null || _b === void 0 ? void 0 : _b.sessionId) === null || _c === void 0 ? void 0 : _c.name) || "Unknown Session";
+        const classroomId = (_d = feeStructure.classroomId) === null || _d === void 0 ? void 0 : _d._id;
         // Generate CSV export of affected data
         const affectedStudents = yield Student_1.Student.find({
             classroomId: classroomId,
             "termFees.term": termName,
-            "termFees.year": termYear,
+            "termFees.session": termSession,
         }).select("fullName studentId termFees");
         const csvData = affectedStudents.map((student) => {
-            const termFee = student.termFees.find((tf) => tf.term === termName && tf.year === termYear);
+            const termFee = student.termFees.find((tf) => tf.term === termName && tf.session === termSession);
             return {
                 studentId: student.studentId,
                 fullName: student.fullName,
                 term: termFee === null || termFee === void 0 ? void 0 : termFee.term,
-                year: termFee === null || termFee === void 0 ? void 0 : termFee.year,
+                session: termFee === null || termFee === void 0 ? void 0 : termFee.session,
                 amount: termFee === null || termFee === void 0 ? void 0 : termFee.amount,
                 paid: termFee === null || termFee === void 0 ? void 0 : termFee.paid,
                 paymentDate: termFee === null || termFee === void 0 ? void 0 : termFee.paymentDate,
@@ -303,21 +327,21 @@ const confirmDeleteFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0
         // Soft delete the fee structure
         feeStructure.isActive = false;
         feeStructure.deletedAt = new Date();
-        feeStructure.deletedBy = (_d = req.user) === null || _d === void 0 ? void 0 : _d._id;
+        feeStructure.deletedBy = (_e = req.user) === null || _e === void 0 ? void 0 : _e._id;
         yield feeStructure.save();
         // Remove related termFees from students
         const result = yield Student_1.Student.updateMany({
             classroomId: classroomId,
             "termFees.term": termName,
-            "termFees.year": termYear,
+            "termFees.session": termSession,
         }, {
             $pull: {
-                termFees: { term: termName, year: termYear },
+                termFees: { term: termName, session: termSession },
             },
         });
         // Create audit log
         yield AuditLog_1.AuditLog.create({
-            userId: (_e = req.user) === null || _e === void 0 ? void 0 : _e._id,
+            userId: (_f = req.user) === null || _f === void 0 ? void 0 : _f._id,
             actionType: "FEE_STRUCTURE_DELETE",
             description: `Soft deleted fee structure and removed ${result.modifiedCount} term fee records. CSV export generated.`,
             targetId: req.params.id,
@@ -335,41 +359,50 @@ const confirmDeleteFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0
     }
 });
 exports.confirmDeleteFeeStructure = confirmDeleteFeeStructure;
-// @desc    Delete fee structure (legacy - now uses soft delete)
+// @desc    Delete fee structure (hard delete)
 // @route   DELETE /api/admin/fees/structures/:id
 // @access  Private/Admin
 const deleteFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     try {
         const feeStructure = yield FeeStructure_1.FeeStructure.findById(req.params.id)
             .populate("classroomId", "name")
-            .populate("termId", "name year");
+            .populate({
+            path: "termId",
+            populate: {
+                path: "sessionId",
+                select: "name",
+            },
+        });
         if (!feeStructure) {
             return res.status(404).json({ message: "Fee structure not found" });
         }
-        if (!feeStructure.isActive) {
-            return res
-                .status(400)
-                .json({ message: "Fee structure is already deleted" });
-        }
-        // Soft delete instead of hard delete
-        feeStructure.isActive = false;
-        feeStructure.deletedAt = new Date();
-        feeStructure.deletedBy = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
-        yield feeStructure.save();
+        const termName = (_a = feeStructure.termId) === null || _a === void 0 ? void 0 : _a.name;
+        const termSession = ((_c = (_b = feeStructure.termId) === null || _b === void 0 ? void 0 : _b.sessionId) === null || _c === void 0 ? void 0 : _c.name) || "Unknown Session";
+        const classroomId = (_d = feeStructure.classroomId) === null || _d === void 0 ? void 0 : _d._id;
+        // Remove related termFees from students
+        const result = yield Student_1.Student.updateMany({
+            classroomId: classroomId,
+            "termFees.term": termName,
+            "termFees.session": termSession,
+        }, {
+            $pull: {
+                termFees: { term: termName, session: termSession },
+            },
+        });
+        // Hard delete the fee structure
+        yield FeeStructure_1.FeeStructure.findByIdAndDelete(req.params.id);
         // Create audit log
         yield AuditLog_1.AuditLog.create({
-            userId: (_b = req.user) === null || _b === void 0 ? void 0 : _b._id,
-            actionType: "FEE_STRUCTURE_UPDATE",
-            description: `Soft deleted fee structure for ${(_c = feeStructure.classroomId) === null || _c === void 0 ? void 0 : _c.name} - ${(_d = feeStructure.termId) === null || _d === void 0 ? void 0 : _d.name} ${(_e = feeStructure.termId) === null || _e === void 0 ? void 0 : _e.year}`,
+            userId: (_e = req.user) === null || _e === void 0 ? void 0 : _e._id,
+            actionType: "FEE_STRUCTURE_DELETE",
+            description: `Hard deleted fee structure and removed ${result.modifiedCount} term fee records for ${(_f = feeStructure.classroomId) === null || _f === void 0 ? void 0 : _f.name} - ${(_g = feeStructure.termId) === null || _g === void 0 ? void 0 : _g.name} ${(_h = feeStructure.termId) === null || _h === void 0 ? void 0 : _h.year}`,
             targetId: req.params.id,
         });
         res.json({
-            message: "Fee structure soft deleted successfully",
-            feeStructure: {
-                _id: feeStructure._id,
-                isActive: false,
-                deletedAt: feeStructure.deletedAt,
+            message: "Fee structure deleted successfully",
+            stats: {
+                studentsAffected: result.modifiedCount,
             },
         });
     }
@@ -384,13 +417,13 @@ exports.deleteFeeStructure = deleteFeeStructure;
 const markFeePaid = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     try {
-        const { term, year, paymentMethod, receiptNumber } = req.body;
+        const { term, session, paymentMethod, receiptNumber } = req.body;
         const student = yield Student_1.Student.findById(req.params.studentId);
         if (!student) {
             return res.status(404).json({ message: "Student not found" });
         }
         // Find the term fee record
-        const termFeeIndex = student.termFees.findIndex((fee) => fee.term === term && fee.year === year);
+        const termFeeIndex = student.termFees.findIndex((fee) => fee.term === term && fee.session === session);
         if (termFeeIndex === -1) {
             return res.status(404).json({ message: "Term fee record not found" });
         }
@@ -410,7 +443,7 @@ const markFeePaid = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         yield AuditLog_1.AuditLog.create({
             userId: (_b = req.user) === null || _b === void 0 ? void 0 : _b._id,
             actionType: "FEE_PAYMENT",
-            description: `Marked fee as paid for ${student.fullName} (${term} ${year}) - Receipt: ${finalReceiptNumber}`,
+            description: `Marked fee as paid for ${student.fullName} (${term} ${session}) - Receipt: ${finalReceiptNumber}`,
             targetId: student._id,
         });
         res.json({
@@ -428,7 +461,7 @@ exports.markFeePaid = markFeePaid;
 // @route   GET /api/admin/fees/students/:studentId/fees
 // @access  Private/Admin
 const getStudentFees = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     try {
         const student = yield Student_1.Student.findById(req.params.studentId)
             .populate("classroomId", "name")
@@ -439,17 +472,25 @@ const getStudentFees = (req, res) => __awaiter(void 0, void 0, void 0, function*
         // Get all existing fee structures to filter fees
         const feeStructures = yield FeeStructure_1.FeeStructure.find({})
             .populate("classroomId", "_id")
-            .populate("termId", "name year");
+            .populate({
+            path: "termId",
+            populate: {
+                path: "sessionId",
+                select: "name",
+            },
+        });
         // Create a map of existing fee structures for quick lookup
         const feeStructureMap = new Map();
         feeStructures.forEach((fs) => {
-            const key = `${fs.classroomId._id}-${fs.termId.name}-${fs.termId.year}`;
+            var _a;
+            const sessionName = ((_a = fs.termId.sessionId) === null || _a === void 0 ? void 0 : _a.name) || "Unknown Session";
+            const key = `${fs.classroomId._id}-${fs.termId.name}-${sessionName}`;
             feeStructureMap.set(key, fs);
         });
         // Filter out fees that don't have corresponding fee structures
         const filteredTermFees = student.termFees.filter((fee) => {
             var _a;
-            const feeKey = `${(_a = student.classroomId) === null || _a === void 0 ? void 0 : _a._id}-${fee.term}-${fee.year}`;
+            const feeKey = `${(_a = student.classroomId) === null || _a === void 0 ? void 0 : _a._id}-${fee.term}-${fee.session}`;
             return feeStructureMap.has(feeKey);
         });
         // Check for inconsistencies - Detect missing or incorrect fees
@@ -468,35 +509,39 @@ const getStudentFees = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 // Skip if student wasn't enrolled during this term
                 if (admissionDate > termEnd)
                     continue;
-                const feeKey = `${term.name}-${term.year}`;
-                const hasFee = filteredTermFees.some((fee) => fee.term === term.name && fee.year === term.year);
+                const feeKey = `${term.name}-${((_a = term.sessionId) === null || _a === void 0 ? void 0 : _a.name) || "Unknown Session"}`;
+                const hasFee = filteredTermFees.some((fee) => {
+                    var _a;
+                    return fee.term === term.name &&
+                        fee.session === ((_a = term.sessionId) === null || _a === void 0 ? void 0 : _a.name);
+                });
                 // Auto-repair: Create missing fee record
                 if (!hasFee) {
                     console.log(`Auto-repairing missing fee for student ${student.fullName}: ${term.name} ${term.year}`);
                     inconsistenciesFound = true;
                     repairedFees.push({
                         term: term.name,
-                        year: term.year,
+                        session: ((_b = term.sessionId) === null || _b === void 0 ? void 0 : _b.name) || "Unknown Session",
                         paid: false,
                         pinCode: generatePinCode(),
                         viewable: false,
                         amount: feeStructure.amount,
                         paymentDate: undefined,
-                        updatedBy: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id,
+                        updatedBy: (_c = req.user) === null || _c === void 0 ? void 0 : _c._id,
                     });
                 }
             }
             // Check for amount mismatches and repair
             for (const fee of filteredTermFees) {
-                const feeKey = `${student.classroomId._id}-${fee.term}-${fee.year}`;
+                const feeKey = `${student.classroomId._id}-${fee.term}-${fee.session}`;
                 const feeStructure = feeStructureMap.get(feeKey);
                 if (feeStructure && fee.amount !== feeStructure.amount) {
-                    console.log(`Auto-repairing fee amount for student ${student.fullName}: ${fee.term} ${fee.year} - ${fee.amount} -> ${feeStructure.amount}`);
+                    console.log(`Auto-repairing fee amount for student ${student.fullName}: ${fee.term} ${fee.session} - ${fee.amount} -> ${feeStructure.amount}`);
                     inconsistenciesFound = true;
                     // Find and update the fee in repairedFees
-                    const index = repairedFees.findIndex((f) => f.term === fee.term && f.year === fee.year);
+                    const index = repairedFees.findIndex((f) => f.term === fee.term && f.session === fee.session);
                     if (index !== -1) {
-                        repairedFees[index] = Object.assign(Object.assign({}, repairedFees[index]), { amount: feeStructure.amount, updatedBy: (_b = req.user) === null || _b === void 0 ? void 0 : _b._id });
+                        repairedFees[index] = Object.assign(Object.assign({}, repairedFees[index]), { amount: feeStructure.amount, updatedBy: (_d = req.user) === null || _d === void 0 ? void 0 : _d._id });
                     }
                 }
             }
@@ -506,7 +551,7 @@ const getStudentFees = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 yield student.save();
                 // Create audit log for auto-repair
                 yield AuditLog_1.AuditLog.create({
-                    userId: (_c = req.user) === null || _c === void 0 ? void 0 : _c._id,
+                    userId: (_e = req.user) === null || _e === void 0 ? void 0 : _e._id,
                     actionType: "FEE_AUTO_REPAIR",
                     description: `Auto-repaired fee inconsistencies for student ${student.fullName}`,
                     targetId: student._id,
@@ -528,7 +573,7 @@ exports.getStudentFees = getStudentFees;
 // @access  Private/Admin
 const getArrears = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { classroomId, term, year } = req.query;
+        const { classroomId, term, session } = req.query;
         // Get all active students first
         let studentFilter = { status: "active" };
         if (classroomId) {
@@ -541,11 +586,19 @@ const getArrears = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         // Get all existing fee structures to filter fees
         const feeStructures = yield FeeStructure_1.FeeStructure.find({})
             .populate("classroomId", "_id")
-            .populate("termId", "name year");
+            .populate({
+            path: "termId",
+            populate: {
+                path: "sessionId",
+                select: "name",
+            },
+        });
         // Create a map of existing fee structures for quick lookup
         const feeStructureMap = new Map();
         feeStructures.forEach((fs) => {
-            const key = `${fs.classroomId._id}-${fs.termId.name}-${fs.termId.year}`;
+            var _a;
+            const sessionName = ((_a = fs.termId.sessionId) === null || _a === void 0 ? void 0 : _a.name) || "Unknown Session";
+            const key = `${fs.classroomId._id}-${fs.termId.name}-${sessionName}`;
             feeStructureMap.set(key, fs);
         });
         // Filter students with unpaid fees that have corresponding fee structures
@@ -555,12 +608,12 @@ const getArrears = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             let unpaidFees = student.termFees.filter((fee) => {
                 var _a;
                 // Only include fees that have a corresponding fee structure
-                const feeKey = `${(_a = student.classroomId) === null || _a === void 0 ? void 0 : _a._id}-${fee.term}-${fee.year}`;
+                const feeKey = `${(_a = student.classroomId) === null || _a === void 0 ? void 0 : _a._id}-${fee.term}-${fee.session}`;
                 return !fee.paid && feeStructureMap.has(feeKey);
             });
-            // Filter by specific term/year if provided
-            if (term && year) {
-                unpaidFees = unpaidFees.filter((fee) => fee.term === term && fee.year === parseInt(year));
+            // Filter by specific term/session if provided
+            if (term && session) {
+                unpaidFees = unpaidFees.filter((fee) => fee.term === term && fee.session === session);
             }
             // Only include students with unpaid fees
             if (unpaidFees.length > 0) {
@@ -733,15 +786,15 @@ exports.syncIndividualStudentFees = syncIndividualStudentFees;
 // @route   POST /api/admin/fees/terms/:termId/sync
 // @access  Private/Admin
 const syncTermsFees = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
     try {
         const { termId } = req.params;
-        // Validate term exists
-        const term = yield Term_1.Term.findById(termId);
+        // Validate term exists with session populated
+        const term = yield Term_1.Term.findById(termId).populate("sessionId");
         if (!term) {
             return res.status(404).json({ message: "Term not found" });
         }
-        console.log(`Starting fee sync for term: ${term.name} ${term.year}`);
+        console.log(`Starting fee sync for term: ${term.name} ${((_a = term.sessionId) === null || _a === void 0 ? void 0 : _a.name) || "Unknown Session"}`);
         const startTime = Date.now();
         // Get all active fee structures for this term
         const feeStructures = yield FeeStructure_1.FeeStructure.find({
@@ -749,14 +802,20 @@ const syncTermsFees = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             isActive: true,
         })
             .populate("classroomId", "_id")
-            .populate("termId", "name year");
+            .populate({
+            path: "termId",
+            populate: {
+                path: "sessionId",
+                select: "name",
+            },
+        });
         if (feeStructures.length === 0) {
             return res.json({
                 message: "No active fee structures found for this term",
                 stats: { totalFeeStructures: 0, syncedClassrooms: 0, totalStudents: 0 },
             });
         }
-        console.log(`Found ${feeStructures.length} fee structures for term ${term.name} ${term.year}`);
+        console.log(`Found ${feeStructures.length} fee structures for term ${term.name} ${((_b = term.sessionId) === null || _b === void 0 ? void 0 : _b.name) || "Unknown Session"}`);
         let totalSyncedStudents = 0;
         let totalFeesProcessed = 0;
         let totalErrors = 0;
@@ -771,13 +830,13 @@ const syncTermsFees = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             }
             processedClassrooms.add(classroomId);
             try {
-                console.log(`Syncing classroom ${classroomId} for term ${term.name} ${term.year}`);
-                const result = yield (0, feeSync_service_1.syncStudentFeesForClassroomBatched)(classroomId, (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id) === null || _b === void 0 ? void 0 : _b.toString());
+                console.log(`Syncing classroom ${classroomId} for term ${term.name} ${((_c = term.sessionId) === null || _c === void 0 ? void 0 : _c.name) || "Unknown Session"}`);
+                const result = yield (0, feeSync_service_1.syncStudentFeesForClassroomBatched)(classroomId, (_e = (_d = req.user) === null || _d === void 0 ? void 0 : _d._id) === null || _e === void 0 ? void 0 : _e.toString());
                 classroomResults.push({
                     classroomId,
                     students: result.created + result.updated,
                     feesProcessed: result.attempted,
-                    errors: ((_c = result.errors) === null || _c === void 0 ? void 0 : _c.length) || 0,
+                    errors: ((_f = result.errors) === null || _f === void 0 ? void 0 : _f.length) || 0,
                 });
                 totalSyncedStudents += result.created + result.updated;
                 totalFeesProcessed += result.attempted;
@@ -799,17 +858,17 @@ const syncTermsFees = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const duration = Date.now() - startTime;
         // Create audit log
         yield AuditLog_1.AuditLog.create({
-            userId: (_d = req.user) === null || _d === void 0 ? void 0 : _d._id,
+            userId: (_g = req.user) === null || _g === void 0 ? void 0 : _g._id,
             actionType: "FEE_STRUCTURE_UPDATE",
-            description: `Term fee sync completed: ${term.name} ${term.year} - ${totalSyncedStudents} students synced, ${totalFeesProcessed} fees processed in ${duration}ms`,
+            description: `Term fee sync completed: ${term.name} ${((_h = term.sessionId) === null || _h === void 0 ? void 0 : _h.name) || "Unknown Session"} - ${totalSyncedStudents} students synced, ${totalFeesProcessed} fees processed in ${duration}ms`,
             targetId: term._id,
         });
         res.json({
-            message: `Term fee synchronization completed for ${term.name} ${term.year}`,
+            message: `Term fee synchronization completed for ${term.name} ${((_j = term.sessionId) === null || _j === void 0 ? void 0 : _j.name) || "Unknown Session"}`,
             term: {
                 _id: term._id,
                 name: term.name,
-                year: term.year,
+                session: ((_k = term.sessionId) === null || _k === void 0 ? void 0 : _k.name) || "Unknown Session",
             },
             stats: {
                 totalFeeStructures: feeStructures.length,
@@ -915,7 +974,13 @@ const getOperationStatus = (req, res) => __awaiter(void 0, void 0, void 0, funct
             operationId: req.params.operationId,
         })
             .populate("classroomId", "name")
-            .populate("termId", "name year")
+            .populate({
+            path: "termId",
+            populate: {
+                path: "sessionId",
+                select: "name",
+            },
+        })
             .populate("enqueuedBy", "name");
         if (!operation) {
             return res.status(404).json({ message: "Operation not found" });
@@ -931,6 +996,7 @@ exports.getOperationStatus = getOperationStatus;
 // @route   GET /api/admin/fees/health-check
 // @access  Private/Admin
 const getFeeHealthCheck = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         console.log("Starting fee system health check...");
         const healthReport = {
@@ -955,11 +1021,19 @@ const getFeeHealthCheck = (req, res) => __awaiter(void 0, void 0, void 0, functi
         // Get all fee structures
         const feeStructures = yield FeeStructure_1.FeeStructure.find({})
             .populate("classroomId", "_id name")
-            .populate("termId", "name year startDate endDate");
+            .populate({
+            path: "termId",
+            populate: {
+                path: "sessionId",
+                select: "name",
+            },
+        });
         // Create fee structure lookup map
         const feeStructureMap = new Map();
         feeStructures.forEach((fs) => {
-            const key = `${fs.classroomId._id}-${fs.termId.name}-${fs.termId.year}`;
+            var _a;
+            const sessionName = ((_a = fs.termId.sessionId) === null || _a === void 0 ? void 0 : _a.name) || "Unknown Session";
+            const key = `${fs.classroomId._id}-${fs.termId.name}-${sessionName}`;
             feeStructureMap.set(key, fs);
         });
         // Analyze each student
@@ -986,8 +1060,12 @@ const getFeeHealthCheck = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 // Skip if student wasn't enrolled during this term
                 if (admissionDate > termEnd)
                     continue;
-                const feeKey = `${term.name}-${term.year}`;
-                const hasFee = student.termFees.some((fee) => fee.term === term.name && fee.year === term.year);
+                const feeKey = `${term.name}-${((_a = term.sessionId) === null || _a === void 0 ? void 0 : _a.name) || "Unknown Session"}`;
+                const hasFee = student.termFees.some((fee) => {
+                    var _a;
+                    return fee.term === term.name &&
+                        fee.session === ((_a = term.sessionId) === null || _a === void 0 ? void 0 : _a.name);
+                });
                 if (!hasFee) {
                     missingFees.push({
                         term: term.name,
@@ -1009,11 +1087,14 @@ const getFeeHealthCheck = (req, res) => __awaiter(void 0, void 0, void 0, functi
             // Check for extra fees (fees without corresponding fee structures)
             const extraFees = [];
             for (const fee of student.termFees) {
-                const feeKey = `${classroomId}-${fee.term}-${fee.year}`;
+                const feeKey = `${classroomId}-${fee.term}-${fee.session}`;
                 if (!feeStructureMap.has(feeKey)) {
                     // Check if student was enrolled during this term
-                    const term = feeStructures.find((fs) => fs.termId.name === fee.term &&
-                        fs.termId.year === fee.year);
+                    const term = feeStructures.find((fs) => {
+                        var _a;
+                        return fs.termId.name === fee.term &&
+                            ((_a = fs.termId.sessionId) === null || _a === void 0 ? void 0 : _a.name) === fee.session;
+                    });
                     if (term) {
                         const termEnd = new Date(term.termId.endDate);
                         if (admissionDate <= termEnd) {

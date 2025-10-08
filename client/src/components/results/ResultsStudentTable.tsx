@@ -1,4 +1,4 @@
-import React, { useState, useRef, KeyboardEvent } from "react";
+import React, { useState, useRef, KeyboardEvent, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, UserCheck } from "lucide-react";
 import { useResultsManagementStore } from "@/store/resultsManagementStore";
 import { Student } from "@/hooks/useResultsStudentsQuery";
 
@@ -31,6 +31,8 @@ interface ActionButton {
 interface ResultsStudentTableProps {
   students: Student[];
   pagination?: Pagination;
+  currentPage?: number;
+  onPageChange?: (page: number) => void;
   onEnterResults?: (studentId: string) => void; // Keep for backward compatibility
   actions?: ActionButton[];
   buttonText?: string; // Keep for backward compatibility
@@ -39,6 +41,9 @@ interface ResultsStudentTableProps {
 
 export default function ResultsStudentTable({
   students,
+  pagination,
+  currentPage = 1,
+  onPageChange,
   onEnterResults,
   actions,
   buttonText = "Enter Results",
@@ -58,12 +63,20 @@ export default function ResultsStudentTable({
       : []);
   const { searchQuery, setSearchQuery } = useResultsManagementStore();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
 
   // Students are already filtered by the hook
   const filteredStudents = students;
 
   // Focus management for keyboard navigation
   const [focusedRowIndex, setFocusedRowIndex] = useState<number | null>(null);
+
+  // Auto-scroll to top when page changes
+  useEffect(() => {
+    if (tableRef.current) {
+      tableRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [currentPage]);
 
   const handleEnterResults = (studentId: string) => {
     if (actionButtons.length > 0) {
@@ -119,7 +132,12 @@ export default function ResultsStudentTable({
   };
 
   return (
-    <div className="space-y-4" role="region" aria-label="Student results table">
+    <div
+      ref={tableRef}
+      className="space-y-4"
+      role="region"
+      aria-label="Student results table"
+    >
       {/* Search Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:space-x-2">
         <div className="relative flex-1 max-w-sm w-full">
@@ -180,7 +198,7 @@ export default function ResultsStudentTable({
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-3">
                   <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-semibold text-sm">
-                    {index + 1}
+                    {(currentPage - 1) * (pagination?.limit || 10) + index + 1}
                   </span>
                   <div>
                     <h3 className="font-medium text-gray-900">
@@ -292,9 +310,11 @@ export default function ResultsStudentTable({
                   <TableCell
                     className="font-medium"
                     role="cell"
-                    aria-label={`Row ${index + 1}`}
+                    aria-label={`Row ${
+                      (currentPage - 1) * (pagination?.limit || 10) + index + 1
+                    }`}
                   >
-                    {index + 1}
+                    {(currentPage - 1) * (pagination?.limit || 10) + index + 1}
                   </TableCell>
                   <TableCell
                     className="font-mono text-sm"
@@ -359,6 +379,68 @@ export default function ResultsStudentTable({
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
+      {pagination && pagination.pages > 1 && onPageChange && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
+          <div className="text-sm text-muted-foreground">
+            Showing {(pagination.page - 1) * (pagination.limit || 10) + 1} to{" "}
+            {Math.min(
+              pagination.page * (pagination.limit || 10),
+              pagination.total
+            )}{" "}
+            of {pagination.total} students
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(pagination.page - 1)}
+              disabled={pagination.page <= 1}
+            >
+              Previous
+            </Button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                let pageNum;
+                if (pagination.pages <= 5) {
+                  pageNum = i + 1;
+                } else if (pagination.page <= 3) {
+                  pageNum = i + 1;
+                } else if (pagination.page >= pagination.pages - 2) {
+                  pageNum = pagination.pages - 4 + i;
+                } else {
+                  pageNum = pagination.page - 2 + i;
+                }
+
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={
+                      pageNum === pagination.page ? "default" : "outline"
+                    }
+                    size="sm"
+                    onClick={() => onPageChange(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(pagination.page + 1)}
+              disabled={pagination.page >= pagination.pages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Instructions */}
       <div id="table-instructions" className="sr-only">

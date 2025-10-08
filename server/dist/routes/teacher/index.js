@@ -15,9 +15,10 @@ router.post("/attendance", attendanceController_1.markAttendance);
 router.get("/attendance", attendanceController_1.getAttendanceHistory);
 // Results routes
 router.post("/results", resultController_1.submitResults);
-router.get("/results/:studentId", resultController_1.getStudentResults);
 router.get("/results/students", resultController_1.getClassroomStudents);
+router.get("/results/:studentId", resultController_1.getStudentResults);
 // Classroom routes
 router.get("/classroom", resultController_1.getClassroomDetails);
 router.get("/classrooms", resultController_1.getTeacherClassrooms);
+router.get("/classrooms/:classroomId/subjects", resultController_1.getClassroomSubjects);
 exports.default = router;

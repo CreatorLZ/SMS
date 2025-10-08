@@ -33,7 +33,7 @@ function generateOperationId() {
 }
 function syncStudentFeesForClassroomBatched(classroomId, userId) {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b;
+        var _a, _b, _c;
         const operationId = generateOperationId();
         const errors = [];
         let created = 0;
@@ -43,7 +43,13 @@ function syncStudentFeesForClassroomBatched(classroomId, userId) {
         const feeStructures = yield FeeStructure_1.FeeStructure.find({
             classroomId,
             isActive: true,
-        }).populate("termId", "name year");
+        }).populate({
+            path: "termId",
+            populate: {
+                path: "sessionId",
+                select: "name",
+            },
+        });
         if (!feeStructures || feeStructures.length === 0) {
             return { operationId, created, updated, attempted, errors };
         }
@@ -60,10 +66,10 @@ function syncStudentFeesForClassroomBatched(classroomId, userId) {
                 if (!term)
                     continue;
                 const termName = term.name;
-                const year = term.year;
-                const amount = (_a = fs.amount) !== null && _a !== void 0 ? _a : 0;
+                const sessionName = ((_a = term.sessionId) === null || _a === void 0 ? void 0 : _a.name) || "Unknown Session";
+                const amount = (_b = fs.amount) !== null && _b !== void 0 ? _b : 0;
                 // Check if student already has this fee
-                const hasTerm = (_b = student.termFees) === null || _b === void 0 ? void 0 : _b.some((t) => t.term === termName && t.year === year);
+                const hasTerm = (_c = student.termFees) === null || _c === void 0 ? void 0 : _c.some((t) => t.term === termName && t.session === sessionName);
                 if (!hasTerm) {
                     // Add new fee entry
                     bulkOps.push({
@@ -71,13 +77,13 @@ function syncStudentFeesForClassroomBatched(classroomId, userId) {
                             filter: {
                                 _id: student._id,
                                 "termFees.term": { $ne: termName },
-                                "termFees.year": { $ne: year },
+                                "termFees.session": { $ne: sessionName },
                             },
                             update: {
                                 $push: {
                                     termFees: {
                                         term: termName,
-                                        year,
+                                        session: sessionName,
                                         paid: false,
                                         pinCode: generatePinCode(),
                                         viewable: false,
@@ -96,14 +102,14 @@ function syncStudentFeesForClassroomBatched(classroomId, userId) {
                 }
                 else {
                     // Update existing fee amount if changed
-                    const existingFee = student.termFees.find((t) => t.term === termName && t.year === year);
+                    const existingFee = student.termFees.find((t) => t.term === termName && t.session === sessionName);
                     if (existingFee && existingFee.amount !== amount) {
                         bulkOps.push({
                             updateOne: {
                                 filter: {
                                     _id: student._id,
                                     "termFees.term": termName,
-                                    "termFees.year": year,
+                                    "termFees.session": sessionName,
                                 },
                                 update: {
                                     $set: {
@@ -124,7 +130,7 @@ function syncStudentFeesForClassroomBatched(classroomId, userId) {
                                 filter: {
                                     _id: student._id,
                                     "termFees.term": termName,
-                                    "termFees.year": year,
+                                    "termFees.session": sessionName,
                                 },
                                 update: {
                                     $set: {
@@ -238,11 +244,11 @@ function removeDuplicateStudentFees(userId) {
             for (const student of students) {
                 if (!student.termFees || student.termFees.length === 0)
                     continue;
-                // Find duplicate term/year combinations
+                // Find duplicate term/session combinations
                 const seenTerms = new Map();
                 const toRemove = [];
                 student.termFees.forEach((fee, index) => {
-                    const key = `${fee.term}-${fee.year}`;
+                    const key = `${fee.term}-${fee.session}`;
                     if (!seenTerms.has(key)) {
                         seenTerms.set(key, []);
                     }
@@ -267,10 +273,10 @@ function removeDuplicateStudentFees(userId) {
                 // Remove duplicates if any found
                 if (toRemove.length > 0) {
                     try {
-                        // Simpler approach: remove all duplicate entries by term/year
+                        // Simpler approach: remove all duplicate entries by term/session
                         const removeConditions = toRemove.map((index) => {
                             const fee = student.termFees[parseInt(index)];
-                            return { term: fee.term, year: fee.year };
+                            return { term: fee.term, session: fee.session };
                         });
                         yield Student_1.Student.updateOne({ _id: student._id }, {
                             $pull: {
@@ -315,11 +321,19 @@ function backfillMissingFees(userId) {
             // Get all active fee structures
             const feeStructures = yield FeeStructure_1.FeeStructure.find({ isActive: true })
                 .populate("classroomId", "_id")
-                .populate("termId", "name year startDate endDate");
+                .populate({
+                path: "termId",
+                populate: {
+                    path: "sessionId",
+                    select: "name",
+                },
+            });
             // Create fee structure lookup
             const feeStructureMap = new Map();
             feeStructures.forEach((fs) => {
-                const key = `${fs.classroomId._id}-${fs.termId.name}-${fs.termId.year}`;
+                var _a;
+                const sessionName = ((_a = fs.termId.sessionId) === null || _a === void 0 ? void 0 : _a.name) || "Unknown Session";
+                const key = `${fs.classroomId._id}-${fs.termId.name}-${sessionName}`;
                 feeStructureMap.set(key, fs);
             });
             // Check each student for missing fees
@@ -331,20 +345,22 @@ function backfillMissingFees(userId) {
                 const missingFees = [];
                 // Check for missing fees that should exist
                 feeStructures.forEach((fs) => {
+                    var _a;
                     const fsClassroomId = fs.classroomId._id.toString();
                     if (fsClassroomId !== classroomId)
                         return;
                     const term = fs.termId;
                     const termEnd = new Date(term.endDate);
+                    const sessionName = ((_a = term.sessionId) === null || _a === void 0 ? void 0 : _a.name) || "Unknown Session";
                     // Skip if student wasn't enrolled during this term
                     if (admissionDate > termEnd)
                         return;
-                    const feeKey = `${term.name}-${term.year}`;
-                    const hasFee = student.termFees.some((fee) => fee.term === term.name && fee.year === term.year);
+                    const feeKey = `${term.name}-${sessionName}`;
+                    const hasFee = student.termFees.some((fee) => fee.term === term.name && fee.session === sessionName);
                     if (!hasFee) {
                         missingFees.push({
                             term: term.name,
-                            year: term.year,
+                            session: sessionName,
                             amount: fs.amount,
                             feeStructureId: fs._id,
                         });
@@ -360,13 +376,13 @@ function backfillMissingFees(userId) {
                                 filter: {
                                     _id: student._id,
                                     "termFees.term": { $ne: missingFee.term },
-                                    "termFees.year": { $ne: missingFee.year },
+                                    "termFees.session": { $ne: missingFee.session },
                                 },
                                 update: {
                                     $push: {
                                         termFees: {
                                             term: missingFee.term,
-                                            year: missingFee.year,
+                                            session: missingFee.session,
                                             paid: false,
                                             pinCode: generatePinCode(),
                                             viewable: false,

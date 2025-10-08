@@ -62,6 +62,8 @@ const auditLogSchema = new Schema({
       "STUDENT_PHOTO_UPDATE",
       "CLASSROOM_TEACHER_REASSIGN",
       "RESULT_SUBMIT",
+      "FEE_RECONCILIATION",
+      "FEE_AUTO_REPAIR",
     ],
   },
   description: {

@@ -17,6 +17,7 @@ const multer_1 = __importDefault(require("multer"));
 const auth_1 = require("../../middleware/auth");
 const userController_1 = require("../../controllers/admin/userController");
 const termController_1 = require("../../controllers/admin/termController");
+const sessionController_1 = require("../../controllers/admin/sessionController");
 const subjectController_1 = require("../../controllers/admin/subjectController");
 const classroomSubjectController_1 = require("../../controllers/admin/classroomSubjectController");
 const studentIdGenerator_1 = require("../../utils/studentIdGenerator");
@@ -96,6 +97,17 @@ router
 router.route("/terms/:id").put((0, auth_1.requirePermission)("terms.update"), termController_1.updateTerm);
 router.patch("/terms/:id/activate", (0, auth_1.requirePermission)("terms.activate"), termController_1.activateTerm);
 router.patch("/terms/:id/deactivate", (0, auth_1.requirePermission)("terms.update"), termController_1.deactivateTerm);
+// Session routes
+router
+    .route("/sessions")
+    .post((0, auth_1.requirePermission)("terms.create"), sessionController_1.createSession)
+    .get((0, auth_1.requirePermission)("terms.read"), sessionController_1.getSessions);
+router
+    .route("/sessions/:id")
+    .put((0, auth_1.requirePermission)("terms.update"), sessionController_1.updateSession);
+router.patch("/sessions/:id/activate", (0, auth_1.requirePermission)("terms.activate"), sessionController_1.activateSession);
+router.patch("/sessions/:id/deactivate", (0, auth_1.requirePermission)("terms.update"), sessionController_1.deactivateSession);
+router.delete("/sessions/:id", (0, auth_1.requirePermission)("terms.delete"), sessionController_1.deleteSession);
 // Classroom routes
 router
     .route("/classrooms")

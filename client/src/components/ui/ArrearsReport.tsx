@@ -81,7 +81,7 @@ export default function ArrearsReport({ onExport }: ArrearsReportProps) {
         "Name",
         "Class",
         "Term",
-        "Year",
+        "Session",
         "Amount",
         "PIN Code",
       ].join(","),
@@ -92,7 +92,7 @@ export default function ArrearsReport({ onExport }: ArrearsReportProps) {
             `"${student.fullName}"`,
             student.currentClass,
             fee.term,
-            fee.year,
+            fee.session,
             fee.amount,
             fee.pinCode,
           ].join(",")
@@ -281,7 +281,7 @@ export default function ArrearsReport({ onExport }: ArrearsReportProps) {
                                 key={index}
                                 className="text-xs text-muted-foreground"
                               >
-                                {fee.term} {fee.year}:{" "}
+                                {fee.term} {fee.session}:{" "}
                                 {formatCurrency(fee.amount)}
                               </div>
                             ))}

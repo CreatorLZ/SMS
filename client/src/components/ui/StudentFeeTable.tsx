@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "./button";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Badge } from "./badge";
@@ -87,12 +87,34 @@ interface StudentFeeTableProps {
 export default function StudentFeeTable({
   onMarkPaidClick,
 }: StudentFeeTableProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedClassroom, setSelectedClassroom] = useState("");
+  const tableRef = useRef<HTMLDivElement>(null);
 
-  const { studentFees, isLoadingStudentFees } = useFeeStore();
-  const { data } = useStudentsQuery();
-  const students = data?.students || [];
+  const {
+    studentFees,
+    isLoadingStudentFees,
+    studentFeesPage,
+    studentFeesSearch,
+    studentFeesClassFilter,
+    setStudentFeesPage,
+    setStudentFeesSearch,
+    setStudentFeesClassFilter,
+  } = useFeeStore();
+
+  const { data: studentsResponse, isLoading: isLoadingStudents } =
+    useStudentsQuery(
+      studentFeesSearch,
+      studentFeesClassFilter,
+      studentFeesPage
+    );
+
+  const students = studentsResponse?.students || [];
+
+  // Auto-scroll to top when page changes
+  useEffect(() => {
+    if (tableRef.current) {
+      tableRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [studentFeesPage]);
   const { getStudentFees } = useStudentFees();
 
   const handleViewFees = async (studentId: string) => {
@@ -132,20 +154,6 @@ export default function StudentFeeTable({
     );
   };
 
-  // Filter students based on search and classroom
-  const filteredStudents = students.filter((student: any) => {
-    const matchesSearch =
-      student.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.studentId.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesClassroom =
-      !selectedClassroom ||
-      selectedClassroom === "all" ||
-      student.classroomId === selectedClassroom;
-
-    return matchesSearch && matchesClassroom;
-  });
-
   // Get unique classrooms for filter
   const classrooms = [
     ...new Set(
@@ -156,7 +164,7 @@ export default function StudentFeeTable({
   ];
 
   return (
-    <div className="space-y-6">
+    <div ref={tableRef} className="space-y-6">
       {/* Current Student Fees Display */}
       {studentFees && (
         <Card>
@@ -182,9 +190,9 @@ export default function StudentFeeTable({
                 </TableHeader>
                 <TableBody>
                   {studentFees.termFees.map((fee: any) => (
-                    <TableRow key={`${fee.term}-${fee.year}`}>
+                    <TableRow key={`${fee.term}-${fee.session}`}>
                       <TableCell className="font-medium">
-                        {fee.term} {fee.year}
+                        {fee.term} {fee.session}
                       </TableCell>
                       <TableCell>{formatCurrency(fee.amount)}</TableCell>
                       <TableCell>{getPaymentStatusBadge(fee.paid)}</TableCell>
@@ -229,14 +237,14 @@ export default function StudentFeeTable({
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder="Search students..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={studentFeesSearch}
+                onChange={(e) => setStudentFeesSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
             <Select
-              value={selectedClassroom}
-              onValueChange={setSelectedClassroom}
+              value={studentFeesClassFilter}
+              onValueChange={setStudentFeesClassFilter}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="All Classrooms" />
@@ -258,7 +266,7 @@ export default function StudentFeeTable({
           </div>
         </CardHeader>
         <CardContent>
-          {isLoadingStudentFees ? (
+          {isLoadingStudents ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
                 <div
@@ -282,7 +290,7 @@ export default function StudentFeeTable({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredStudents.map((student: any) => (
+                  {students.map((student: any) => (
                     <StudentFeeRow
                       key={student._id}
                       student={student}
@@ -295,13 +303,98 @@ export default function StudentFeeTable({
             </div>
           )}
 
-          {filteredStudents.length === 0 && !isLoadingStudentFees && (
+          {students.length === 0 && !isLoadingStudents && (
             <div className="text-center py-8">
               <p className="text-muted-foreground">No students found</p>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {studentsResponse?.pagination &&
+        studentsResponse.pagination.pages > 1 && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing{" "}
+                  {(studentFeesPage - 1) *
+                    (studentsResponse.pagination.limit || 10) +
+                    1}{" "}
+                  to{" "}
+                  {Math.min(
+                    studentFeesPage * (studentsResponse.pagination.limit || 10),
+                    studentsResponse.pagination.total
+                  )}{" "}
+                  of {studentsResponse.pagination.total} students
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStudentFeesPage(studentFeesPage - 1)}
+                    disabled={studentFeesPage <= 1 || isLoadingStudents}
+                  >
+                    Previous
+                  </Button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from(
+                      {
+                        length: Math.min(5, studentsResponse.pagination.pages),
+                      },
+                      (_, i) => {
+                        let pageNum;
+                        if (studentsResponse.pagination.pages <= 5) {
+                          pageNum = i + 1;
+                        } else if (studentFeesPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (
+                          studentFeesPage >=
+                          studentsResponse.pagination.pages - 2
+                        ) {
+                          pageNum = studentsResponse.pagination.pages - 4 + i;
+                        } else {
+                          pageNum = studentFeesPage - 2 + i;
+                        }
+
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={
+                              pageNum === studentFeesPage
+                                ? "default"
+                                : "outline"
+                            }
+                            size="sm"
+                            onClick={() => setStudentFeesPage(pageNum)}
+                            disabled={isLoadingStudents}
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      }
+                    )}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStudentFeesPage(studentFeesPage + 1)}
+                    disabled={
+                      studentFeesPage >= studentsResponse.pagination.pages ||
+                      isLoadingStudents
+                    }
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
     </div>
   );
 }

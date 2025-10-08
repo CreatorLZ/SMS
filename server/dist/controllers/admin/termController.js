@@ -51,20 +51,22 @@ const AuditLog_1 = require("../../models/AuditLog");
 const createTerm = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        const { name, year, startDate, endDate, holidays } = req.body;
+        const { name, sessionId, startDate, endDate, holidays } = req.body;
         const term = yield Term_1.Term.create({
             name,
-            year,
+            sessionId,
             startDate,
             endDate,
             holidays: holidays || [],
             isActive: false,
         });
+        // Populate session data for audit log
+        yield term.populate("sessionId");
         // Create audit log
         yield AuditLog_1.AuditLog.create({
             userId: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id,
             actionType: "TERM_CREATE",
-            description: `Created new term: ${name} ${year}`,
+            description: `Created new term: ${name} ${term.sessionId.name}`,
             targetId: term._id,
         });
         res.status(201).json(term);
@@ -114,11 +116,13 @@ const activateTerm = (req, res) => __awaiter(void 0, void 0, void 0, function* (
                 // Don't fail the activation if sync fails
             }
         }
+        // Populate session data for audit log
+        yield term.populate("sessionId");
         // Create audit log
         yield AuditLog_1.AuditLog.create({
             userId: (_d = req.user) === null || _d === void 0 ? void 0 : _d._id,
             actionType: "TERM_ACTIVATE",
-            description: `Activated term: ${term.name} ${term.year}${feeStructuresUpdated.modifiedCount > 0
+            description: `Activated term: ${term.name} ${term.sessionId.name}${feeStructuresUpdated.modifiedCount > 0
                 ? ` and synced fees for ${feeStructuresUpdated.modifiedCount} fee structures`
                 : ""}`,
             targetId: term._id,
@@ -141,30 +145,31 @@ exports.activateTerm = activateTerm;
 const updateTerm = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        const { name, year, startDate, endDate, holidays } = req.body;
+        const { name, sessionId, startDate, endDate, holidays } = req.body;
         const term = yield Term_1.Term.findById(req.params.id);
         if (!term) {
             return res.status(404).json({ message: "Term not found" });
         }
-        // Check if new term name/year combination conflicts with existing term
-        if ((name && name !== term.name) || (year && year !== term.year)) {
+        // Check if new term name/sessionId combination conflicts with existing term
+        if ((name && name !== term.name) ||
+            (sessionId && sessionId !== term.sessionId.toString())) {
             const existingTerm = yield Term_1.Term.findOne({
                 name: name || term.name,
-                year: year || term.year,
+                sessionId: sessionId || term.sessionId,
                 _id: { $ne: req.params.id },
             });
             if (existingTerm) {
                 return res.status(400).json({
-                    message: `Term "${name || term.name} ${year || term.year}" already exists`,
+                    message: `Term "${name || term.name}" already exists for this session`,
                 });
             }
         }
-        const updatedTerm = yield Term_1.Term.findByIdAndUpdate(req.params.id, { name, year, startDate, endDate, holidays }, { new: true, runValidators: true });
+        const updatedTerm = yield Term_1.Term.findByIdAndUpdate(req.params.id, { name, sessionId, startDate, endDate, holidays }, { new: true, runValidators: true }).populate("sessionId");
         // Create audit log
         yield AuditLog_1.AuditLog.create({
             userId: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id,
             actionType: "TERM_UPDATE",
-            description: `Updated term: ${term.name} ${term.year}`,
+            description: `Updated term: ${term.name} ${term.sessionId.name}`,
             targetId: term._id,
         });
         res.json(updatedTerm);
@@ -192,11 +197,13 @@ const deactivateTerm = (req, res) => __awaiter(void 0, void 0, void 0, function*
         // Deactivate the term
         term.isActive = false;
         yield term.save();
+        // Populate session data for audit log
+        yield term.populate("sessionId");
         // Create audit log
         yield AuditLog_1.AuditLog.create({
             userId: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id,
             actionType: "TERM_DEACTIVATE",
-            description: `Deactivated term: ${term.name} ${term.year}`,
+            description: `Deactivated term: ${term.name} ${term.sessionId.name}`,
             targetId: term._id,
         });
         res.json(term);
@@ -211,7 +218,9 @@ exports.deactivateTerm = deactivateTerm;
 // @access  Private/Admin
 const getTerms = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const terms = yield Term_1.Term.find().sort({ year: -1, name: 1 });
+        const terms = yield Term_1.Term.find()
+            .populate("sessionId")
+            .sort({ "sessionId.startYear": -1, name: 1 });
         res.json(terms);
     }
     catch (error) {

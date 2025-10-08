@@ -11,12 +11,15 @@ import StudentFeeTable from "@/components/ui/StudentFeeTable";
 import ArrearsReport from "@/components/ui/ArrearsReport";
 import ReconcilePage from "@/components/ui/ReconcilePage";
 import CreateFeeStructureModal from "@/components/ui/CreateFeeStructureModal";
+import EditFeeStructureModal from "@/components/ui/EditFeeStructureModal";
 import MarkFeePaidModal from "@/components/ui/MarkFeePaidModal";
 
 export default function FeesPage() {
   const [activeTab, setActiveTab] = useState("structures");
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [markPaidModalOpen, setMarkPaidModalOpen] = useState(false);
+  const [selectedFeeStructure, setSelectedFeeStructure] = useState<any>(null);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedFee, setSelectedFee] = useState<any>(null);
 
@@ -25,8 +28,8 @@ export default function FeesPage() {
   };
 
   const handleEditFeeStructure = (structure: any) => {
-    // TODO: Implement edit functionality
-    console.log("Edit structure:", structure);
+    setSelectedFeeStructure(structure);
+    setEditModalOpen(true);
   };
 
   const handleMarkFeePaid = (student: any, fee: any) => {
@@ -139,6 +142,12 @@ export default function FeesPage() {
           <CreateFeeStructureModal
             open={createModalOpen}
             onOpenChange={setCreateModalOpen}
+          />
+
+          <EditFeeStructureModal
+            open={editModalOpen}
+            onOpenChange={setEditModalOpen}
+            feeStructure={selectedFeeStructure}
           />
 
           <MarkFeePaidModal

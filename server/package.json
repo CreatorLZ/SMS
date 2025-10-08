@@ -10,7 +10,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed:subjects": "ts-node -r tsconfig-paths/register src/scripts/seedSubjects.ts",
     "reset:subjects": "ts-node -r tsconfig-paths/register src/scripts/resetSubjects.ts",
-    "reset-and-seed": "npm run reset:subjects && npm run seed:subjects"
+    "reset-and-seed": "npm run reset:subjects && npm run seed:subjects",
+    "create:students": "ts-node -r tsconfig-paths/register src/scripts/createStudents.ts",
+    "fix:student-fullnames": "ts-node -r tsconfig-paths/register src/scripts/fixStudentFullNames.ts"
   },
   "keywords": [],
   "author": "",

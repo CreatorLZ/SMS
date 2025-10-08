@@ -68,6 +68,7 @@ export const useResultsManagementStore = create<ResultsManagementState>(
     setSearchQuery: (query: string) =>
       set({
         searchQuery: query,
+        currentPage: 1,
       }),
 
     setCurrentPage: (page: number) =>

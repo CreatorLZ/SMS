@@ -12,11 +12,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getClassroomStudents = exports.getTeacherClassrooms = exports.getClassroomDetails = exports.getStudentResults = exports.submitResults = void 0;
+exports.getClassroomSubjects = exports.getClassroomStudents = exports.getTeacherClassrooms = exports.getClassroomDetails = exports.getStudentResults = exports.submitResults = void 0;
 const Student_1 = require("../../models/Student");
 const Classroom_1 = require("../../models/Classroom");
 const AuditLog_1 = require("../../models/AuditLog");
 const Term_1 = require("../../models/Term");
+const Session_1 = __importDefault(require("../../models/Session"));
 const mongoose_1 = __importDefault(require("mongoose"));
 // @desc    Submit or update student results
 // @route   POST /api/teacher/results
@@ -26,10 +27,25 @@ const submitResults = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     try {
         const { studentId, term, year, scores, comment } = req.body;
         const teacherId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+        // Debug logging
+        console.log("submitResults called with:", {
+            studentId,
+            studentIdType: typeof studentId,
+            teacherId,
+            term,
+            year,
+        });
         if (!teacherId) {
             return res
                 .status(401)
                 .json({ message: "Unauthorized: teacher ID missing" });
+        }
+        if (!studentId) {
+            return res.status(400).json({ message: "studentId is required" });
+        }
+        if (!mongoose_1.default.Types.ObjectId.isValid(studentId)) {
+            console.error(`ERROR: Invalid studentId format: ${studentId}`);
+            return res.status(400).json({ message: "Invalid studentId format" });
         }
         // Verify teacher has access to this student
         const classroom = yield Classroom_1.Classroom.findOne({
@@ -41,10 +57,17 @@ const submitResults = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 message: "You don't have permission to submit results for this student",
             });
         }
+        // Find the session by startYear
+        const session = yield Session_1.default.findOne({ startYear: year });
+        if (!session) {
+            return res.status(400).json({
+                message: "Invalid session year",
+            });
+        }
         // Verify term exists and is active
         const termExists = yield Term_1.Term.findOne({
             name: term,
-            year,
+            sessionId: session._id,
             isActive: true,
         });
         if (!termExists) {
@@ -138,6 +161,19 @@ const getStudentResults = (req, res) => __awaiter(void 0, void 0, void 0, functi
     try {
         const { studentId } = req.params;
         const teacherId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+        // Debug logging
+        console.log("getStudentResults called with:", {
+            studentId,
+            studentIdType: typeof studentId,
+            teacherId,
+        });
+        if (!studentId) {
+            return res.status(400).json({ message: "studentId is required" });
+        }
+        if (!mongoose_1.default.Types.ObjectId.isValid(studentId)) {
+            console.error(`ERROR: Invalid studentId format: ${studentId}`);
+            return res.status(400).json({ message: "Invalid studentId format" });
+        }
         // Verify teacher has access to this student
         const classroom = yield Classroom_1.Classroom.findOne({
             teacherId,
@@ -206,11 +242,31 @@ const getClassroomStudents = (req, res) => __awaiter(void 0, void 0, void 0, fun
     var _a;
     try {
         const teacherId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
-        const { classId, search, page = 1, limit = 10 } = req.query;
+        const { classId, search, page = 1, limit = 10, hasResults, term, year, } = req.query;
+        // Debug logging to identify where the issue is coming from
+        console.log("DEBUG: getClassroomStudents called with:", {
+            classId,
+            classIdType: typeof classId,
+            classIdLength: classId === null || classId === void 0 ? void 0 : classId.length,
+            teacherId,
+            search,
+            page,
+            limit,
+            fullUrl: req.originalUrl,
+            method: req.method,
+        });
         if (!classId) {
             return res.status(400).json({ message: "classId is required" });
         }
+        // Check if classId is the problematic "students" string
+        if (classId === "students") {
+            console.error("ERROR: classId is 'students' string instead of ObjectId");
+            return res.status(400).json({
+                message: "Invalid classId: received 'students' string instead of classroom ID",
+            });
+        }
         if (!mongoose_1.default.Types.ObjectId.isValid(classId)) {
+            console.error(`ERROR: Invalid classId format: ${classId}`);
             return res.status(400).json({ message: "Invalid classId format" });
         }
         if (!teacherId) {
@@ -222,27 +278,36 @@ const getClassroomStudents = (req, res) => __awaiter(void 0, void 0, void 0, fun
         const classroom = yield Classroom_1.Classroom.findOne({
             _id: classId,
             teacherId,
-        }).lean();
+        });
         if (!classroom) {
             return res.status(403).json({
                 message: "You don't have permission to view students in this classroom",
             });
         }
-        // Validate classroom.students is an array and not corrupted
-        if (!Array.isArray(classroom.students) || classroom.students.length === 0) {
-            return res.json({
-                students: [],
-                total: 0,
-                pagination: {
-                    page: 1,
-                    limit: 10,
-                    total: 0,
-                    pages: 0,
+        // Build query for students using classroomId (direct ObjectId relationship)
+        const query = { classroomId: classId };
+        // Add filter for students who have results if requested
+        if (hasResults === "true" && term && year) {
+            query.results = {
+                $elemMatch: {
+                    term: term,
+                    year: parseInt(year),
                 },
-            });
+            };
         }
-        // Build query for students
-        const query = { _id: { $in: classroom.students } };
+        else if (hasResults === "false" && term && year) {
+            // Filter students who do NOT have results for the specified term and year
+            query.$nor = [
+                {
+                    results: {
+                        $elemMatch: {
+                            term: term,
+                            year: parseInt(year),
+                        },
+                    },
+                },
+            ];
+        }
         // Add search filter if provided
         if (search) {
             query.$or = [
@@ -280,3 +345,45 @@ const getClassroomStudents = (req, res) => __awaiter(void 0, void 0, void 0, fun
     }
 });
 exports.getClassroomStudents = getClassroomStudents;
+// @desc    Get subjects for a specific classroom (teacher access)
+// @route   GET /api/teacher/classrooms/:classroomId/subjects
+// @access  Private/Teacher
+const getClassroomSubjects = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const teacherId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+        const { classroomId } = req.params;
+        if (!classroomId) {
+            return res.status(400).json({ message: "classroomId is required" });
+        }
+        if (!mongoose_1.default.Types.ObjectId.isValid(classroomId)) {
+            return res.status(400).json({ message: "Invalid classroomId format" });
+        }
+        if (!teacherId) {
+            return res
+                .status(401)
+                .json({ message: "Unauthorized: teacher ID missing" });
+        }
+        // Verify teacher has access to this classroom
+        const classroom = yield Classroom_1.Classroom.findOne({
+            _id: classroomId,
+            teacherId,
+        }).populate("subjects", "name category level isActive");
+        if (!classroom) {
+            return res.status(403).json({
+                message: "You don't have permission to view subjects for this classroom",
+            });
+        }
+        res.json({
+            classroom: {
+                _id: classroom._id,
+                name: classroom.name,
+            },
+            subjects: classroom.subjects,
+        });
+    }
+    catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+});
+exports.getClassroomSubjects = getClassroomSubjects;

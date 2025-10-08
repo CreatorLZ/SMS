@@ -371,6 +371,7 @@ exports.getClassrooms = getClassrooms;
 // @route   GET /api/admin/classrooms/:id/school-days
 // @access  Private/Admin/Teacher
 const getSchoolDays = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const { id } = req.params;
         if (!req.user) {
@@ -388,8 +389,8 @@ const getSchoolDays = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 message: "Not authorized to view classroom data",
             });
         }
-        // Get current active term
-        const currentTerm = yield Term_1.Term.findOne({ isActive: true });
+        // Get current active term with session populated
+        const currentTerm = yield Term_1.Term.findOne({ isActive: true }).populate("sessionId");
         if (!currentTerm) {
             return res.status(404).json({ message: "No active term found" });
         }
@@ -417,7 +418,7 @@ const getSchoolDays = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             classroomId: id,
             term: {
                 name: currentTerm.name,
-                year: currentTerm.year,
+                session: ((_a = currentTerm.sessionId) === null || _a === void 0 ? void 0 : _a.name) || "Unknown Session",
                 startDate: currentTerm.startDate,
                 endDate: currentTerm.endDate,
             },

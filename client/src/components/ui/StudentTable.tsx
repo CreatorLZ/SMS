@@ -6,7 +6,7 @@ import { Button } from "./button";
 import { Badge } from "./badge";
 import { Card, CardContent } from "./card";
 import { Skeleton } from "./skeleton";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Edit,
   UserCheck,
@@ -34,6 +34,15 @@ export default function StudentTable() {
     type: "success" | "error";
   } | null>(null);
   const [showToast, setShowToast] = useState(false);
+
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to top when page changes
+  useEffect(() => {
+    if (tableRef.current) {
+      tableRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [currentPage]);
 
   const showToastMessage = (message: string, type: "success" | "error") => {
     setToastProps({ message, type });
@@ -124,7 +133,7 @@ export default function StudentTable() {
   }
 
   return (
-    <div className="space-y-4">
+    <div ref={tableRef} className="space-y-4">
       {/* Desktop Table View */}
       <div className="hidden md:block">
         <Card>

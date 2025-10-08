@@ -72,13 +72,13 @@ export const useStudentFees = () => {
     mutationFn: async ({
       studentId,
       term,
-      year,
+      session,
       paymentMethod,
       receiptNumber,
     }: {
       studentId: string;
       term: string;
-      year: number;
+      session: string;
       paymentMethod?: string;
       receiptNumber?: string;
     }) => {
@@ -86,7 +86,7 @@ export const useStudentFees = () => {
         `/admin/fees/students/${studentId}/pay`,
         {
           term,
-          year,
+          session,
           paymentMethod,
           receiptNumber,
         }

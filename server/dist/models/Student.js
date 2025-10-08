@@ -154,9 +154,9 @@ const studentSchema = new mongoose_1.Schema({
                 enum: ["1st", "2nd", "3rd"],
                 required: [true, "Term is required"],
             },
-            year: {
-                type: Number,
-                required: [true, "Year is required"],
+            session: {
+                type: String,
+                required: [true, "Session is required"],
             },
             paid: {
                 type: Boolean,

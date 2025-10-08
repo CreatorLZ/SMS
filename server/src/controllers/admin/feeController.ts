@@ -134,7 +134,13 @@ export const getFeeStructures = async (req: Request, res: Response) => {
 
     const feeStructures = await FeeStructure.find({ ...filter, isActive: true })
       .populate("classroomId", "name")
-      .populate("termId", "name year")
+      .populate({
+        path: "termId",
+        populate: {
+          path: "sessionId",
+          select: "name",
+        },
+      })
       .populate("createdBy", "name")
       .populate("updatedBy", "name")
       .sort({ createdAt: -1 });
@@ -154,7 +160,13 @@ export const updateFeeStructure = async (req: Request, res: Response) => {
 
     const feeStructure = await FeeStructure.findById(req.params.id)
       .populate("classroomId", "name")
-      .populate("termId", "name year");
+      .populate({
+        path: "termId",
+        populate: {
+          path: "sessionId",
+          select: "name",
+        },
+      });
 
     if (!feeStructure) {
       return res.status(404).json({ message: "Fee structure not found" });
@@ -224,7 +236,13 @@ export const previewDeleteFeeStructure = async (
   try {
     const feeStructure = await FeeStructure.findById(req.params.id)
       .populate("classroomId", "name")
-      .populate("termId", "name year");
+      .populate({
+        path: "termId",
+        populate: {
+          path: "sessionId",
+          select: "name",
+        },
+      });
 
     if (!feeStructure) {
       return res.status(404).json({ message: "Fee structure not found" });
@@ -308,7 +326,13 @@ export const confirmDeleteFeeStructure = async (
 
     const feeStructure = await FeeStructure.findById(req.params.id)
       .populate("classroomId", "name")
-      .populate("termId", "name year");
+      .populate({
+        path: "termId",
+        populate: {
+          path: "sessionId",
+          select: "name",
+        },
+      });
 
     if (!feeStructure) {
       return res.status(404).json({ message: "Fee structure not found" });
@@ -388,49 +412,63 @@ export const confirmDeleteFeeStructure = async (
   }
 };
 
-// @desc    Delete fee structure (legacy - now uses soft delete)
+// @desc    Delete fee structure (hard delete)
 // @route   DELETE /api/admin/fees/structures/:id
 // @access  Private/Admin
 export const deleteFeeStructure = async (req: Request, res: Response) => {
   try {
     const feeStructure = await FeeStructure.findById(req.params.id)
       .populate("classroomId", "name")
-      .populate("termId", "name year");
+      .populate({
+        path: "termId",
+        populate: {
+          path: "sessionId",
+          select: "name",
+        },
+      });
 
     if (!feeStructure) {
       return res.status(404).json({ message: "Fee structure not found" });
     }
 
-    if (!feeStructure.isActive) {
-      return res
-        .status(400)
-        .json({ message: "Fee structure is already deleted" });
-    }
+    const termName = (feeStructure.termId as any)?.name;
+    const termSession =
+      (feeStructure.termId as any)?.sessionId?.name || "Unknown Session";
+    const classroomId = (feeStructure.classroomId as any)?._id;
 
-    // Soft delete instead of hard delete
-    feeStructure.isActive = false;
-    feeStructure.deletedAt = new Date();
-    feeStructure.deletedBy = req.user?._id as any;
-    await feeStructure.save();
+    // Remove related termFees from students
+    const result = await Student.updateMany(
+      {
+        classroomId: classroomId,
+        "termFees.term": termName,
+        "termFees.session": termSession,
+      },
+      {
+        $pull: {
+          termFees: { term: termName, session: termSession },
+        },
+      }
+    );
+
+    // Hard delete the fee structure
+    await FeeStructure.findByIdAndDelete(req.params.id);
 
     // Create audit log
     await AuditLog.create({
       userId: req.user?._id,
-      actionType: "FEE_STRUCTURE_UPDATE",
-      description: `Soft deleted fee structure for ${
-        (feeStructure.classroomId as any)?.name
-      } - ${(feeStructure.termId as any)?.name} ${
-        (feeStructure.termId as any)?.year
-      }`,
+      actionType: "FEE_STRUCTURE_DELETE",
+      description: `Hard deleted fee structure and removed ${
+        result.modifiedCount
+      } term fee records for ${(feeStructure.classroomId as any)?.name} - ${
+        (feeStructure.termId as any)?.name
+      } ${(feeStructure.termId as any)?.year}`,
       targetId: req.params.id,
     });
 
     res.json({
-      message: "Fee structure soft deleted successfully",
-      feeStructure: {
-        _id: feeStructure._id,
-        isActive: false,
-        deletedAt: feeStructure.deletedAt,
+      message: "Fee structure deleted successfully",
+      stats: {
+        studentsAffected: result.modifiedCount,
       },
     });
   } catch (error: any) {
@@ -510,14 +548,22 @@ export const getStudentFees = async (req: Request, res: Response) => {
     // Get all existing fee structures to filter fees
     const feeStructures = await FeeStructure.find({})
       .populate("classroomId", "_id")
-      .populate("termId", "name year");
+      .populate({
+        path: "termId",
+        populate: {
+          path: "sessionId",
+          select: "name",
+        },
+      });
 
     // Create a map of existing fee structures for quick lookup
     const feeStructureMap = new Map();
     feeStructures.forEach((fs) => {
-      const key = `${(fs.classroomId as any)._id}-${(fs.termId as any).name}-${
-        (fs.termId as any).year
-      }`;
+      const sessionName =
+        (fs.termId as any).sessionId?.name || "Unknown Session";
+      const key = `${(fs.classroomId as any)._id}-${
+        (fs.termId as any).name
+      }-${sessionName}`;
       feeStructureMap.set(key, fs);
     });
 
@@ -644,7 +690,7 @@ export const getStudentFees = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const getArrears = async (req: Request, res: Response) => {
   try {
-    const { classroomId, term, year } = req.query;
+    const { classroomId, term, session } = req.query;
 
     // Get all active students first
     let studentFilter: any = { status: "active" };
@@ -660,14 +706,22 @@ export const getArrears = async (req: Request, res: Response) => {
     // Get all existing fee structures to filter fees
     const feeStructures = await FeeStructure.find({})
       .populate("classroomId", "_id")
-      .populate("termId", "name year");
+      .populate({
+        path: "termId",
+        populate: {
+          path: "sessionId",
+          select: "name",
+        },
+      });
 
     // Create a map of existing fee structures for quick lookup
     const feeStructureMap = new Map();
     feeStructures.forEach((fs) => {
-      const key = `${(fs.classroomId as any)._id}-${(fs.termId as any).name}-${
-        (fs.termId as any).year
-      }`;
+      const sessionName =
+        (fs.termId as any).sessionId?.name || "Unknown Session";
+      const key = `${(fs.classroomId as any)._id}-${
+        (fs.termId as any).name
+      }-${sessionName}`;
       feeStructureMap.set(key, fs);
     });
 
@@ -683,9 +737,9 @@ export const getArrears = async (req: Request, res: Response) => {
         });
 
         // Filter by specific term/session if provided
-        if (term && year) {
+        if (term && session) {
           unpaidFees = unpaidFees.filter(
-            (fee) => fee.term === term && fee.session === year
+            (fee) => fee.term === term && fee.session === session
           );
         }
 
@@ -1115,7 +1169,13 @@ export const getOperationStatus = async (req: Request, res: Response) => {
       operationId: req.params.operationId,
     })
       .populate("classroomId", "name")
-      .populate("termId", "name year")
+      .populate({
+        path: "termId",
+        populate: {
+          path: "sessionId",
+          select: "name",
+        },
+      })
       .populate("enqueuedBy", "name");
 
     if (!operation) {
@@ -1160,14 +1220,22 @@ export const getFeeHealthCheck = async (req: Request, res: Response) => {
     // Get all fee structures
     const feeStructures = await FeeStructure.find({})
       .populate("classroomId", "_id name")
-      .populate("termId", "name year startDate endDate");
+      .populate({
+        path: "termId",
+        populate: {
+          path: "sessionId",
+          select: "name",
+        },
+      });
 
     // Create fee structure lookup map
     const feeStructureMap = new Map<string, any>();
     feeStructures.forEach((fs) => {
-      const key = `${(fs.classroomId as any)._id}-${(fs.termId as any).name}-${
-        (fs.termId as any).year
-      }`;
+      const sessionName =
+        (fs.termId as any).sessionId?.name || "Unknown Session";
+      const key = `${(fs.classroomId as any)._id}-${
+        (fs.termId as any).name
+      }-${sessionName}`;
       feeStructureMap.set(key, fs);
     });
 

@@ -41,9 +41,10 @@ const termSchema = new mongoose_1.Schema({
         enum: ["1st", "2nd", "3rd"],
         required: [true, "Term name is required"],
     },
-    year: {
-        type: Number,
-        required: [true, "Year is required"],
+    sessionId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "Session",
+        required: [true, "Session is required"],
     },
     startDate: {
         type: Date,
@@ -76,8 +77,8 @@ const termSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
-// Create compound unique index for term and year
-termSchema.index({ name: 1, year: 1 }, { unique: true });
+// Create compound unique index for term and session
+termSchema.index({ name: 1, sessionId: 1 }, { unique: true });
 // Add validation to ensure endDate is after startDate
 termSchema.pre("save", function (next) {
     if (this.endDate <= this.startDate) {

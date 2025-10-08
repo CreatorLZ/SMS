@@ -277,12 +277,12 @@ export async function removeDuplicateStudentFees(userId?: string): Promise<{
     for (const student of students) {
       if (!student.termFees || student.termFees.length === 0) continue;
 
-      // Find duplicate term/year combinations
+      // Find duplicate term/session combinations
       const seenTerms = new Map<string, any[]>();
       const toRemove: string[] = [];
 
       student.termFees.forEach((fee: any, index: number) => {
-        const key = `${fee.term}-${fee.session || fee.year}`;
+        const key = `${fee.term}-${fee.session}`;
         if (!seenTerms.has(key)) {
           seenTerms.set(key, []);
         }

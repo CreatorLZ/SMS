@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "./button";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import {
@@ -12,6 +13,7 @@ import { useFeeStore } from "../../store/feeStore";
 import { useFeeStructures } from "../../hooks/useFeeStructures";
 import { useEnqueueFeeSync } from "../../hooks/useFeeSync";
 import SyncStatusWidget from "./SyncStatusWidget";
+import DeleteFeeStructureModal from "./DeleteFeeStructureModal";
 import { Plus, RefreshCw, Edit, Trash2 } from "lucide-react";
 
 interface FeeStructureTableProps {
@@ -26,8 +28,13 @@ export default function FeeStructureTable({
   const { feeStructures, isLoadingFeeStructures, feeStructuresError } =
     useFeeStore();
 
-  const { refetchFeeStructures } = useFeeStructures();
+  const { refetchFeeStructures, deleteFeeStructure, isDeleting } =
+    useFeeStructures();
   const syncMutation = useEnqueueFeeSync();
+
+  // Modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [feeStructureToDelete, setFeeStructureToDelete] = useState<any>(null);
 
   const handleSync = async () => {
     try {
@@ -38,25 +45,34 @@ export default function FeeStructureTable({
     }
   };
 
-  const handleDelete = async (structure: any) => {
-    if (
-      window.confirm(
-        `Delete fee structure for ${structure.classroomId.name} - ${structure.termId.name} ${structure.termId.year}?`
-      )
-    ) {
-      try {
-        await useFeeStructures().confirmDeleteFeeStructure({
-          id: structure._id,
-          confirm: true,
-        });
-        alert("Fee structure deleted successfully!");
-        refetchFeeStructures();
-      } catch (error: any) {
-        alert(
-          error.response?.data?.message || "Failed to delete fee structure"
-        );
-      }
+  const handleDeleteClick = (structure: any) => {
+    setFeeStructureToDelete(structure);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!feeStructureToDelete) return;
+
+    try {
+      await deleteFeeStructure(feeStructureToDelete._id);
+      alert("Fee structure deleted successfully!");
+      refetchFeeStructures();
+      setDeleteModalOpen(false);
+      setFeeStructureToDelete(null);
+    } catch (error: any) {
+      console.error("Delete fee structure error:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.statusText ||
+        error.message ||
+        "Failed to delete fee structure";
+      alert(`Error: ${errorMessage}`);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setFeeStructureToDelete(null);
   };
 
   const formatCurrency = (amount: number) => {
@@ -164,8 +180,9 @@ export default function FeeStructureTable({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(structure)}
-                          className="text-red-600 hover:text-red-700"
+                          onClick={() => handleDeleteClick(structure)}
+                          disabled={isDeleting}
+                          className="text-red-600 hover:text-red-700 disabled:opacity-50"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -178,6 +195,15 @@ export default function FeeStructureTable({
           </div>
         )}
       </CardContent>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteFeeStructureModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        feeStructure={feeStructureToDelete}
+        isLoading={isDeleting}
+      />
     </Card>
   );
 }

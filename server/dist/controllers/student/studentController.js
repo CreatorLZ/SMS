@@ -20,13 +20,13 @@ const AuditLog_1 = require("../../models/AuditLog");
 const verifyAndGetResults = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        const { studentId, pinCode, term, year } = req.body;
+        const { studentId, pinCode, term, session } = req.body;
         const student = yield Student_1.Student.findOne({ studentId });
         if (!student) {
             return res.status(404).json({ message: "Student not found" });
         }
         // Find the term fee record
-        const termFee = student.termFees.find((fee) => fee.term === term && fee.year === year);
+        const termFee = student.termFees.find((fee) => fee.term === term && fee.session === session);
         if (!termFee) {
             return res.status(404).json({ message: "Term record not found" });
         }
@@ -43,7 +43,7 @@ const verifyAndGetResults = (req, res) => __awaiter(void 0, void 0, void 0, func
                 .json({ message: "Results not yet available for viewing" });
         }
         // Get results for the specified term
-        const results = student.results.find((result) => result.term === term && result.year === year);
+        const results = student.results.find((result) => result.term === term && result.year === parseInt(session.split("/")[0]));
         if (!results) {
             return res
                 .status(404)
@@ -53,7 +53,7 @@ const verifyAndGetResults = (req, res) => __awaiter(void 0, void 0, void 0, func
         yield AuditLog_1.AuditLog.create({
             userId: ((_a = req.user) === null || _a === void 0 ? void 0 : _a._id) || null,
             actionType: "RESULT_VIEW",
-            description: `Results viewed for student ${student.fullName} (${term} ${year})`,
+            description: `Results viewed for student ${student.fullName} (${term} ${session})`,
             targetId: student._id,
         });
         res.json(results);

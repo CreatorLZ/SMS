@@ -32,7 +32,7 @@ export interface StudentFee {
   classroom: string;
   termFees: Array<{
     term: "1st" | "2nd" | "3rd";
-    year: number;
+    session: string;
     paid: boolean;
     pinCode: string;
     viewable: boolean;
@@ -52,7 +52,7 @@ export interface ArrearsData {
   classroom: string;
   unpaidFees: Array<{
     term: "1st" | "2nd" | "3rd";
-    year: number;
+    session: string;
     paid: boolean;
     pinCode: string;
     viewable: boolean;
@@ -74,6 +74,11 @@ interface FeeState {
   isLoadingStudentFees: boolean;
   studentFeesError: string | null;
 
+  // Student Fees Pagination
+  studentFeesPage: number;
+  studentFeesSearch: string;
+  studentFeesClassFilter: string;
+
   // Arrears
   arrears: ArrearsData[];
   isLoadingArrears: boolean;
@@ -94,6 +99,10 @@ interface FeeState {
   setStudentFees: (fees: StudentFee | null) => void;
   setLoadingStudentFees: (loading: boolean) => void;
   setStudentFeesError: (error: string | null) => void;
+
+  setStudentFeesPage: (page: number) => void;
+  setStudentFeesSearch: (search: string) => void;
+  setStudentFeesClassFilter: (classFilter: string) => void;
 
   setArrears: (arrears: ArrearsData[]) => void;
   setLoadingArrears: (loading: boolean) => void;
@@ -119,6 +128,10 @@ export const useFeeStore = create<FeeState>((set) => ({
   isLoadingStudentFees: false,
   studentFeesError: null,
 
+  studentFeesPage: 1,
+  studentFeesSearch: "",
+  studentFeesClassFilter: "",
+
   arrears: [],
   isLoadingArrears: false,
   arrearsError: null,
@@ -138,6 +151,12 @@ export const useFeeStore = create<FeeState>((set) => ({
   setStudentFees: (fees) => set({ studentFees: fees }),
   setLoadingStudentFees: (loading) => set({ isLoadingStudentFees: loading }),
   setStudentFeesError: (error) => set({ studentFeesError: error }),
+
+  setStudentFeesPage: (page) => set({ studentFeesPage: page }),
+  setStudentFeesSearch: (search) =>
+    set({ studentFeesSearch: search, studentFeesPage: 1 }),
+  setStudentFeesClassFilter: (classFilter) =>
+    set({ studentFeesClassFilter: classFilter, studentFeesPage: 1 }),
 
   setArrears: (arrears) => set({ arrears }),
   setLoadingArrears: (loading) => set({ isLoadingArrears: loading }),
@@ -167,6 +186,9 @@ export const useFeeStore = create<FeeState>((set) => ({
       studentFees: null,
       isLoadingStudentFees: false,
       studentFeesError: null,
+      studentFeesPage: 1,
+      studentFeesSearch: "",
+      studentFeesClassFilter: "",
       arrears: [],
       isLoadingArrears: false,
       arrearsError: null,
