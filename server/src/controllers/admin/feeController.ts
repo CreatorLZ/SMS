@@ -476,12 +476,20 @@ export const deleteFeeStructure = async (req: Request, res: Response) => {
   }
 };
 
-// @desc    Mark student fee as paid
+// @desc    Mark student fee as paid (supports partial payments)
 // @route   POST /api/admin/fees/students/:studentId/pay
 // @access  Private/Admin
 export const markFeePaid = async (req: Request, res: Response) => {
   try {
-    const { term, session, paymentMethod, receiptNumber } = req.body;
+    const { term, session, paymentAmount, paymentMethod, receiptNumber } =
+      req.body;
+
+    // Validate payment amount
+    if (!paymentAmount || paymentAmount <= 0) {
+      return res
+        .status(400)
+        .json({ message: "Valid payment amount is required" });
+    }
 
     const student = await Student.findById(req.params.studentId);
     if (!student) {
@@ -497,35 +505,77 @@ export const markFeePaid = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Term fee record not found" });
     }
 
+    const termFee = student.termFees[termFeeIndex];
+    const currentPaid = termFee.amountPaid || 0;
+    const newAmountPaid = currentPaid + paymentAmount;
+
+    // Check if payment exceeds the total amount
+    if (newAmountPaid > termFee.amount) {
+      return res.status(400).json({
+        message: `Payment amount exceeds remaining balance. Remaining: ₦${
+          termFee.amount - currentPaid
+        }`,
+      });
+    }
+
     // Generate receipt number if not provided
     const finalReceiptNumber =
       receiptNumber || `RCP-${Date.now()}-${student.studentId}`;
 
+    // Create payment record
+    const paymentRecord = {
+      amount: paymentAmount,
+      paymentDate: new Date(),
+      paymentMethod: paymentMethod || "cash",
+      receiptNumber: finalReceiptNumber,
+      updatedBy: req.user?._id as any,
+    };
+
     // Update the fee record
-    student.termFees[termFeeIndex].paid = true;
-    student.termFees[termFeeIndex].viewable = true;
-    student.termFees[termFeeIndex].paymentDate = new Date();
-    student.termFees[termFeeIndex].paymentMethod = paymentMethod || "cash";
-    student.termFees[termFeeIndex].receiptNumber = finalReceiptNumber;
+    termFee.amountPaid = newAmountPaid;
+    termFee.paymentHistory = termFee.paymentHistory || [];
+    termFee.paymentHistory.push(paymentRecord);
+
+    // Check if fully paid
+    const isFullyPaid = newAmountPaid >= termFee.amount;
+    termFee.paid = isFullyPaid;
+
+    if (isFullyPaid) {
+      termFee.viewable = true;
+      termFee.paymentDate = new Date();
+      termFee.paymentMethod = paymentMethod || "cash";
+      termFee.receiptNumber = finalReceiptNumber;
+    }
 
     if (req.user?._id) {
-      student.termFees[termFeeIndex].updatedBy = req.user._id as any;
+      termFee.updatedBy = req.user._id as any;
     }
 
     await student.save();
 
     // Create audit log
+    const paymentType = isFullyPaid
+      ? "fully paid"
+      : `partial payment of ₦${paymentAmount}`;
     await AuditLog.create({
       userId: req.user?._id,
       actionType: "FEE_PAYMENT",
-      description: `Marked fee as paid for ${student.fullName} (${term} ${session}) - Receipt: ${finalReceiptNumber}`,
+      description: `Fee ${paymentType} for ${
+        student.fullName
+      } (${term} ${session}) - Receipt: ${finalReceiptNumber} - Balance: ₦${
+        termFee.amount - newAmountPaid
+      }`,
       targetId: student._id,
     });
 
     res.json({
-      message: "Fee marked as paid successfully",
+      message: isFullyPaid
+        ? "Fee fully paid successfully"
+        : "Partial payment recorded successfully",
       termFee: student.termFees[termFeeIndex],
       receiptNumber: finalReceiptNumber,
+      remainingBalance: termFee.amount - newAmountPaid,
+      isFullyPaid,
     });
   } catch (error: any) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -618,6 +668,8 @@ export const getStudentFees = async (req: Request, res: Response) => {
             pinCode: generatePinCode(),
             viewable: false,
             amount: feeStructure.amount,
+            amountPaid: 0,
+            paymentHistory: [],
             paymentDate: undefined,
             updatedBy: req.user?._id as any,
           });
@@ -725,37 +777,48 @@ export const getArrears = async (req: Request, res: Response) => {
       feeStructureMap.set(key, fs);
     });
 
-    // Filter students with unpaid fees that have corresponding fee structures
+    // Filter students with outstanding fees that have corresponding fee structures
     const arrearsData = students
       .map((student) => {
-        let unpaidFees = student.termFees.filter((fee) => {
+        let outstandingFees = student.termFees.filter((fee) => {
           // Only include fees that have a corresponding fee structure
           const feeKey = `${(student.classroomId as any)?._id}-${fee.term}-${
             fee.session
           }`;
-          return !fee.paid && feeStructureMap.has(feeKey);
+          if (!feeStructureMap.has(feeKey)) return false;
+
+          // Include if not fully paid (amountPaid < amount)
+          const amountPaid = fee.amountPaid || 0;
+          return amountPaid < fee.amount;
         });
 
         // Filter by specific term/session if provided
         if (term && session) {
-          unpaidFees = unpaidFees.filter(
+          outstandingFees = outstandingFees.filter(
             (fee) => fee.term === term && fee.session === session
           );
         }
 
-        // Only include students with unpaid fees
-        if (unpaidFees.length > 0) {
+        // Only include students with outstanding fees
+        if (outstandingFees.length > 0) {
+          // Calculate total outstanding amount
+          const totalOutstanding = outstandingFees.reduce(
+            (sum, fee) => sum + (fee.amount - (fee.amountPaid || 0)),
+            0
+          );
+
           return {
             _id: student._id,
             fullName: student.fullName,
             studentId: student.studentId,
             currentClass: student.currentClass,
             classroom: (student.classroomId as any)?.name || "N/A",
-            unpaidFees,
-            totalUnpaid: unpaidFees.reduce(
-              (sum, fee) => sum + (fee.amount || 0),
-              0
-            ),
+            outstandingFees: outstandingFees.map((fee) => ({
+              ...fee,
+              amountPaid: fee.amountPaid || 0,
+              balance: fee.amount - (fee.amountPaid || 0),
+            })),
+            totalOutstanding,
           };
         }
         return null;
@@ -1269,18 +1332,23 @@ export const getFeeHealthCheck = async (req: Request, res: Response) => {
         const feeKey = `${term.name}-${
           (term.sessionId as any)?.name || "Unknown Session"
         }`;
-        const hasFee = student.termFees.some(
+        const existingFee = student.termFees.find(
           (fee) =>
             fee.term === term.name &&
             fee.session === (term.sessionId as any)?.name
         );
 
-        if (!hasFee) {
+        if (!existingFee) {
           missingFees.push({
             term: term.name,
             year: term.year,
             expectedAmount: feeStructure.amount,
           });
+        } else {
+          // Check if fee amount matches
+          if (existingFee.amount !== feeStructure.amount) {
+            // This will be handled in the amount mismatch check below
+          }
         }
       }
 

@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    reactCompiler: true,
+  },
+
   // Enable bundle analyzer in development
   ...(process.env.ANALYZE === "true" && {
     webpack: (config: any) => {

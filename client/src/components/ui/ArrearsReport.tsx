@@ -57,7 +57,7 @@ export default function ArrearsReport({ onExport }: ArrearsReportProps) {
     const matchesTerm =
       selectedTerm === "" ||
       selectedTerm === "all" ||
-      student.unpaidFees.some((fee) => fee.term === selectedTerm);
+      student.outstandingFees.some((fee) => fee.term === selectedTerm);
 
     return matchesSearch && matchesClassroom && matchesTerm;
   });
@@ -65,11 +65,11 @@ export default function ArrearsReport({ onExport }: ArrearsReportProps) {
   // Calculate totals
   const totalStudents = filteredArrears.length;
   const totalUnpaidAmount = filteredArrears.reduce(
-    (sum, student) => sum + student.totalUnpaid,
+    (sum, student) => sum + student.totalOutstanding,
     0
   );
   const totalUnpaidFees = filteredArrears.reduce(
-    (sum, student) => sum + student.unpaidFees.length,
+    (sum, student) => sum + student.outstandingFees.length,
     0
   );
 
@@ -82,11 +82,13 @@ export default function ArrearsReport({ onExport }: ArrearsReportProps) {
         "Class",
         "Term",
         "Session",
-        "Amount",
+        "Total Amount",
+        "Amount Paid",
+        "Balance",
         "PIN Code",
       ].join(","),
       ...filteredArrears.flatMap((student) =>
-        student.unpaidFees.map((fee) =>
+        student.outstandingFees.map((fee) =>
           [
             student.studentId,
             `"${student.fullName}"`,
@@ -94,6 +96,8 @@ export default function ArrearsReport({ onExport }: ArrearsReportProps) {
             fee.term,
             fee.session,
             fee.amount,
+            fee.amountPaid || 0,
+            fee.balance,
             fee.pinCode,
           ].join(",")
         )
@@ -251,8 +255,8 @@ export default function ArrearsReport({ onExport }: ArrearsReportProps) {
                     <TableHead>Student ID</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Class</TableHead>
-                    <TableHead>Unpaid Fees</TableHead>
-                    <TableHead>Total Amount</TableHead>
+                    <TableHead>Outstanding Fees</TableHead>
+                    <TableHead>Total Outstanding</TableHead>
                     <TableHead>Details</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -266,28 +270,30 @@ export default function ArrearsReport({ onExport }: ArrearsReportProps) {
                       <TableCell>{student.currentClass}</TableCell>
                       <TableCell>
                         <Badge variant="destructive">
-                          {student.unpaidFees.length} fees
+                          {student.outstandingFees.length} fees
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium text-red-600">
-                        {formatCurrency(student.totalUnpaid)}
+                        {formatCurrency(student.totalOutstanding)}
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          {student.unpaidFees
+                          {student.outstandingFees
                             .slice(0, 2)
                             .map((fee: any, index: number) => (
                               <div
                                 key={index}
                                 className="text-xs text-muted-foreground"
                               >
-                                {fee.term} {fee.session}:{" "}
-                                {formatCurrency(fee.amount)}
+                                {fee.term} {fee.session}: Balance{" "}
+                                {formatCurrency(fee.balance)}
+                                {fee.amountPaid > 0 &&
+                                  ` (₦${formatCurrency(fee.amountPaid)} paid)`}
                               </div>
                             ))}
-                          {student.unpaidFees.length > 2 && (
+                          {student.outstandingFees.length > 2 && (
                             <div className="text-xs text-muted-foreground">
-                              +{student.unpaidFees.length - 2} more fees
+                              +{student.outstandingFees.length - 2} more fees
                             </div>
                           )}
                         </div>

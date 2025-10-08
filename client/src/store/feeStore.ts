@@ -37,6 +37,14 @@ export interface StudentFee {
     pinCode: string;
     viewable: boolean;
     amount: number;
+    amountPaid: number;
+    paymentHistory: Array<{
+      amount: number;
+      paymentDate: string;
+      paymentMethod: string;
+      receiptNumber?: string;
+      updatedBy?: string;
+    }>;
     paymentDate?: string;
     paymentMethod?: string;
     receiptNumber?: string;
@@ -50,17 +58,19 @@ export interface ArrearsData {
   studentId: string;
   currentClass: string;
   classroom: string;
-  unpaidFees: Array<{
+  outstandingFees: Array<{
     term: "1st" | "2nd" | "3rd";
     session: string;
     paid: boolean;
     pinCode: string;
     viewable: boolean;
     amount: number;
+    amountPaid: number;
+    balance: number;
     paymentDate?: string;
     updatedBy?: string;
   }>;
-  totalUnpaid: number;
+  totalOutstanding: number;
 }
 
 interface FeeState {

@@ -73,12 +73,14 @@ export const useStudentFees = () => {
       studentId,
       term,
       session,
+      paymentAmount,
       paymentMethod,
       receiptNumber,
     }: {
       studentId: string;
       term: string;
       session: string;
+      paymentAmount: number;
       paymentMethod?: string;
       receiptNumber?: string;
     }) => {
@@ -87,6 +89,7 @@ export const useStudentFees = () => {
         {
           term,
           session,
+          paymentAmount,
           paymentMethod,
           receiptNumber,
         }

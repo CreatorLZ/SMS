@@ -89,6 +89,8 @@ export async function syncStudentFeesForClassroomBatched(
                   pinCode: generatePinCode(),
                   viewable: false,
                   amount,
+                  amountPaid: 0,
+                  paymentHistory: [],
                   paymentDate: null,
                   updatedBy: userId
                     ? new mongoose.Types.ObjectId(userId)
@@ -456,6 +458,8 @@ export async function backfillMissingFees(userId?: string): Promise<{
                     pinCode: generatePinCode(),
                     viewable: false,
                     amount: missingFee.amount,
+                    amountPaid: 0,
+                    paymentHistory: [],
                     paymentDate: null,
                     updatedBy: userId
                       ? new mongoose.Types.ObjectId(userId)

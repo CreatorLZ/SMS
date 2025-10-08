@@ -180,7 +180,9 @@ export default function StudentFeeTable({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Term</TableHead>
-                    <TableHead>Amount</TableHead>
+                    <TableHead>Total Amount</TableHead>
+                    <TableHead>Amount Paid</TableHead>
+                    <TableHead>Balance</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Viewable</TableHead>
                     <TableHead>PIN Code</TableHead>
@@ -189,38 +191,60 @@ export default function StudentFeeTable({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {studentFees.termFees.map((fee: any) => (
-                    <TableRow key={`${fee.term}-${fee.session}`}>
-                      <TableCell className="font-medium">
-                        {fee.term} {fee.session}
-                      </TableCell>
-                      <TableCell>{formatCurrency(fee.amount)}</TableCell>
-                      <TableCell>{getPaymentStatusBadge(fee.paid)}</TableCell>
-                      <TableCell>
-                        {getViewableStatusBadge(fee.viewable)}
-                      </TableCell>
-                      <TableCell>
-                        <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-                          {fee.pinCode}
-                        </code>
-                      </TableCell>
-                      <TableCell>
-                        {fee.paymentDate
-                          ? new Date(fee.paymentDate).toLocaleDateString()
-                          : "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        {!fee.paid && (
-                          <Button
-                            size="sm"
-                            onClick={() => onMarkPaidClick?.(studentFees, fee)}
-                          >
-                            Mark Paid
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {studentFees.termFees.map((fee: any) => {
+                    const amountPaid = fee.amountPaid || 0;
+                    const balance = fee.amount - amountPaid;
+                    const isOutstanding = balance > 0;
+
+                    return (
+                      <TableRow key={`${fee.term}-${fee.session}`}>
+                        <TableCell className="font-medium">
+                          {fee.term} {fee.session}
+                        </TableCell>
+                        <TableCell>{formatCurrency(fee.amount)}</TableCell>
+                        <TableCell className="text-blue-600 font-medium">
+                          {formatCurrency(amountPaid)}
+                        </TableCell>
+                        <TableCell
+                          className={
+                            balance > 0
+                              ? "text-orange-600 font-medium"
+                              : "text-green-600"
+                          }
+                        >
+                          {formatCurrency(balance)}
+                        </TableCell>
+                        <TableCell>{getPaymentStatusBadge(fee.paid)}</TableCell>
+                        <TableCell>
+                          {getViewableStatusBadge(fee.viewable)}
+                        </TableCell>
+                        <TableCell>
+                          <code className="bg-gray-100 px-2 py-1 rounded text-sm">
+                            {fee.pinCode}
+                          </code>
+                        </TableCell>
+                        <TableCell>
+                          {fee.paymentDate
+                            ? new Date(fee.paymentDate).toLocaleDateString()
+                            : "N/A"}
+                        </TableCell>
+                        <TableCell>
+                          {isOutstanding && (
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                onMarkPaidClick?.(studentFees, fee)
+                              }
+                            >
+                              {balance === fee.amount
+                                ? "Make Payment"
+                                : "Pay Balance"}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

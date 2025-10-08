@@ -40,6 +40,7 @@ export default function MarkFeePaidModal({
   fee,
 }: MarkFeePaidModalProps) {
   const [formData, setFormData] = useState({
+    paymentAmount: "",
     paymentMethod: "",
     receiptNumber: "",
   });
@@ -56,12 +57,15 @@ export default function MarkFeePaidModal({
         studentId: student._id,
         term: fee.term,
         session: fee.session,
+        paymentAmount:
+          parseFloat(formData.paymentAmount) ||
+          fee.amount - (fee.amountPaid || 0),
         paymentMethod: formData.paymentMethod || "cash",
         receiptNumber: formData.receiptNumber,
       });
 
-      alert("Fee marked as paid successfully!");
-      setFormData({ paymentMethod: "", receiptNumber: "" });
+      alert("Payment recorded successfully!");
+      setFormData({ paymentAmount: "", paymentMethod: "", receiptNumber: "" });
       onOpenChange(false);
     } catch (error: any) {
       alert(error.response?.data?.message || "Failed to mark fee as paid");
@@ -134,10 +138,24 @@ export default function MarkFeePaidModal({
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <DollarSign className="w-4 h-4" />
-                          Amount
+                          Total Amount
                         </div>
                         <div className="font-semibold text-green-600 text-lg">
                           {formatCurrency(fee.amount)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                      <div className="space-y-1">
+                        <div className="text-sm text-gray-600">Amount Paid</div>
+                        <div className="font-semibold text-blue-600">
+                          {formatCurrency(fee.amountPaid || 0)}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-sm text-gray-600">Balance Due</div>
+                        <div className="font-semibold text-orange-600">
+                          {formatCurrency(fee.amount - (fee.amountPaid || 0))}
                         </div>
                       </div>
                     </div>
@@ -225,6 +243,40 @@ export default function MarkFeePaidModal({
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
+                      {/* Payment Amount */}
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="paymentAmount"
+                          className="text-sm font-medium"
+                        >
+                          Payment Amount (₦)
+                        </Label>
+                        <Input
+                          id="paymentAmount"
+                          type="number"
+                          placeholder={`Enter amount (max: ₦${formatCurrency(
+                            fee.amount - (fee.amountPaid || 0)
+                          )})`}
+                          value={formData.paymentAmount}
+                          onChange={(e) =>
+                            handleInputChange("paymentAmount", e.target.value)
+                          }
+                          className="h-11"
+                          min="0"
+                          max={fee.amount - (fee.amountPaid || 0)}
+                          required
+                        />
+                        <p className="text-xs text-gray-500">
+                          Current balance:{" "}
+                          {formatCurrency(fee.amount - (fee.amountPaid || 0))}
+                          {fee.amountPaid && fee.amountPaid > 0
+                            ? ` (₦${formatCurrency(
+                                fee.amountPaid
+                              )} already paid)`
+                            : ""}
+                        </p>
+                      </div>
+
                       <div className="space-y-2">
                         <Label
                           htmlFor="paymentMethod"

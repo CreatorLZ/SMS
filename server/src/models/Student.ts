@@ -32,18 +32,31 @@ export interface IStudent extends Document {
   termFees: {
     term: "1st" | "2nd" | "3rd";
     session: string;
-    paid: boolean;
+    paid: boolean; // true when amountPaid >= amount
     pinCode: string;
     viewable: boolean;
-    amount: number;
-    paymentDate?: Date;
+    amount: number; // total fee amount required
+    amountPaid: number; // total amount paid so far (default 0)
+    paymentHistory: {
+      amount: number;
+      paymentDate: Date;
+      paymentMethod:
+        | "cash"
+        | "bank_transfer"
+        | "online"
+        | "check"
+        | "mobile_money";
+      receiptNumber?: string;
+      updatedBy?: Schema.Types.ObjectId;
+    }[];
+    paymentDate?: Date; // most recent payment date
     paymentMethod?:
       | "cash"
       | "bank_transfer"
       | "online"
       | "check"
       | "mobile_money";
-    receiptNumber?: string;
+    receiptNumber?: string; // most recent receipt
     updatedBy?: Schema.Types.ObjectId;
   }[];
 
@@ -209,6 +222,42 @@ const studentSchema = new Schema(
           required: [true, "Fee amount is required"],
           min: [0, "Fee amount cannot be negative"],
         },
+        amountPaid: {
+          type: Number,
+          default: 0,
+          min: [0, "Amount paid cannot be negative"],
+        },
+        paymentHistory: [
+          {
+            amount: {
+              type: Number,
+              required: [true, "Payment amount is required"],
+              min: [0, "Payment amount cannot be negative"],
+            },
+            paymentDate: {
+              type: Date,
+              default: Date.now,
+            },
+            paymentMethod: {
+              type: String,
+              enum: [
+                "cash",
+                "bank_transfer",
+                "online",
+                "check",
+                "mobile_money",
+              ],
+              required: [true, "Payment method is required"],
+            },
+            receiptNumber: {
+              type: String,
+            },
+            updatedBy: {
+              type: Schema.Types.ObjectId,
+              ref: "User",
+            },
+          },
+        ],
         paymentDate: {
           type: Date,
         },
