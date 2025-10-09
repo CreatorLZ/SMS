@@ -21,7 +21,10 @@ export const useStudentFeeSummary = (studentId: string | undefined) => {
       );
       const { termFees, fullName } = response.data as any;
 
-      const paidFees = termFees.filter((fee: any) => fee.paid).length;
+      const paidFees = termFees.reduce(
+        (sum: number, fee: any) => sum + (fee.amountPaid || 0),
+        0
+      );
       const unpaidFees = termFees.filter((fee: any) => !fee.paid).length;
       const totalAmount = termFees.reduce(
         (sum: number, fee: any) => sum + (fee.amount || 0),
