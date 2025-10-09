@@ -5,7 +5,7 @@ import { useFeeStore } from "../store/feeStore";
 interface FeeSummary {
   studentId: string;
   fullName: string;
-  paidFees: number;
+  totalPaidAmount: number;
   unpaidFees: number;
   totalAmount: number;
 }
@@ -21,7 +21,7 @@ export const useStudentFeeSummary = (studentId: string | undefined) => {
       );
       const { termFees, fullName } = response.data as any;
 
-      const paidFees = termFees.reduce(
+      const totalPaidAmount = termFees.reduce(
         (sum: number, fee: any) => sum + (fee.amountPaid || 0),
         0
       );
@@ -34,7 +34,7 @@ export const useStudentFeeSummary = (studentId: string | undefined) => {
       return {
         studentId,
         fullName,
-        paidFees,
+        totalPaidAmount,
         unpaidFees,
         totalAmount,
       };

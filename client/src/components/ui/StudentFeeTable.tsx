@@ -46,7 +46,7 @@ function StudentFeeRow({
   const { data: feeSummary, isLoading } = useStudentFeeSummary(student._id);
 
   // Calculate total paid and balance from fee summary
-  const totalPaid = feeSummary?.paidFees || 0;
+  const totalPaid = feeSummary?.totalPaidAmount || 0;
   const totalUnpaid = feeSummary?.unpaidFees || 0;
   const totalAmount = feeSummary?.totalAmount || 0;
   const balance = totalAmount - totalPaid;
