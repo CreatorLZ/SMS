@@ -46,8 +46,12 @@ export const useStudentFeeSummary = (studentId: string | undefined) => {
 
 export const useStudentFees = () => {
   const queryClient = useQueryClient();
-  const { setStudentFees, setLoadingStudentFees, setStudentFeesError } =
-    useFeeStore();
+  const {
+    setStudentFees,
+    setLoadingStudentFees,
+    setStudentFeesError,
+    studentFees,
+  } = useFeeStore();
 
   // Get student fees
   const getStudentFeesMutation = useMutation({
@@ -99,10 +103,37 @@ export const useStudentFees = () => {
       );
       return response.data;
     },
-    onSuccess: (data) => {
-      // Refresh student fees after payment
+    onSuccess: (data: any, variables) => {
+      // Optimistically update the fee store if the student is currently loaded
+      if (studentFees && studentFees._id === variables.studentId) {
+        const updatedTermFees = studentFees.termFees.map((fee) => {
+          if (
+            fee.term === variables.term &&
+            fee.session === variables.session
+          ) {
+            // Update the fee with the new data from backend
+            return {
+              ...fee,
+              ...data.termFee,
+            };
+          }
+          return fee;
+        });
+
+        // Update the store with the new fee data
+        setStudentFees({
+          ...studentFees,
+          termFees: updatedTermFees,
+        });
+      }
+
+      // Refresh queries as fallback
       queryClient.invalidateQueries({ queryKey: ["studentFees"] });
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "studentFeeSummary",
+      });
       queryClient.invalidateQueries({ queryKey: ["arrears"] });
+      queryClient.invalidateQueries({ queryKey: ["feeStructures"] });
     },
   });
 

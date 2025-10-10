@@ -17,7 +17,14 @@ interface Student {
   parentName?: string;
   parentPhone?: string;
   parentEmail?: string;
-  relationshipToStudent?: "Father" | "Mother" | "Guardian";
+  relationshipToStudent?:
+    | "Father"
+    | "Mother"
+    | "Guardian"
+    | "Uncle"
+    | "Aunt"
+    | "Grandparent"
+    | "Other";
   email?: string;
   phoneNumber?: string;
   emergencyContact?: {

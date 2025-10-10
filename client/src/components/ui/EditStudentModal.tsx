@@ -780,6 +780,30 @@ export default function EditStudentModal() {
                               >
                                 Guardian
                               </option>
+                              <option
+                                value="Uncle"
+                                className="bg-white text-gray-800"
+                              >
+                                Uncle
+                              </option>
+                              <option
+                                value="Aunt"
+                                className="bg-white text-gray-800"
+                              >
+                                Aunt
+                              </option>
+                              <option
+                                value="Grandparent"
+                                className="bg-white text-gray-800"
+                              >
+                                Grandparent
+                              </option>
+                              <option
+                                value="Other"
+                                className="bg-white text-gray-800"
+                              >
+                                Other
+                              </option>
                             </select>
                           </div>
                         </div>

@@ -15,6 +15,7 @@ import {
 // Using simple modal implementation without Radix UI
 import { useStudentFees } from "../../hooks/useStudentFees";
 import { useQueryClient } from "@tanstack/react-query";
+import { Toast } from "./toast";
 import {
   CreditCard,
   DollarSign,
@@ -25,6 +26,7 @@ import {
   CheckCircle,
   XCircle,
   X,
+  Loader2,
 } from "lucide-react";
 
 interface MarkFeePaidModalProps {
@@ -32,6 +34,7 @@ interface MarkFeePaidModalProps {
   onOpenChange: (open: boolean) => void;
   student?: any;
   fee?: any;
+  onPaymentSuccess?: () => void;
 }
 
 export default function MarkFeePaidModal({
@@ -39,20 +42,32 @@ export default function MarkFeePaidModal({
   onOpenChange,
   student,
   fee,
+  onPaymentSuccess,
 }: MarkFeePaidModalProps) {
   const [formData, setFormData] = useState({
     paymentAmount: "",
     paymentMethod: "",
     receiptNumber: "",
   });
+  const [showToast, setShowToast] = useState(false);
+  const [toastProps, setToastProps] = useState<{
+    message: string;
+    type: "success" | "error";
+  }>({ message: "", type: "success" });
+  const [modalState, setModalState] = useState<"idle" | "loading" | "success">(
+    "idle"
+  );
 
-  const { markFeePaid, isMarkingPaid } = useStudentFees();
+  const { markFeePaid } = useStudentFees();
   const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!student || !fee) return;
+
+    // Set loading state
+    setModalState("loading");
 
     try {
       await markFeePaid({
@@ -74,11 +89,39 @@ export default function MarkFeePaidModal({
       await queryClient.invalidateQueries({ queryKey: ["arrears"] });
       await queryClient.invalidateQueries({ queryKey: ["feeStructures"] });
 
-      alert("Payment recorded successfully!");
-      setFormData({ paymentAmount: "", paymentMethod: "", receiptNumber: "" });
-      onOpenChange(false);
+      // Show success state immediately (no gap!)
+      setModalState("success");
+
+      // Reset form and close modal after showing success for 2 seconds
+      setTimeout(() => {
+        setFormData({
+          paymentAmount: "",
+          paymentMethod: "",
+          receiptNumber: "",
+        });
+        setModalState("idle");
+        onOpenChange(false);
+        onPaymentSuccess?.();
+
+        // Show toast notification after modal closes
+        setTimeout(() => {
+          setToastProps({
+            message: "Payment recorded successfully!",
+            type: "success",
+          });
+          setShowToast(true);
+        }, 100);
+      }, 2000);
     } catch (error: any) {
-      alert(error.response?.data?.message || "Failed to mark fee as paid");
+      // Reset to idle state on error
+      setModalState("idle");
+
+      // Show error toast
+      setToastProps({
+        message: error.response?.data?.message || "Failed to mark fee as paid",
+        type: "error",
+      });
+      setShowToast(true);
     }
   };
 
@@ -96,138 +139,168 @@ export default function MarkFeePaidModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[95vh] shadow-2xl border border-gray-200 flex flex-col">
-        {/* Header */}
-        <div className="relative bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-8 text-white overflow-hidden flex-shrink-0">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full -translate-y-16 translate-x-16"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/20 rounded-full translate-y-12 -translate-x-12"></div>
-          </div>
-
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30">
-                <Receipt className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold mb-1">Record Payment</h1>
-                <p className="text-emerald-100 text-sm">
-                  Complete this transaction to grant result access
-                </p>
-              </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] shadow-xl border border-gray-200 flex flex-col relative">
+        {/* Loading Overlay */}
+        {modalState === "loading" && (
+          <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              <p className="text-sm font-medium text-gray-700">
+                Processing payment...
+              </p>
             </div>
-            <button
-              onClick={() => onOpenChange(false)}
-              className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30 hover:bg-white/30 transition-all duration-200"
-            >
-              <X className="w-4 h-4 text-white" />
-            </button>
           </div>
+        )}
+
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <Receipt className="w-6 h-6 text-gray-600" />
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">
+                Record Payment
+              </h1>
+              <p className="text-sm text-gray-600">
+                Complete payment to grant result access
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onOpenChange(false)}
+            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Scrollable Content */}
+        {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {student && fee && (
-            <div className="p-8">
-              {/* Transaction Summary */}
-              <div className="bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-                      <User className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {student.fullName}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        ID: {student.studentId}
-                      </p>
-                    </div>
+            <div className="p-6">
+              {modalState === "success" ? (
+                /* Success Screen */
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-gray-900">
-                      {formatCurrency(fee.amount - (fee.amountPaid || 0))}
-                    </div>
-                    <div className="text-sm text-gray-600">Balance Due</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
-                  <div className="text-center">
-                    <div className="text-lg font-semibold text-gray-900">
-                      {fee.term} {fee.session}
-                    </div>
-                    <div className="text-xs text-gray-600 uppercase tracking-wide">
-                      Term
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-semibold text-emerald-600">
-                      {formatCurrency(fee.amountPaid || 0)}
-                    </div>
-                    <div className="text-xs text-gray-600 uppercase tracking-wide">
-                      Paid
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-semibold text-orange-600">
-                      {formatCurrency(fee.amount)}
-                    </div>
-                    <div className="text-xs text-gray-600 uppercase tracking-wide">
-                      Total
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Payment Recorded Successfully!
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    The student's fee has been marked as paid and result access
+                    has been granted.
+                  </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 w-full max-w-sm">
+                    <div className="text-center">
+                      <div className="text-lg font-mono font-bold text-blue-700 mb-1">
+                        {fee.pinCode}
+                      </div>
+                      <p className="text-xs text-gray-600">Result Access PIN</p>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Student Summary */}
+                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <User className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <h3 className="font-medium text-gray-900">
+                            {student.fullName}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            ID: {student.studentId}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-semibold text-gray-900">
+                          {formatCurrency(fee.amount - (fee.amountPaid || 0))}
+                        </div>
+                        <div className="text-sm text-gray-600">Balance Due</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200">
+                      <div className="text-center">
+                        <div className="font-medium text-gray-900">
+                          {fee.term} {fee.session}
+                        </div>
+                        <div className="text-xs text-gray-500 uppercase">
+                          Term
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium text-green-600">
+                          {formatCurrency(fee.amountPaid || 0)}
+                        </div>
+                        <div className="text-xs text-gray-500 uppercase">
+                          Paid
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium text-gray-900">
+                          {formatCurrency(fee.amount)}
+                        </div>
+                        <div className="text-xs text-gray-500 uppercase">
+                          Total
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Payment Form */}
-              <form onSubmit={handleSubmit} className="space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Payment Details */}
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <CreditCard className="w-5 h-5 text-emerald-600" />
-                        Payment Information
-                      </h3>
-
+                  {/* Payment Form */}
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Payment Details */}
                       <div className="space-y-4">
+                        <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                          <CreditCard className="w-5 h-5" />
+                          Payment Details
+                        </h3>
+
                         {/* Payment Amount */}
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           <Label className="text-sm font-medium text-gray-700">
-                            Amount to Pay
+                            Amount to Pay *
                           </Label>
                           <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                              <span className="text-gray-500 text-sm">₦</span>
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <span className="text-gray-500">₦</span>
                             </div>
                             <Input
-                              type="number"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*[.,]?[0-9]*"
                               placeholder="0.00"
                               value={formData.paymentAmount}
                               onChange={(e) =>
                                 handleInputChange(
                                   "paymentAmount",
-                                  e.target.value
+                                  e.target.value.replace(/[^0-9.]/g, "")
                                 )
                               }
-                              className="pl-8 h-12 text-lg font-medium border-2 border-gray-200 focus:border-emerald-500 rounded-xl"
-                              min="0"
-                              max={fee.amount - (fee.amountPaid || 0)}
+                              className="pl-8 h-10 border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                               required
                             />
                           </div>
-                          <p className="text-xs text-gray-600">
+                          {formData.paymentAmount && (
+                            <div className="text-sm text-gray-600">
+                              {formatCurrency(
+                                parseFloat(formData.paymentAmount) || 0
+                              )}
+                            </div>
+                          )}
+                          <p className="text-xs text-gray-500">
                             Maximum:{" "}
                             {formatCurrency(fee.amount - (fee.amountPaid || 0))}
                           </p>
                         </div>
 
                         {/* Payment Method */}
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           <Label className="text-sm font-medium text-gray-700">
                             Payment Method
                           </Label>
@@ -237,176 +310,121 @@ export default function MarkFeePaidModal({
                               handleInputChange("paymentMethod", value)
                             }
                           >
-                            <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-emerald-500 rounded-xl">
-                              <SelectValue placeholder="Choose payment method" />
+                            <SelectTrigger className="h-10 border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                              <SelectValue placeholder="Select payment method" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="cash">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                  <span>Cash Payment</span>
-                                </div>
-                              </SelectItem>
+                              <SelectItem value="cash">Cash Payment</SelectItem>
                               <SelectItem value="bank_transfer">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                  <span>Bank Transfer</span>
-                                </div>
+                                Bank Transfer
                               </SelectItem>
                               <SelectItem value="online">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                                  <span>Online Payment</span>
-                                </div>
+                                Online Payment
                               </SelectItem>
                               <SelectItem value="mobile_money">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-3 h-3 bg-teal-500 rounded-full"></div>
-                                  <span>Mobile Money</span>
-                                </div>
+                                Mobile Money
                               </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
                         {/* Receipt Number */}
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           <Label className="text-sm font-medium text-gray-700">
                             Receipt Number
-                            <span className="text-gray-500 font-normal ml-1">
-                              (Optional)
-                            </span>
                           </Label>
                           <Input
-                            placeholder="Enter receipt number"
+                            placeholder="Enter receipt number (optional)"
                             value={formData.receiptNumber}
                             onChange={(e) =>
                               handleInputChange("receiptNumber", e.target.value)
                             }
-                            className="h-12 border-2 border-gray-200 focus:border-emerald-500 rounded-xl"
+                            className="h-10 border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                           />
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Preview & Actions */}
-                  <div className="space-y-6">
-                    {/* PIN Code Display */}
-                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                          <Key className="w-5 h-5 text-amber-600" />
+                      {/* Access PIN */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                          <Key className="w-5 h-5" />
+                          Result Access PIN
+                        </h3>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <div className="text-center">
+                            <div className="text-xl font-mono font-bold text-blue-700 mb-2">
+                              {fee.pinCode}
+                            </div>
+                            <p className="text-sm text-gray-600">
+                              Share this PIN with the student after payment
+                              confirmation
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900">
-                            Access PIN
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            For result viewing
-                          </p>
-                        </div>
-                      </div>
-                      <div className="bg-white border-2 border-dashed border-amber-300 rounded-xl p-4 text-center">
-                        <div className="text-2xl font-mono font-bold text-amber-700 tracking-wider">
-                          {fee.pinCode}
-                        </div>
-                        <p className="text-xs text-amber-600 mt-2">
-                          Share this PIN with the student after payment
-                        </p>
-                      </div>
-                    </div>
 
-                    {/* What Happens Next */}
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-                          <CheckCircle className="w-5 h-5 text-emerald-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900">
-                            What Happens Next
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            After payment confirmation
-                          </p>
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                          <span className="text-sm text-gray-700">
-                            Fee status updates to "Paid"
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                          <span className="text-sm text-gray-700">
-                            Student can view results immediately
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                          <span className="text-sm text-gray-700">
-                            Transaction recorded in audit log
-                          </span>
+                        {/* Warning */}
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <span className="text-yellow-600 text-sm font-bold mt-0.5">
+                              !
+                            </span>
+                            <div>
+                              <h4 className="font-medium text-yellow-800 mb-1">
+                                Important
+                              </h4>
+                              <p className="text-sm text-yellow-700">
+                                This action cannot be undone. Payment
+                                confirmation will grant immediate result access.
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Important Notice */}
-                    <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center">
-                          <span className="text-red-600 text-sm font-bold">
-                            !
-                          </span>
-                        </div>
-                        <h4 className="font-semibold text-red-900">
-                          Important
-                        </h4>
-                      </div>
-                      <p className="text-sm text-red-800 leading-relaxed">
-                        This action cannot be undone. Once confirmed, the
-                        payment will be recorded and the student will have
-                        immediate access to their results.
-                      </p>
+                    {/* Action Buttons */}
+                    <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        className="px-6 py-2 border border-gray-300 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={modalState === "loading"}
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {modalState === "loading" ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Processing...
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4" />
+                            Confirm Payment
+                          </div>
+                        )}
+                      </Button>
                     </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col-reverse sm:flex-row justify-end gap-4 pt-8 border-t border-gray-200">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => onOpenChange(false)}
-                    className="h-12 px-8 border-2 border-gray-300 hover:border-gray-400 rounded-xl font-medium"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isMarkingPaid}
-                    className="h-12 px-8 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    {isMarkingPaid ? (
-                      <div className="flex items-center gap-3">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Processing Payment...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3">
-                        <CheckCircle className="w-5 h-5" />
-                        Confirm Payment
-                      </div>
-                    )}
-                  </Button>
-                </div>
-              </form>
+                  </form>
+                </>
+              )}
             </div>
           )}
         </div>
+
+        {/* Toast Notification */}
+        {showToast && toastProps && (
+          <Toast
+            message={toastProps.message}
+            type={toastProps.type}
+            onClose={() => setShowToast(false)}
+          />
+        )}
       </div>
     </div>
   );

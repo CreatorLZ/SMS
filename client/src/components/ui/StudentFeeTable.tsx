@@ -98,7 +98,11 @@ interface StudentFeeDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   student: any;
-  onMarkPaidClick?: (student: any, fee: any) => void;
+  onMarkPaidClick?: (
+    student: any,
+    fee: any,
+    onPaymentSuccess?: () => void
+  ) => void;
 }
 
 function StudentFeeDetailsModal({
@@ -306,7 +310,9 @@ function StudentFeeDetailsModal({
                                   <Button
                                     size="sm"
                                     onClick={() =>
-                                      onMarkPaidClick?.(studentFees, fee)
+                                      onMarkPaidClick?.(studentFees, fee, () =>
+                                        onOpenChange(false)
+                                      )
                                     }
                                     className="bg-green-600 hover:bg-green-700"
                                   >

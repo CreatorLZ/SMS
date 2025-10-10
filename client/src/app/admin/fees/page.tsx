@@ -22,6 +22,9 @@ export default function FeesPage() {
   const [selectedFeeStructure, setSelectedFeeStructure] = useState<any>(null);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedFee, setSelectedFee] = useState<any>(null);
+  const [onPaymentSuccessCallback, setOnPaymentSuccessCallback] = useState<
+    (() => void) | null
+  >(null);
 
   const handleCreateFeeStructure = () => {
     setCreateModalOpen(true);
@@ -32,9 +35,14 @@ export default function FeesPage() {
     setEditModalOpen(true);
   };
 
-  const handleMarkFeePaid = (student: any, fee: any) => {
+  const handleMarkFeePaid = (
+    student: any,
+    fee: any,
+    onPaymentSuccess?: () => void
+  ) => {
     setSelectedStudent(student);
     setSelectedFee(fee);
+    setOnPaymentSuccessCallback(() => onPaymentSuccess);
     setMarkPaidModalOpen(true);
   };
 
@@ -155,6 +163,7 @@ export default function FeesPage() {
             onOpenChange={setMarkPaidModalOpen}
             student={selectedStudent}
             fee={selectedFee}
+            onPaymentSuccess={onPaymentSuccessCallback || undefined}
           />
         </div>
       </DashboardLayout>

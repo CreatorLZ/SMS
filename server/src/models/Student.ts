@@ -20,7 +20,14 @@ export interface IStudent extends Document {
   parentName: string;
   parentPhone: string;
   parentEmail?: string;
-  relationshipToStudent: "Father" | "Mother" | "Guardian";
+  relationshipToStudent:
+    | "Father"
+    | "Mother"
+    | "Guardian"
+    | "Uncle"
+    | "Aunt"
+    | "Grandparent"
+    | "Other";
 
   currentClass: string;
   classroomId?: Schema.Types.ObjectId;
@@ -162,7 +169,15 @@ const studentSchema = new Schema(
     },
     relationshipToStudent: {
       type: String,
-      enum: ["Father", "Mother", "Guardian"],
+      enum: [
+        "Father",
+        "Mother",
+        "Guardian",
+        "Uncle",
+        "Aunt",
+        "Grandparent",
+        "Other",
+      ],
       required: true,
     },
 

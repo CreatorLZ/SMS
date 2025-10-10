@@ -540,6 +540,10 @@ export default function CreateStudentModal({
                     <option value="Father">Father</option>
                     <option value="Mother">Mother</option>
                     <option value="Guardian">Guardian</option>
+                    <option value="Uncle">Uncle</option>
+                    <option value="Aunt">Aunt</option>
+                    <option value="Grandparent">Grandparent</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
               </div>
