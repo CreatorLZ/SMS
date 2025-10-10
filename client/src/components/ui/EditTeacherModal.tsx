@@ -4,7 +4,7 @@ import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useUserQuery } from "@/hooks/useUsersQuery";
 import { useAuthStore } from "@/store/authStore";
 import { useUpdateTeacherMutation } from "@/hooks/useUpdateTeacherMutation";
-import { Toast } from "./toast";
+import { toast } from "sonner";
 import { useUserPassportUpload } from "@/hooks/useUserPassportUpload";
 import { UploadButton } from "@uploadthing/react";
 import type { OurFileRouter } from "@/app/api/uploadthing/core";
@@ -32,11 +32,6 @@ export default function EditTeacherModal({
   const [currentTime] = useState(
     new Date().toLocaleTimeString("en-US", { hour12: false })
   );
-  const [showToast, setShowToast] = useState(false);
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  }>({ message: "", type: "success" });
 
   // Photo upload hooks
   const {
@@ -82,8 +77,11 @@ export default function EditTeacherModal({
   };
 
   const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastProps({ message, type });
-    setShowToast(true);
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
   };
 
   useEffect(() => {
@@ -665,14 +663,6 @@ export default function EditTeacherModal({
           background: #4b5563;
         }
       `}</style>
-
-      {showToast && toastProps && (
-        <Toast
-          message={toastProps.message}
-          type={toastProps.type}
-          onClose={() => setShowToast(false)}
-        />
-      )}
     </div>
   );
 }

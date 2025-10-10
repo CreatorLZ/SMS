@@ -1,7 +1,6 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { useState } from "react";
-import { Toast } from "./toast";
+import { toast } from "sonner";
 
 interface Result {
   term: string;
@@ -13,15 +12,6 @@ interface Result {
 }
 
 export default function ResultPdfExport({ results }: { results: Result[] }) {
-  const [showToast, setShowToast] = useState(false);
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  }>({
-    message: "",
-    type: "success",
-  });
-
   const handleExport = async () => {
     try {
       const doc = new jsPDF();
@@ -42,33 +32,16 @@ export default function ResultPdfExport({ results }: { results: Result[] }) {
         );
       });
       doc.save("results.pdf");
-      setToastProps({
-        message: "Results exported successfully!",
-        type: "success",
-      });
-      setShowToast(true);
+      toast.success("Results exported successfully!");
     } catch (error) {
       console.error("Error exporting PDF:", error);
-      setToastProps({
-        message: "Failed to export results. Please try again.",
-        type: "error",
-      });
-      setShowToast(true);
+      toast.error("Failed to export results. Please try again.");
     }
   };
 
   return (
-    <>
-      <button className="btn btn-outline" onClick={handleExport}>
-        Export Results as PDF
-      </button>
-      {showToast && (
-        <Toast
-          message={toastProps.message}
-          type={toastProps.type}
-          onClose={() => setShowToast(false)}
-        />
-      )}
-    </>
+    <button className="btn btn-outline" onClick={handleExport}>
+      Export Results as PDF
+    </button>
   );
 }

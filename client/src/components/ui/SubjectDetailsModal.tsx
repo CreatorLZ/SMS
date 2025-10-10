@@ -5,7 +5,7 @@ import { Input } from "./input";
 import { Badge } from "./badge";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { X, Edit, Save, Eye, EyeOff, Loader2, BookOpen } from "lucide-react";
-import { useToast } from "./use-toast";
+import { toast } from "sonner";
 import {
   useUpdateSubjectMutation,
   useDeactivateSubjectMutation,
@@ -30,8 +30,6 @@ export default function SubjectDetailsModal({
     category: "",
     level: "",
   });
-
-  const { toast } = useToast();
 
   const updateSubjectMutation = useUpdateSubjectMutation();
   const deactivateSubjectMutation = useDeactivateSubjectMutation();
@@ -86,23 +84,19 @@ export default function SubjectDetailsModal({
     try {
       if (subject.isActive) {
         await deactivateSubjectMutation.mutateAsync(subject._id);
-        toast({
-          title: "Success",
+        toast.success("Success", {
           description: `Subject "${subject.name}" has been deactivated`,
         });
       } else {
         await activateSubjectMutation.mutateAsync(subject._id);
-        toast({
-          title: "Success",
+        toast.success("Success", {
           description: `Subject "${subject.name}" has been activated`,
         });
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           error.response?.data?.message || "Failed to update subject status",
-        variant: "destructive",
       });
     }
   };
@@ -118,18 +112,15 @@ export default function SubjectDetailsModal({
         },
       });
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Subject details updated successfully",
       });
 
       setIsEditing(false);
     } catch (error: any) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           error.response?.data?.message || "Failed to update subject",
-        variant: "destructive",
       });
     }
   };

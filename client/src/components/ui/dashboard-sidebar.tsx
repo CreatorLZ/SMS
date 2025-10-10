@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
-import { Toast } from "./toast";
+import { toast } from "sonner";
 import { useState } from "react";
 
 type ColorType = "emerald" | "blue" | "purple" | "cyan" | "orange" | "teal";
@@ -312,15 +312,12 @@ export function DashboardSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  }>({ message: "", type: "success" });
-
   const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastProps({ message, type });
-    setShowToast(true);
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
   };
 
   const handleLogout = React.useCallback(async () => {
@@ -497,14 +494,6 @@ export function DashboardSidebar() {
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
-
-      {showToast && toastProps && (
-        <Toast
-          message={toastProps.message}
-          type={toastProps.type}
-          onClose={() => setShowToast(false)}
-        />
-      )}
     </>
   );
 }

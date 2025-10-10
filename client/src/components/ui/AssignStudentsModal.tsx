@@ -6,7 +6,7 @@ import { useRemoveStudentsMutation } from "@/hooks/useRemoveStudentsMutation";
 import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useClassroomManagementStore } from "@/store/classroomManagementStore";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
-import { Toast } from "./toast";
+import { toast } from "sonner";
 import { Button } from "./button";
 import { Plus, UserMinus, Users, CheckCircle, XCircle } from "lucide-react";
 
@@ -29,17 +29,6 @@ export default function AssignStudentsModal() {
 
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [originalStudentIds, setOriginalStudentIds] = useState<string[]>([]);
-
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
-  const [showToast, setShowToast] = useState(false);
-
-  const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastProps({ message, type });
-    setShowToast(true);
-  };
 
   // Get current classroom data
   const currentClassroom = classrooms?.find(
@@ -71,7 +60,7 @@ export default function AssignStudentsModal() {
     );
 
     if (newStudentIds.length === 0) {
-      showToastMessage("No new students selected to add", "error");
+      toast.error("No new students selected to add");
       return;
     }
 
@@ -81,17 +70,11 @@ export default function AssignStudentsModal() {
         classroomId: selectedClassroomId,
         data: { studentIds: selectedStudentIds }, // Send all selected students
       });
-      showToastMessage(
-        `${newStudentIds.length} students added successfully!`,
-        "success"
-      );
+      toast.success(`${newStudentIds.length} students added successfully!`);
       setOriginalStudentIds(selectedStudentIds);
     } catch (error: any) {
       console.error("Error adding students:", error);
-      showToastMessage(
-        error?.response?.data?.message || "Failed to add students",
-        "error"
-      );
+      toast.error(error?.response?.data?.message || "Failed to add students");
     }
   };
 
@@ -103,7 +86,7 @@ export default function AssignStudentsModal() {
     );
 
     if (studentsToRemove.length === 0) {
-      showToastMessage("No students selected to remove", "error");
+      toast.error("No students selected to remove");
       return;
     }
 
@@ -112,16 +95,14 @@ export default function AssignStudentsModal() {
         classroomId: selectedClassroomId,
         data: { studentIds: studentsToRemove },
       });
-      showToastMessage(
-        `${studentsToRemove.length} students removed successfully!`,
-        "success"
+      toast.success(
+        `${studentsToRemove.length} students removed successfully!`
       );
       setOriginalStudentIds(selectedStudentIds);
     } catch (error: any) {
       console.error("Error removing students:", error);
-      showToastMessage(
-        error?.response?.data?.message || "Failed to remove students",
-        "error"
+      toast.error(
+        error?.response?.data?.message || "Failed to remove students"
       );
     }
   };
@@ -134,13 +115,12 @@ export default function AssignStudentsModal() {
         classroomId: selectedClassroomId,
         data: { studentIds: selectedStudentIds },
       });
-      showToastMessage("Students updated successfully!", "success");
+      toast.success("Students updated successfully!");
       setOriginalStudentIds(selectedStudentIds);
     } catch (error: any) {
       console.error("Error updating students:", error);
-      showToastMessage(
-        error?.response?.data?.message || "Failed to update students",
-        "error"
+      toast.error(
+        error?.response?.data?.message || "Failed to update students"
       );
     }
   };
@@ -332,14 +312,6 @@ export default function AssignStudentsModal() {
           </div>
         </div>
       </div>
-
-      {showToast && toastProps && (
-        <Toast
-          message={toastProps.message}
-          type={toastProps.type}
-          onClose={() => setShowToast(false)}
-        />
-      )}
     </div>
   );
 }

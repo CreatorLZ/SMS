@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Button } from "./button";
 import { Input } from "./input";
-import { useToast } from "./use-toast";
+import { toast } from "sonner";
 import {
   User,
   Mail,
@@ -31,7 +31,6 @@ export default function StudentProfile({
   studentId,
   onClose,
 }: StudentProfileProps) {
-  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<
     "week" | "month" | "quarter" | "year"
@@ -78,16 +77,13 @@ export default function StudentProfile({
         data: editData,
       });
       setIsEditing(false);
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Student profile updated successfully",
       });
     } catch (error: any) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           error.response?.data?.message || "Failed to update student profile",
-        variant: "destructive",
       });
     }
   };

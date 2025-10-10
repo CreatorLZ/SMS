@@ -1,7 +1,7 @@
 import { useStudentsQuery, Student } from "@/hooks/useStudentsQuery";
 import { useToggleStudentStatusMutation } from "@/hooks/useToggleStudentStatusMutation";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
-import { Toast } from "./toast";
+import { toast } from "sonner";
 import { Button } from "./button";
 import { Badge } from "./badge";
 import { Card, CardContent } from "./card";
@@ -29,12 +29,6 @@ export default function StudentTable() {
 
   const toggleStatusMutation = useToggleStudentStatusMutation();
 
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
-  const [showToast, setShowToast] = useState(false);
-
   const tableRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to top when page changes
@@ -45,8 +39,11 @@ export default function StudentTable() {
   }, [currentPage]);
 
   const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastProps({ message, type });
-    setShowToast(true);
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
   };
 
   const handleToggleStatus = async (
@@ -365,14 +362,6 @@ export default function StudentTable() {
           </Card>
         ))}
       </div>
-
-      {showToast && toastProps && (
-        <Toast
-          message={toastProps.message}
-          type={toastProps.type}
-          onClose={() => setShowToast(false)}
-        />
-      )}
     </div>
   );
 }

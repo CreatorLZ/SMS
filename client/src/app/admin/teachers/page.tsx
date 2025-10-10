@@ -4,7 +4,7 @@ import DashboardLayout from "../../../components/ui/dashboard-layout";
 import RoleGuard from "../../../components/ui/role-guard";
 import { useTeachersQuery } from "../../../hooks/useTeachersQuery";
 import { useUpdateTeacherMutation } from "../../../hooks/useUpdateTeacherMutation";
-import { Toast } from "../../../components/ui/toast";
+import { toast } from "sonner";
 import { useCreateTeacherMutation } from "@/hooks/useCreateTeacherMutation";
 import { useDeleteTeacherMutation } from "@/hooks/useDeleteTeacherMutation";
 import TeacherTable from "@/components/ui/TeacherTable";
@@ -45,17 +45,15 @@ export default function TeacherManagement() {
     }
   };
 
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
-  const [showToast, setShowToast] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState<any>(null);
 
   const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastProps({ message, type });
-    setShowToast(true);
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
   };
 
   const handleCreateTeacher = async (teacherData: any) => {
@@ -291,14 +289,6 @@ export default function TeacherManagement() {
             message={`Are you sure you want to delete ${teacherToDelete?.name}? This action cannot be undone.`}
             isLoading={deleteTeacherMutation.isPending}
           />
-
-          {showToast && toastProps && (
-            <Toast
-              message={toastProps.message}
-              type={toastProps.type}
-              onClose={() => setShowToast(false)}
-            />
-          )}
         </div>
       </DashboardLayout>
     </RoleGuard>

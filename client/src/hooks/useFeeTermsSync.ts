@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../lib/api";
-import { useToast } from "../components/ui/use-toast";
+import { toast } from "sonner";
 
 interface SyncTermResult {
   message: string;
@@ -29,7 +29,6 @@ interface SyncTermResult {
  * Hook for syncing fees for a specific term
  */
 export const useFeeTermsSync = () => {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -38,8 +37,7 @@ export const useFeeTermsSync = () => {
       return response.data as SyncTermResult;
     },
     onSuccess: (data: SyncTermResult) => {
-      toast({
-        title: "✅ Term Fee Sync Complete",
+      toast.success("✅ Term Fee Sync Complete", {
         description: `${data.term.name} ${data.term.session}: ${data.stats.syncedStudents} students synced`,
       });
 
@@ -51,10 +49,8 @@ export const useFeeTermsSync = () => {
     onError: (error: any) => {
       const errorMessage =
         error.response?.data?.message || "Term fee sync failed";
-      toast({
-        title: "❌ Term Fee Sync Failed",
+      toast.error("❌ Term Fee Sync Failed", {
         description: errorMessage,
-        variant: "destructive",
       });
     },
   });

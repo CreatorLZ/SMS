@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Button } from "./button";
-import { useToast } from "./use-toast";
+import { toast } from "sonner";
 
 import {
   useGetTimetable,
@@ -75,7 +75,6 @@ export default function TimetableManager({
   onSave,
   existingTimetable = [],
 }: TimetableManagerProps) {
-  const { toast } = useToast();
   const [timetable, setTimetable] =
     useState<TimetableEntry[]>(existingTimetable);
   const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
@@ -168,8 +167,7 @@ export default function TimetableManager({
 
   const handleDeleteEntry = (entryId: string) => {
     setTimetable((prev) => prev.filter((entry) => entry._id !== entryId));
-    toast({
-      title: "Entry deleted",
+    toast.success("Entry deleted", {
       description: "Timetable entry has been removed",
     });
   };
@@ -180,19 +178,15 @@ export default function TimetableManager({
     // Validate required fields based on period type
     if (editingEntry.isBreak) {
       if (!editingEntry.breakLabel?.trim()) {
-        toast({
-          title: "Validation Error",
+        toast.error("Validation Error", {
           description: "Please provide a break label",
-          variant: "destructive",
         });
         return;
       }
     } else {
       if (!editingEntry.subject || !editingEntry.teacherId) {
-        toast({
-          title: "Validation Error",
+        toast.error("Validation Error", {
           description: "Please fill in all required fields",
-          variant: "destructive",
         });
         return;
       }
@@ -210,10 +204,8 @@ export default function TimetableManager({
       const conflictDescription = conflict.isBreak
         ? conflict.breakLabel || "Break"
         : conflict.subject;
-      toast({
-        title: "Schedule Conflict",
+      toast.error("Schedule Conflict", {
         description: `This time slot is already occupied by ${conflictDescription}`,
-        variant: "destructive",
       });
       return;
     }
@@ -257,8 +249,7 @@ export default function TimetableManager({
       setShowAddForm(false);
 
       const entryType = editingEntry.isBreak ? "break period" : "class period";
-      toast({
-        title: "Entry saved",
+      toast.success("Entry saved", {
         description: `${
           editingEntry.isBreak
             ? editingEntry.breakLabel || "Break"
@@ -267,10 +258,8 @@ export default function TimetableManager({
       });
     } catch (error: any) {
       console.error("Error saving entry:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.response?.data?.message || "Failed to save entry",
-        variant: "destructive",
       });
     }
   };
@@ -279,17 +268,14 @@ export default function TimetableManager({
     try {
       setIsSaving(true);
       await onSave(timetable);
-      toast({
-        title: "Timetable saved",
+      toast.success("Timetable saved", {
         description: "Class timetable has been updated successfully",
       });
     } catch (error: any) {
       console.error("Error saving timetable:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           error.response?.data?.message || "Failed to save timetable",
-        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
@@ -328,8 +314,7 @@ export default function TimetableManager({
     );
     setSelectedEntries(new Set());
 
-    toast({
-      title: "Bulk delete completed",
+    toast.success("Bulk delete completed", {
       description: `${selectedEntries.size} entries removed from timetable`,
     });
   };
@@ -362,8 +347,7 @@ export default function TimetableManager({
     linkElement.setAttribute("download", exportFileDefaultName);
     linkElement.click();
 
-    toast({
-      title: "Export completed",
+    toast.success("Export completed", {
       description: "Timetable exported successfully",
     });
   };
@@ -379,8 +363,7 @@ export default function TimetableManager({
     setTimetable([]);
     setSelectedEntries(new Set());
 
-    toast({
-      title: "Timetable cleared",
+    toast.success("Timetable cleared", {
       description: "All entries have been removed",
     });
   };

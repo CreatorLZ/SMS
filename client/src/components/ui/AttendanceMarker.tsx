@@ -9,7 +9,7 @@ import {
   Users,
   Calendar,
 } from "lucide-react";
-import { useToast } from "./use-toast";
+import { toast } from "sonner";
 import { useGetClassAttendance } from "../../hooks/useAttendance";
 
 interface Student {
@@ -39,8 +39,6 @@ export default function AttendanceMarker({
   onCancel,
   existingAttendance = {},
 }: AttendanceMarkerProps) {
-  const { toast } = useToast();
-
   // Fetch existing attendance data for the selected date
   const selectedDateString = `${selectedDate.getFullYear()}-${String(
     selectedDate.getMonth() + 1
@@ -61,9 +59,10 @@ export default function AttendanceMarker({
   useEffect(() => {
     const studentsKey = JSON.stringify(students.map((s) => s._id));
     const existingAttendanceKey = JSON.stringify(existingAttendance);
-    const existingDataKey = existingAttendanceData
-      ? JSON.stringify(existingAttendanceData.records)
-      : "";
+    const existingDataKey =
+      existingAttendanceData && "records" in existingAttendanceData
+        ? JSON.stringify(existingAttendanceData.records)
+        : "";
 
     // Only reinitialize if students, existingAttendance, or backend data changed
     if (
@@ -77,7 +76,11 @@ export default function AttendanceMarker({
       } = {};
 
       // First priority: Use backend data if available
-      if (existingAttendanceData?.records) {
+      if (
+        existingAttendanceData &&
+        "records" in existingAttendanceData &&
+        existingAttendanceData.records
+      ) {
         // Create a map of student IDs to their attendance status from backend
         const backendAttendanceMap: {
           [studentId: string]: "present" | "absent" | "late";
@@ -131,17 +134,14 @@ export default function AttendanceMarker({
     try {
       setIsSaving(true);
       await onSave(attendanceData);
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Attendance saved successfully",
       });
     } catch (error: any) {
       console.error("Error saving attendance:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           error.response?.data?.message || "Failed to save attendance",
-        variant: "destructive",
       });
     } finally {
       setIsSaving(false);

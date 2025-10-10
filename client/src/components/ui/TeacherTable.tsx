@@ -4,7 +4,7 @@ import { Badge } from "./badge";
 import { Card, CardContent } from "./card";
 import { Skeleton } from "./skeleton";
 import { useDeleteTeacherMutation } from "@/hooks/useDeleteTeacherMutation";
-import { Toast } from "./toast";
+import { toast } from "sonner";
 import {
   Edit,
   UserX,
@@ -47,15 +47,12 @@ export default function TeacherTable({
 }: TeacherTableProps) {
   const deleteTeacherMutation = useDeleteTeacherMutation();
 
-  const [showToast, setShowToast] = useState(false);
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
-
   const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastProps({ message, type });
-    setShowToast(true);
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
   };
 
   // Helper function to get subjects (support both old and new format)
@@ -351,15 +348,6 @@ export default function TeacherTable({
           </Card>
         ))}
       </div>
-
-      {/* Toast */}
-      {showToast && toastProps && (
-        <Toast
-          message={toastProps.message}
-          type={toastProps.type}
-          onClose={() => setShowToast(false)}
-        />
-      )}
     </div>
   );
 }

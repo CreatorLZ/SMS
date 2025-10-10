@@ -10,7 +10,7 @@ import DeleteConfirmationModal from "../../../components/ui/DeleteConfirmationMo
 import { useUserManagementStore } from "../../../store/userManagementStore";
 import { useDeleteUserMutation } from "../../../hooks/useDeleteUserMutation";
 import { useUsersQuery } from "../../../hooks/useUsersQuery";
-import { Toast } from "../../../components/ui/toast";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,11 +46,6 @@ export default function AdminUsersPage() {
   } = useUserManagementStore();
 
   const deleteUserMutation = useDeleteUserMutation();
-  const [showToast, setShowToast] = useState(false);
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  }>({ message: "", type: "success" });
 
   // Get user data for delete confirmation
   const { data: usersData } = useUsersQuery({});
@@ -59,8 +54,11 @@ export default function AdminUsersPage() {
   );
 
   const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastProps({ message, type });
-    setShowToast(true);
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -324,15 +322,6 @@ export default function AdminUsersPage() {
             onClose={handleDeleteCancel}
             isLoading={deleteUserMutation.isPending}
           />
-
-          {/* Toast */}
-          {showToast && toastProps && (
-            <Toast
-              message={toastProps.message}
-              type={toastProps.type}
-              onClose={() => setShowToast(false)}
-            />
-          )}
         </div>
       </DashboardLayout>
     </RoleGuard>

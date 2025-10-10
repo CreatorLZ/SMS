@@ -25,7 +25,7 @@ import { useRecentActivity } from "../../hooks/useRecentActivity";
 import { useClassroomSubjectsQuery } from "../../hooks/useClassroomSubjectsQuery";
 import { useRemoveSubjectMutation } from "../../hooks/useAssignSubjectsMutation";
 import { useActiveTermQuery } from "../../hooks/useActiveTermQuery";
-import { useToast } from "./use-toast";
+import { toast } from "sonner";
 import { useClassroomManagementStore } from "../../store/classroomManagementStore";
 import api from "../../lib/api";
 import { Subject } from "../../hooks/useSubjectsQuery";
@@ -80,7 +80,6 @@ export default function ClassroomDetailView({
   const [showReassignTeacherModal, setShowReassignTeacherModal] =
     useState(false);
 
-  const { toast } = useToast();
   const markAttendance = useMarkAttendance();
   const updateAttendance = useUpdateAttendance();
   const saveTimetable = useSaveTimetable();
@@ -197,8 +196,7 @@ export default function ClassroomDetailView({
         });
       }
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Attendance saved successfully",
       });
 
@@ -209,17 +207,13 @@ export default function ClassroomDetailView({
 
       // Handle specific error cases
       if (error.response?.status === 400) {
-        toast({
-          title: "Error",
+        toast.error("Error", {
           description:
             error.response?.data?.message || "Failed to save attendance",
-          variant: "destructive",
         });
       } else {
-        toast({
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to save attendance",
-          variant: "destructive",
         });
       }
 
@@ -265,8 +259,7 @@ export default function ClassroomDetailView({
         data: { studentIds: studentIds },
       });
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: `${studentIds.length} student${
           studentIds.length > 1 ? "s" : ""
         } ${
@@ -279,11 +272,9 @@ export default function ClassroomDetailView({
       setShowRemoveConfirmDialog(false);
       setStudentToRemove(null);
     } catch (error: any) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           error.response?.data?.message || "Failed to remove student(s)",
-        variant: "destructive",
       });
     }
   };
@@ -295,8 +286,7 @@ export default function ClassroomDetailView({
 
   const handleStudentCreated = () => {
     setShowCreateStudentModal(false);
-    toast({
-      title: "Success",
+    toast.success("Success", {
       description: "Student added to class successfully",
     });
   };
@@ -360,16 +350,13 @@ export default function ClassroomDetailView({
         classroomId: classroom._id,
         subjectId,
       });
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: `${subjectName} removed from ${classroom.name}`,
       });
     } catch (error: any) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           error.response?.data?.message || "Failed to remove subject",
-        variant: "destructive",
       });
     }
   };

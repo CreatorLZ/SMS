@@ -11,7 +11,7 @@ import {
   Loader2,
 } from "lucide-react";
 import api from "../../lib/api";
-import { useToast } from "./use-toast";
+import { toast } from "sonner";
 
 interface HealthReport {
   timestamp: string;
@@ -33,7 +33,6 @@ interface HealthReport {
 }
 
 export default function ReconcilePage() {
-  const { toast } = useToast();
   const [healthReport, setHealthReport] = useState<HealthReport | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,8 +84,7 @@ export default function ReconcilePage() {
     try {
       const response = await api.post("/admin/fees/reconcile/deduplicate");
       const data = response.data as any;
-      toast({
-        title: "✅ Deduplication Complete",
+      toast.success("✅ Deduplication Complete", {
         description: `Removed ${data.stats.duplicatesFound} duplicates`,
       });
       // Run health check automatically after reconciliation
@@ -95,10 +93,8 @@ export default function ReconcilePage() {
       const errorMessage =
         err.response?.data?.message || "Deduplication failed";
       setError(errorMessage);
-      toast({
-        title: "❌ Deduplication Failed",
+      toast.error("❌ Deduplication Failed", {
         description: errorMessage,
-        variant: "destructive",
       });
     } finally {
       setIsDeduplicating(false);
@@ -111,8 +107,7 @@ export default function ReconcilePage() {
     try {
       const response = await api.post("/admin/fees/reconcile/backfill");
       const data = response.data as any;
-      toast({
-        title: "✅ Backfill Complete",
+      toast.success("✅ Backfill Complete", {
         description: `Backfilled ${data.stats.feesBackfilled} missing fees`,
       });
       // Run health check automatically after reconciliation
@@ -120,10 +115,8 @@ export default function ReconcilePage() {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || "Backfill failed";
       setError(errorMessage);
-      toast({
-        title: "❌ Backfill Failed",
+      toast.error("❌ Backfill Failed", {
         description: errorMessage,
-        variant: "destructive",
       });
     } finally {
       setIsBackfilling(false);
@@ -136,8 +129,7 @@ export default function ReconcilePage() {
     try {
       const response = await api.post("/admin/fees/reconcile/full");
       const data = response.data as any;
-      toast({
-        title: "✅ Full Reconciliation Complete",
+      toast.success("✅ Full Reconciliation Complete", {
         description: `Removed ${data.stats.deduplication.duplicatesRemoved} duplicates, backfilled ${data.stats.backfill.feesBackfilled} fees`,
       });
       // Run health check automatically after reconciliation
@@ -146,10 +138,8 @@ export default function ReconcilePage() {
       const errorMessage =
         err.response?.data?.message || "Full reconciliation failed";
       setError(errorMessage);
-      toast({
-        title: "❌ Full Reconciliation Failed",
+      toast.error("❌ Full Reconciliation Failed", {
         description: errorMessage,
-        variant: "destructive",
       });
     } finally {
       setIsFullReconciliation(false);

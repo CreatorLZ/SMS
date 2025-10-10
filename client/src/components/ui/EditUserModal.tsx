@@ -4,7 +4,7 @@ import { useUpdateUserMutation } from "@/hooks/useUpdateUserMutation";
 import { useUserManagementStore } from "@/store/userManagementStore";
 import { useUserQuery, useUsersQuery } from "@/hooks/useUsersQuery";
 import { useAuthStore } from "@/store/authStore";
-import { Toast } from "./toast";
+import { toast } from "sonner";
 import { UploadButton } from "@uploadthing/react";
 import type { OurFileRouter } from "@/app/api/uploadthing/core";
 import { useUserPassportUpload } from "@/hooks/useUserPassportUpload";
@@ -19,11 +19,6 @@ export default function EditUserModal() {
   } = useUserManagementStore();
 
   const updateUserMutation = useUpdateUserMutation();
-  const [showToast, setShowToast] = useState(false);
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  }>({ message: "", type: "success" });
   const [activeTab, setActiveTab] = useState("USER");
   const [currentTime] = useState(
     new Date().toLocaleTimeString("en-US", { hour12: false })
@@ -82,8 +77,11 @@ export default function EditUserModal() {
   };
 
   const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastProps({ message, type });
-    setShowToast(true);
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
   };
 
   useEffect(() => {
@@ -721,14 +719,6 @@ export default function EditUserModal() {
           background: #4b5563;
         }
       `}</style>
-
-      {showToast && toastProps && (
-        <Toast
-          message={toastProps.message}
-          type={toastProps.type}
-          onClose={() => setShowToast(false)}
-        />
-      )}
     </div>
   );
 }

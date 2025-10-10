@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { useToast } from "../ui/use-toast";
+import { toast } from "sonner";
 import {
   Download,
   Upload,
@@ -25,7 +25,6 @@ export default function ExcelBulkUpload({
   classroomName,
   onUploadSuccess,
 }: ExcelBulkUploadProps) {
-  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isDownloading, setIsDownloading] = useState(false);
@@ -43,10 +42,8 @@ export default function ExcelBulkUpload({
 
   const handleDownloadTemplate = async () => {
     if (!classroomId) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "No classroom selected",
-        variant: "destructive",
       });
       return;
     }
@@ -75,17 +72,14 @@ export default function ExcelBulkUpload({
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Excel template downloaded successfully",
       });
     } catch (error: any) {
       console.error("Error downloading template:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           error.response?.data?.message || "Failed to download template",
-        variant: "destructive",
       });
     } finally {
       setIsDownloading(false);
@@ -103,20 +97,16 @@ export default function ExcelBulkUpload({
       ];
 
       if (!allowedTypes.includes(file.type)) {
-        toast({
-          title: "Invalid File Type",
+        toast.error("Invalid File Type", {
           description: "Please select a valid Excel file (.xlsx or .xls)",
-          variant: "destructive",
         });
         return;
       }
 
       // Validate file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "File Too Large",
+        toast.error("File Too Large", {
           description: "File size must be less than 10MB",
-          variant: "destructive",
         });
         return;
       }
@@ -127,19 +117,15 @@ export default function ExcelBulkUpload({
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      toast({
-        title: "No File Selected",
+      toast.error("No File Selected", {
         description: "Please select an Excel file to upload",
-        variant: "destructive",
       });
       return;
     }
 
     if (!selectedTerm || !selectedYear) {
-      toast({
-        title: "Missing Information",
+      toast.error("Missing Information", {
         description: "Please select a term and year",
-        variant: "destructive",
       });
       return;
     }
@@ -158,8 +144,7 @@ export default function ExcelBulkUpload({
         },
       });
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: (response.data as any).message,
       });
 
@@ -177,17 +162,13 @@ export default function ExcelBulkUpload({
       if (error.response?.data?.errors) {
         // Show validation errors
         const errorMessages = (error.response.data as any).errors;
-        toast({
-          title: "Validation Errors",
+        toast.error("Validation Errors", {
           description: errorMessages.join(". "),
-          variant: "destructive",
         });
       } else {
-        toast({
-          title: "Error",
+        toast.error("Error", {
           description:
             error.response?.data?.message || "Failed to upload results",
-          variant: "destructive",
         });
       }
     } finally {

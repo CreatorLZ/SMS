@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useCreateUserMutation } from "@/hooks/useCreateUserMutation";
 import { useUserManagementStore } from "@/store/userManagementStore";
-import { Toast } from "./toast";
+import { toast } from "sonner";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
@@ -19,11 +19,6 @@ import {
 export default function CreateUserModal() {
   const { isCreateModalOpen, setCreateModalOpen } = useUserManagementStore();
   const createUserMutation = useCreateUserMutation();
-  const [showToast, setShowToast] = useState(false);
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  }>({ message: "", type: "success" });
 
   const [formData, setFormData] = useState({
     name: "",
@@ -37,8 +32,11 @@ export default function CreateUserModal() {
   });
 
   const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastProps({ message, type });
-    setShowToast(true);
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -363,15 +361,7 @@ export default function CreateUserModal() {
           </div>
         </form>
 
-        <div className="p-6">
-          {showToast && toastProps && (
-            <Toast
-              message={toastProps.message}
-              type={toastProps.type}
-              onClose={() => setShowToast(false)}
-            />
-          )}
-        </div>
+        <div className="p-6"></div>
       </div>
     </div>
   );

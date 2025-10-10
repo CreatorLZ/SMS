@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTeachersQuery } from "@/hooks/useTeachersQuery";
 import { useReassignTeacherMutation } from "@/hooks/useClassroomReassignment";
-import { Toast } from "./toast";
+import { toast } from "sonner";
 import { Button } from "./button";
 import { GraduationCap, Users, CheckCircle, X } from "lucide-react";
 
@@ -32,15 +32,12 @@ export default function ReassignTeacherModal({
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
   const [originalTeacherId, setOriginalTeacherId] = useState<string>("");
 
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
-  const [showToast, setShowToast] = useState(false);
-
   const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastProps({ message, type });
-    setShowToast(true);
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
   };
 
   useEffect(() => {
@@ -254,14 +251,6 @@ export default function ReassignTeacherModal({
           </Button>
         </div>
       </div>
-
-      {showToast && toastProps && (
-        <Toast
-          message={toastProps.message}
-          type={toastProps.type}
-          onClose={() => setShowToast(false)}
-        />
-      )}
     </div>
   );
 }

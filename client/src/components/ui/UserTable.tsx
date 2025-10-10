@@ -3,7 +3,7 @@ import { useUsersQuery, User } from "@/hooks/useUsersQuery";
 import { useUserManagementStore } from "@/store/userManagementStore";
 import { useDeleteUserMutation } from "@/hooks/useDeleteUserMutation";
 import { useUpdateUserMutation } from "@/hooks/useUpdateUserMutation";
-import { Toast } from "./toast";
+import { toast } from "sonner";
 import { Button } from "./button";
 import { Badge } from "./badge";
 import { Card, CardContent } from "./card";
@@ -34,12 +34,6 @@ export default function UserTable() {
     setViewModalOpen,
     setDeleteModalOpen,
   } = useUserManagementStore();
-
-  const [showToast, setShowToast] = useState(false);
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
 
   // Sanitize inputs before calling useUsersQuery
   const queryParams: any = {};
@@ -84,8 +78,11 @@ export default function UserTable() {
   };
 
   const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastProps({ message, type });
-    setShowToast(true);
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
   };
 
   const getRoleIcon = (role: string) => {
@@ -532,14 +529,6 @@ export default function UserTable() {
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {showToast && toastProps && (
-        <Toast
-          message={toastProps.message}
-          type={toastProps.type}
-          onClose={() => setShowToast(false)}
-        />
       )}
     </div>
   );

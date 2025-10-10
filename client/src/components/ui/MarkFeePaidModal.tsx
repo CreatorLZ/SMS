@@ -15,7 +15,7 @@ import {
 // Using simple modal implementation without Radix UI
 import { useStudentFees } from "../../hooks/useStudentFees";
 import { useQueryClient } from "@tanstack/react-query";
-import { Toast } from "./toast";
+import { toast } from "sonner";
 import { useFeeModalStore } from "../../store/feeModalStore";
 import {
   CreditCard,
@@ -42,11 +42,6 @@ export default function MarkFeePaidModal() {
     paymentMethod: "",
     receiptNumber: "",
   });
-  const [showToast, setShowToast] = useState(false);
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  }>({ message: "", type: "success" });
   const [modalState, setModalState] = useState<"idle" | "loading" | "success">(
     "idle"
   );
@@ -97,11 +92,7 @@ export default function MarkFeePaidModal() {
 
         // Show toast notification after modal closes
         setTimeout(() => {
-          setToastProps({
-            message: "Payment recorded successfully!",
-            type: "success",
-          });
-          setShowToast(true);
+          toast.success("Payment recorded successfully!");
         }, 100);
       }, 2000);
     } catch (error: any) {
@@ -109,11 +100,9 @@ export default function MarkFeePaidModal() {
       setModalState("idle");
 
       // Show error toast
-      setToastProps({
-        message: error.response?.data?.message || "Failed to mark fee as paid",
-        type: "error",
-      });
-      setShowToast(true);
+      toast.error(
+        error.response?.data?.message || "Failed to mark fee as paid"
+      );
     }
   };
 
@@ -412,15 +401,6 @@ export default function MarkFeePaidModal() {
             </div>
           )}
         </div>
-
-        {/* Toast Notification */}
-        {showToast && toastProps && (
-          <Toast
-            message={toastProps.message}
-            type={toastProps.type}
-            onClose={() => setShowToast(false)}
-          />
-        )}
       </div>
     </div>
   );

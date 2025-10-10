@@ -21,7 +21,7 @@ import { useAttendanceComparison } from "../../hooks/useAttendanceComparison";
 import { useRecentActivity } from "../../hooks/useRecentActivity";
 import { useTeacherClassroomStudents } from "../../hooks/useTeacherClassroomsQuery";
 import { useActiveTermQuery } from "../../hooks/useActiveTermQuery";
-import { useToast } from "./use-toast";
+import { toast } from "sonner";
 import api from "../../lib/api";
 
 import {
@@ -57,7 +57,6 @@ export default function TeacherClassroomDetailView({
     null
   );
 
-  const { toast } = useToast();
   const markAttendance = useMarkAttendance();
   const updateAttendance = useUpdateAttendance();
   const saveTimetable = useSaveTimetable();
@@ -160,8 +159,7 @@ export default function TeacherClassroomDetailView({
         });
       }
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Attendance saved successfully",
       });
 
@@ -172,17 +170,13 @@ export default function TeacherClassroomDetailView({
 
       // Handle specific error cases
       if (error.response?.status === 400) {
-        toast({
-          title: "Error",
+        toast.error("Error", {
           description:
             error.response?.data?.message || "Failed to save attendance",
-          variant: "destructive",
         });
       } else {
-        toast({
-          title: "Error",
+        toast.error("Error", {
           description: "Failed to save attendance",
-          variant: "destructive",
         });
       }
 

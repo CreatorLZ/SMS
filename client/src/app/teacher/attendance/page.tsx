@@ -26,7 +26,7 @@ import {
   useUpdateAttendance,
   useGetClassAttendance,
 } from "../../../hooks/useAttendance";
-import { useToast } from "../../../components/ui/use-toast";
+import { toast } from "sonner";
 
 export default function TeacherAttendancePage() {
   const [selectedClass, setSelectedClass] = useState("");
@@ -46,7 +46,6 @@ export default function TeacherAttendancePage() {
     string | null
   >(null);
 
-  const { toast } = useToast();
   const { data: classrooms, isLoading: classroomsLoading } =
     useTeacherClassroomsQuery();
   const {
@@ -238,8 +237,7 @@ export default function TeacherAttendancePage() {
           // Validate draft data structure
           if (typeof draftData === "object" && draftData !== null) {
             setAttendanceData(draftData);
-            toast({
-              title: "Draft Loaded",
+            toast.success("Draft Loaded", {
               description: "Previous unsaved changes have been restored",
             });
           }
@@ -283,16 +281,13 @@ export default function TeacherAttendancePage() {
         newData[student._id] = "present";
       });
       setAttendanceData(newData);
-      toast({
-        title: "All Marked Present",
+      toast.success("All Marked Present", {
         description: "All students have been marked as present",
       });
     } catch (error) {
       console.error("Error marking all present:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to mark all students as present",
-        variant: "destructive",
       });
     } finally {
       setBulkOperationLoading(null);
@@ -313,21 +308,18 @@ export default function TeacherAttendancePage() {
         newData[student._id] = "absent";
       });
       setAttendanceData(newData);
-      toast({
-        title: "All Marked Absent",
+      toast.success("All Marked Absent", {
         description: "All students have been marked as absent",
       });
     } catch (error) {
       console.error("Error marking all absent:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to mark all students as absent",
-        variant: "destructive",
       });
     } finally {
       setBulkOperationLoading(null);
     }
-  }, [selectedClassroom, toast]);
+  }, [selectedClassroom]);
 
   const resetAttendance = useCallback(async () => {
     if (!selectedClassroom) return;
@@ -343,21 +335,18 @@ export default function TeacherAttendancePage() {
         newData[student._id] = "present"; // Default to present
       });
       setAttendanceData(newData);
-      toast({
-        title: "Attendance Reset",
+      toast.success("Attendance Reset", {
         description: "All students reset to present",
       });
     } catch (error) {
       console.error("Error resetting attendance:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to reset attendance",
-        variant: "destructive",
       });
     } finally {
       setBulkOperationLoading(null);
     }
-  }, [selectedClassroom, toast]);
+  }, [selectedClassroom]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -433,17 +422,14 @@ export default function TeacherAttendancePage() {
         });
       }
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Attendance saved successfully",
       });
     } catch (error: any) {
       console.error("Save attendance error:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           error.response?.data?.message || "Failed to save attendance",
-        variant: "destructive",
       });
     } finally {
       setIsSaving(false);

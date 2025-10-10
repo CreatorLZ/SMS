@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Label } from "./label";
-import { useToast } from "./use-toast";
+import { toast } from "sonner";
 import {
   GraduationCap,
   X,
@@ -58,7 +58,6 @@ export default function ResultsMarker({
   onSave,
   onCancel,
 }: ResultsMarkerProps) {
-  const { toast } = useToast();
   const submitResult = useSubmitResult();
 
   const { data: classroomSubjects, isLoading: subjectsLoading } =
@@ -313,10 +312,8 @@ export default function ResultsMarker({
 
   const validateResults = (): boolean => {
     if (!selectedTerm || !selectedYear) {
-      toast({
-        title: "Validation Error",
+      toast.error("Validation Error", {
         description: "Please select a term and year",
-        variant: "destructive",
       });
       return false;
     }
@@ -332,10 +329,8 @@ export default function ResultsMarker({
     );
 
     if (hasValidationErrors) {
-      toast({
-        title: "Validation Error",
+      toast.error("Validation Error", {
         description: "Please fix all validation errors before saving",
-        variant: "destructive",
       });
       return false;
     }
@@ -348,10 +343,8 @@ export default function ResultsMarker({
     );
 
     if (!hasValidResults) {
-      toast({
-        title: "Validation Error",
+      toast.error("Validation Error", {
         description: "Please enter at least one score or comment",
-        variant: "destructive",
       });
       return false;
     }
@@ -383,8 +376,7 @@ export default function ResultsMarker({
 
       await Promise.all(promises);
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Results saved successfully",
       });
 
@@ -395,10 +387,8 @@ export default function ResultsMarker({
       onSave?.();
     } catch (error: any) {
       console.error("Error saving results:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.response?.data?.message || "Failed to save results",
-        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);

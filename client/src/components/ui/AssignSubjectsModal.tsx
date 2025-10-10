@@ -6,7 +6,7 @@ import { Input } from "./input";
 import { Badge } from "./badge";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { X } from "lucide-react";
-import { useToast } from "./use-toast";
+import { toast } from "sonner";
 import { Loader2, Search, BookOpen } from "lucide-react";
 import {
   useAvailableSubjectsQuery,
@@ -34,7 +34,6 @@ export default function AssignSubjectsModal({
   );
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch current classroom subjects
@@ -107,10 +106,8 @@ export default function AssignSubjectsModal({
 
   const handleAssign = async () => {
     if (selectedSubjects.size === 0) {
-      toast({
-        title: "No subjects selected",
+      toast.error("No subjects selected", {
         description: "Please select at least one subject to assign.",
-        variant: "destructive",
       });
       return;
     }
@@ -147,8 +144,7 @@ export default function AssignSubjectsModal({
         .join(", ");
 
       // Success toast with detailed message
-      toast({
-        title: "✅ Subjects Assigned Successfully",
+      toast.success("✅ Subjects Assigned Successfully", {
         description:
           selectedSubjects.size === 1
             ? `Assigned "${assignedSubjectNames}" to ${classroomName}`
@@ -174,12 +170,10 @@ export default function AssignSubjectsModal({
         queryKey: ["available-subjects", classroomId],
       });
 
-      toast({
-        title: "❌ Assignment Failed",
+      toast.error("❌ Assignment Failed", {
         description:
           error.response?.data?.message ||
           "Failed to assign subjects. Please try again.",
-        variant: "destructive",
       });
     }
   };

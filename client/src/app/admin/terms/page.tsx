@@ -23,7 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Toast } from "@/components/ui/toast";
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
@@ -71,15 +71,12 @@ export default function AdminTermsPage() {
   const deactivateSessionMutation = useDeactivateSessionMutation();
   const deleteSessionMutation = useDeleteSessionMutation();
 
-  const [toastProps, setToastProps] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
-  const [showToast, setShowToast] = useState(false);
-
   const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastProps({ message, type });
-    setShowToast(true);
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
   };
 
   // Calculate term statistics
@@ -561,15 +558,6 @@ export default function AdminTermsPage() {
             message={`Are you sure you want to delete "${sessionToDelete?.name}"? This action cannot be undone.`}
             isLoading={deleteSessionMutation.isPending}
           />
-
-          {/* Toast */}
-          {showToast && toastProps && (
-            <Toast
-              message={toastProps.message}
-              type={toastProps.type}
-              onClose={() => setShowToast(false)}
-            />
-          )}
         </div>
       </DashboardLayout>
     </RoleGuard>

@@ -30,15 +30,13 @@ import {
   useDeactivateSubjectMutation,
   useActivateSubjectMutation,
 } from "../../../hooks/useUpdateSubjectMutation";
-import { useToast } from "../../../components/ui/use-toast";
+import { toast } from "sonner";
 
 export default function AdminSubjectsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-
-  const { toast } = useToast();
 
   // API queries and mutations
   const {
@@ -64,23 +62,19 @@ export default function AdminSubjectsPage() {
     try {
       if (isActive) {
         await deactivateSubjectMutation.mutateAsync(subjectId);
-        toast({
-          title: "Success",
+        toast.success("Success", {
           description: "Subject deactivated successfully",
         });
       } else {
         await activateSubjectMutation.mutateAsync(subjectId);
-        toast({
-          title: "Success",
+        toast.success("Success", {
           description: "Subject activated successfully",
         });
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           error.response?.data?.message || "Failed to update subject status",
-        variant: "destructive",
       });
     }
   };
