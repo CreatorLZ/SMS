@@ -13,7 +13,6 @@ import ReconcilePage from "@/components/ui/ReconcilePage";
 import CreateFeeStructureModal from "@/components/ui/CreateFeeStructureModal";
 import EditFeeStructureModal from "@/components/ui/EditFeeStructureModal";
 import MarkFeePaidModal from "@/components/ui/MarkFeePaidModal";
-import { useFeeModalStore } from "../../../store/feeModalStore";
 
 export default function FeesPage() {
   const [activeTab, setActiveTab] = useState("structures");

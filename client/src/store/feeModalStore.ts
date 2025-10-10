@@ -5,6 +5,7 @@ interface FeeModalState {
   selectedStudent: any;
   selectedFee: any;
   onPaymentSuccess: (() => void) | null;
+  isClosing: boolean;
   openMarkPaidModal: (student: any, fee: any, onSuccess?: () => void) => void;
   closeMarkPaidModal: () => void;
 }
@@ -14,6 +15,7 @@ export const useFeeModalStore = create<FeeModalState>((set, get) => ({
   selectedStudent: null,
   selectedFee: null,
   onPaymentSuccess: null,
+  isClosing: false,
   openMarkPaidModal: (student, fee, onSuccess) => {
     set({
       isMarkPaidModalOpen: true,
@@ -23,15 +25,21 @@ export const useFeeModalStore = create<FeeModalState>((set, get) => ({
     });
   },
   closeMarkPaidModal: () => {
+    if (get().isClosing) return; // Prevent re-entrant calls
+    set({ isClosing: true });
     const { onPaymentSuccess } = get();
-    if (onPaymentSuccess) {
-      onPaymentSuccess();
+    try {
+      if (onPaymentSuccess) {
+        onPaymentSuccess();
+      }
+    } finally {
+      set({
+        isMarkPaidModalOpen: false,
+        selectedStudent: null,
+        selectedFee: null,
+        onPaymentSuccess: null,
+        isClosing: false,
+      });
     }
-    set({
-      isMarkPaidModalOpen: false,
-      selectedStudent: null,
-      selectedFee: null,
-      onPaymentSuccess: null,
-    });
   },
 }));
