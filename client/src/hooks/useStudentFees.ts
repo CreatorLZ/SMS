@@ -112,6 +112,7 @@ export const useStudentFees = () => {
             fee.session === variables.session
           ) {
             // Update the fee with the new data from backend
+            if (!data.termFee) return fee;
             return {
               ...fee,
               ...data.termFee,

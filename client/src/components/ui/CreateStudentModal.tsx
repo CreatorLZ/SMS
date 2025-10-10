@@ -77,6 +77,7 @@ export default function CreateStudentModal({
     parentPhone: "",
     parentEmail: "",
     relationshipToStudent: "",
+    otherRelationship: "",
     admissionDate: "",
     emergencyContact: {
       name: "",
@@ -124,7 +125,25 @@ export default function CreateStudentModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Validate otherRelationship when Other is selected
+      if (
+        formData.relationshipToStudent === "Other" &&
+        (!formData.otherRelationship ||
+          formData.otherRelationship.trim() === "")
+      ) {
+        showToastMessage(
+          "Please specify the relationship when 'Other' is selected.",
+          "error"
+        );
+        return;
+      }
+
       let submissionData = { ...formData };
+
+      // Use otherRelationship value when Other is selected
+      if (submissionData.relationshipToStudent === "Other") {
+        submissionData.relationshipToStudent = submissionData.otherRelationship;
+      }
 
       // If creating within a classroom context, ensure classroomId is set properly
       if (currentClassroomId && currentClassroomName) {
@@ -188,6 +207,7 @@ export default function CreateStudentModal({
       parentPhone: "",
       parentEmail: "",
       relationshipToStudent: "",
+      otherRelationship: "",
       admissionDate: "",
       emergencyContact: {
         name: "",
@@ -547,6 +567,30 @@ export default function CreateStudentModal({
                   </select>
                 </div>
               </div>
+
+              {formData.relationshipToStudent === "Other" && (
+                <div className="space-y-2">
+                  <label
+                    htmlFor="otherRelationship"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Specify Relationship *
+                  </label>
+                  <Input
+                    id="otherRelationship"
+                    type="text"
+                    value={formData.otherRelationship}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        otherRelationship: e.target.value,
+                      })
+                    }
+                    placeholder="Enter the relationship"
+                    required
+                  />
+                </div>
+              )}
 
               {/* Student Phone & Email */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

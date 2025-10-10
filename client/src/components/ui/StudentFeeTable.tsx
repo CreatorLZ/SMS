@@ -24,6 +24,7 @@ import {
   useStudentFees,
   useStudentFeeSummary,
 } from "../../hooks/useStudentFees";
+import { useFeeModalStore } from "../../store/feeModalStore";
 import {
   CheckCircle,
   XCircle,
@@ -98,20 +99,15 @@ interface StudentFeeDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   student: any;
-  onMarkPaidClick?: (
-    student: any,
-    fee: any,
-    onPaymentSuccess?: () => void
-  ) => void;
 }
 
 function StudentFeeDetailsModal({
   open,
   onOpenChange,
   student,
-  onMarkPaidClick,
 }: StudentFeeDetailsModalProps) {
   const { studentFees, isLoadingStudentFees } = useFeeStore();
+  const { openMarkPaidModal } = useFeeModalStore();
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
@@ -310,7 +306,7 @@ function StudentFeeDetailsModal({
                                   <Button
                                     size="sm"
                                     onClick={() =>
-                                      onMarkPaidClick?.(studentFees, fee, () =>
+                                      openMarkPaidModal(student, fee, () =>
                                         onOpenChange(false)
                                       )
                                     }
@@ -341,13 +337,9 @@ function StudentFeeDetailsModal({
   );
 }
 
-interface StudentFeeTableProps {
-  onMarkPaidClick?: (student: any, fee: any) => void;
-}
+interface StudentFeeTableProps {}
 
-export default function StudentFeeTable({
-  onMarkPaidClick,
-}: StudentFeeTableProps) {
+export default function StudentFeeTable({}: StudentFeeTableProps) {
   const tableRef = useRef<HTMLDivElement>(null);
   const [selectedStudentForDetails, setSelectedStudentForDetails] =
     useState<any>(null);
@@ -604,7 +596,6 @@ export default function StudentFeeTable({
         open={isDetailsModalOpen}
         onOpenChange={setIsDetailsModalOpen}
         student={selectedStudentForDetails}
-        onMarkPaidClick={onMarkPaidClick}
       />
     </div>
   );

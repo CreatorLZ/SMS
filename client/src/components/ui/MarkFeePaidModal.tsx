@@ -16,6 +16,7 @@ import {
 import { useStudentFees } from "../../hooks/useStudentFees";
 import { useQueryClient } from "@tanstack/react-query";
 import { Toast } from "./toast";
+import { useFeeModalStore } from "../../store/feeModalStore";
 import {
   CreditCard,
   DollarSign,
@@ -29,21 +30,13 @@ import {
   Loader2,
 } from "lucide-react";
 
-interface MarkFeePaidModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  student?: any;
-  fee?: any;
-  onPaymentSuccess?: () => void;
-}
-
-export default function MarkFeePaidModal({
-  open,
-  onOpenChange,
-  student,
-  fee,
-  onPaymentSuccess,
-}: MarkFeePaidModalProps) {
+export default function MarkFeePaidModal() {
+  const {
+    isMarkPaidModalOpen,
+    selectedStudent,
+    selectedFee,
+    closeMarkPaidModal,
+  } = useFeeModalStore();
   const [formData, setFormData] = useState({
     paymentAmount: "",
     paymentMethod: "",
@@ -64,19 +57,19 @@ export default function MarkFeePaidModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!student || !fee) return;
+    if (!selectedStudent || !selectedFee) return;
 
     // Set loading state
     setModalState("loading");
 
     try {
       await markFeePaid({
-        studentId: student._id,
-        term: fee.term,
-        session: fee.session,
+        studentId: selectedStudent._id,
+        term: selectedFee.term,
+        session: selectedFee.session,
         paymentAmount:
           parseFloat(formData.paymentAmount) ||
-          fee.amount - (fee.amountPaid || 0),
+          selectedFee.amount - (selectedFee.amountPaid || 0),
         paymentMethod: formData.paymentMethod || "cash",
         receiptNumber: formData.receiptNumber,
       });
@@ -100,8 +93,7 @@ export default function MarkFeePaidModal({
           receiptNumber: "",
         });
         setModalState("idle");
-        onOpenChange(false);
-        onPaymentSuccess?.();
+        closeMarkPaidModal();
 
         // Show toast notification after modal closes
         setTimeout(() => {
@@ -136,7 +128,7 @@ export default function MarkFeePaidModal({
     }).format(amount);
   };
 
-  if (!open) return null;
+  if (!isMarkPaidModalOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -167,7 +159,7 @@ export default function MarkFeePaidModal({
             </div>
           </div>
           <button
-            onClick={() => onOpenChange(false)}
+            onClick={closeMarkPaidModal}
             className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
           >
             <X className="w-5 h-5" />
@@ -176,7 +168,7 @@ export default function MarkFeePaidModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          {student && fee && (
+          {selectedStudent && selectedFee && (
             <div className="p-6">
               {modalState === "success" ? (
                 /* Success Screen */
@@ -194,7 +186,7 @@ export default function MarkFeePaidModal({
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 w-full max-w-sm">
                     <div className="text-center">
                       <div className="text-lg font-mono font-bold text-blue-700 mb-1">
-                        {fee.pinCode}
+                        {selectedFee.pinCode}
                       </div>
                       <p className="text-xs text-gray-600">Result Access PIN</p>
                     </div>
@@ -209,16 +201,18 @@ export default function MarkFeePaidModal({
                         <User className="w-5 h-5 text-gray-600" />
                         <div>
                           <h3 className="font-medium text-gray-900">
-                            {student.fullName}
+                            {selectedStudent.fullName}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            ID: {student.studentId}
+                            ID: {selectedStudent.studentId}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-semibold text-gray-900">
-                          {formatCurrency(fee.amount - (fee.amountPaid || 0))}
+                          {formatCurrency(
+                            selectedFee.amount - (selectedFee.amountPaid || 0)
+                          )}
                         </div>
                         <div className="text-sm text-gray-600">Balance Due</div>
                       </div>
@@ -226,7 +220,7 @@ export default function MarkFeePaidModal({
                     <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200">
                       <div className="text-center">
                         <div className="font-medium text-gray-900">
-                          {fee.term} {fee.session}
+                          {selectedFee.term} {selectedFee.session}
                         </div>
                         <div className="text-xs text-gray-500 uppercase">
                           Term
@@ -234,7 +228,7 @@ export default function MarkFeePaidModal({
                       </div>
                       <div className="text-center">
                         <div className="font-medium text-green-600">
-                          {formatCurrency(fee.amountPaid || 0)}
+                          {formatCurrency(selectedFee.amountPaid || 0)}
                         </div>
                         <div className="text-xs text-gray-500 uppercase">
                           Paid
@@ -242,7 +236,7 @@ export default function MarkFeePaidModal({
                       </div>
                       <div className="text-center">
                         <div className="font-medium text-gray-900">
-                          {formatCurrency(fee.amount)}
+                          {formatCurrency(selectedFee.amount)}
                         </div>
                         <div className="text-xs text-gray-500 uppercase">
                           Total
@@ -295,7 +289,9 @@ export default function MarkFeePaidModal({
                           )}
                           <p className="text-xs text-gray-500">
                             Maximum:{" "}
-                            {formatCurrency(fee.amount - (fee.amountPaid || 0))}
+                            {formatCurrency(
+                              selectedFee.amount - (selectedFee.amountPaid || 0)
+                            )}
                           </p>
                         </div>
 
@@ -353,7 +349,7 @@ export default function MarkFeePaidModal({
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                           <div className="text-center">
                             <div className="text-xl font-mono font-bold text-blue-700 mb-2">
-                              {fee.pinCode}
+                              {selectedFee.pinCode}
                             </div>
                             <p className="text-sm text-gray-600">
                               Share this PIN with the student after payment
@@ -387,7 +383,7 @@ export default function MarkFeePaidModal({
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => onOpenChange(false)}
+                        onClick={closeMarkPaidModal}
                         className="px-6 py-2 border border-gray-300 hover:bg-gray-50"
                       >
                         Cancel

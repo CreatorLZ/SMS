@@ -13,18 +13,13 @@ import ReconcilePage from "@/components/ui/ReconcilePage";
 import CreateFeeStructureModal from "@/components/ui/CreateFeeStructureModal";
 import EditFeeStructureModal from "@/components/ui/EditFeeStructureModal";
 import MarkFeePaidModal from "@/components/ui/MarkFeePaidModal";
+import { useFeeModalStore } from "../../../store/feeModalStore";
 
 export default function FeesPage() {
   const [activeTab, setActiveTab] = useState("structures");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [markPaidModalOpen, setMarkPaidModalOpen] = useState(false);
   const [selectedFeeStructure, setSelectedFeeStructure] = useState<any>(null);
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
-  const [selectedFee, setSelectedFee] = useState<any>(null);
-  const [onPaymentSuccessCallback, setOnPaymentSuccessCallback] = useState<
-    (() => void) | null
-  >(null);
 
   const handleCreateFeeStructure = () => {
     setCreateModalOpen(true);
@@ -33,17 +28,6 @@ export default function FeesPage() {
   const handleEditFeeStructure = (structure: any) => {
     setSelectedFeeStructure(structure);
     setEditModalOpen(true);
-  };
-
-  const handleMarkFeePaid = (
-    student: any,
-    fee: any,
-    onPaymentSuccess?: () => void
-  ) => {
-    setSelectedStudent(student);
-    setSelectedFee(fee);
-    setOnPaymentSuccessCallback(() => onPaymentSuccess);
-    setMarkPaidModalOpen(true);
   };
 
   const tabs = [
@@ -64,7 +48,7 @@ export default function FeesPage() {
       label: "Student Fees",
       icon: Users,
       description: "Manage individual student fee payments",
-      content: <StudentFeeTable onMarkPaidClick={handleMarkFeePaid} />,
+      content: <StudentFeeTable />,
     },
     {
       id: "arrears",
@@ -158,13 +142,7 @@ export default function FeesPage() {
             feeStructure={selectedFeeStructure}
           />
 
-          <MarkFeePaidModal
-            open={markPaidModalOpen}
-            onOpenChange={setMarkPaidModalOpen}
-            student={selectedStudent}
-            fee={selectedFee}
-            onPaymentSuccess={onPaymentSuccessCallback || undefined}
-          />
+          <MarkFeePaidModal />
         </div>
       </DashboardLayout>
     </RoleGuard>
