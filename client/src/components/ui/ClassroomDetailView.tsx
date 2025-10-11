@@ -6,11 +6,12 @@ import AttendanceCalendar from "./AttendanceCalendar";
 import AttendanceMarker from "./AttendanceMarker";
 import TimetableManager from "./TimetableManager";
 import ReportsDashboard from "./ReportsDashboard";
-import StudentProfile from "./StudentProfile";
 import ConfirmDialog from "./ConfirmDialog";
 import AssignSubjectsModal from "./AssignSubjectsModal";
 import SubjectDetailsModal from "./SubjectDetailsModal";
 import ReassignTeacherModal from "./ReassignTeacherModal";
+import ViewStudentModal from "./ViewStudentModal";
+import EditStudentModal from "./EditStudentModal";
 import {
   useMarkAttendance,
   useUpdateAttendance,
@@ -27,6 +28,7 @@ import { useRemoveSubjectMutation } from "../../hooks/useAssignSubjectsMutation"
 import { useActiveTermQuery } from "../../hooks/useActiveTermQuery";
 import { toast } from "sonner";
 import { useClassroomManagementStore } from "../../store/classroomManagementStore";
+import { useStudentManagementStore } from "../../store/studentManagementStore";
 import api from "../../lib/api";
 import { Subject } from "../../hooks/useSubjectsQuery";
 
@@ -58,10 +60,6 @@ export default function ClassroomDetailView({
 
   // Student management state
   const [showCreateStudentModal, setShowCreateStudentModal] = useState(false);
-  const [showStudentProfileModal, setShowStudentProfileModal] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
-    null
-  );
   const [showRemoveConfirmDialog, setShowRemoveConfirmDialog] = useState(false);
   const [studentToRemove, setStudentToRemove] = useState<{
     id: string;
@@ -235,8 +233,8 @@ export default function ClassroomDetailView({
   };
 
   const handleViewProfile = (studentId: string) => {
-    setSelectedStudentId(studentId);
-    setShowStudentProfileModal(true);
+    const { setViewModalOpen } = useStudentManagementStore.getState();
+    setViewModalOpen(true, studentId);
   };
 
   const handleRemoveStudent = (studentId: string, studentName: string) => {
@@ -289,11 +287,6 @@ export default function ClassroomDetailView({
     toast.success("Success", {
       description: "Student added to class successfully",
     });
-  };
-
-  const handleCloseStudentProfile = () => {
-    setShowStudentProfileModal(false);
-    setSelectedStudentId(null);
   };
 
   // Bulk operations
@@ -999,16 +992,8 @@ export default function ClassroomDetailView({
       </div>
 
       {/* Modals */}
-      {showStudentProfileModal && selectedStudentId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4">
-            <StudentProfile
-              studentId={selectedStudentId}
-              onClose={handleCloseStudentProfile}
-            />
-          </div>
-        </div>
-      )}
+      <ViewStudentModal />
+      <EditStudentModal />
 
       {showRemoveConfirmDialog && studentToRemove && (
         <ConfirmDialog

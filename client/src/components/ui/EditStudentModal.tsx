@@ -8,6 +8,7 @@ import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
 import { useAuthStore } from "@/store/authStore";
 import { useStudentResults } from "@/hooks/useResults";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "./button";
 import { Input } from "./input";
@@ -102,6 +103,7 @@ export default function EditStudentModal() {
   } = usePassportUpload({ studentId: selectedStudentId || "" });
 
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
 
   // Results data - only query when we have a valid studentId
   const { data: studentResults, isLoading: resultsLoading } = useStudentResults(
@@ -243,6 +245,11 @@ export default function EditStudentModal() {
         data: formData,
       });
       showToastMessage("Student updated successfully!", "success");
+
+      // Invalidate classroom queries to refresh classroom views with updated student data
+      queryClient.invalidateQueries({ queryKey: ["classrooms"] });
+      queryClient.invalidateQueries({ queryKey: ["teacher-classrooms"] });
+
       setEditModalOpen(false);
     } catch (error: any) {
       console.error("Error updating student:", error);

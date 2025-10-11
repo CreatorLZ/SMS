@@ -6,8 +6,8 @@ import AttendanceCalendar from "./AttendanceCalendar";
 import AttendanceMarker from "./AttendanceMarker";
 import TimetableManager from "./TimetableManager";
 import ReportsDashboard from "./ReportsDashboard";
-import StudentProfile from "./StudentProfile";
-import ConfirmDialog from "./ConfirmDialog";
+import ViewStudentModal from "./ViewStudentModal";
+import EditStudentModal from "./EditStudentModal";
 import {
   useMarkAttendance,
   useUpdateAttendance,
@@ -22,6 +22,7 @@ import { useRecentActivity } from "../../hooks/useRecentActivity";
 import { useTeacherClassroomStudents } from "../../hooks/useTeacherClassroomsQuery";
 import { useActiveTermQuery } from "../../hooks/useActiveTermQuery";
 import { toast } from "sonner";
+import { useStudentManagementStore } from "../../store/studentManagementStore";
 import api from "../../lib/api";
 
 import {
@@ -50,12 +51,6 @@ export default function TeacherClassroomDetailView({
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showAttendanceMarker, setShowAttendanceMarker] = useState(false);
-
-  // Student management state
-  const [showStudentProfileModal, setShowStudentProfileModal] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
-    null
-  );
 
   const markAttendance = useMarkAttendance();
   const updateAttendance = useUpdateAttendance();
@@ -190,13 +185,8 @@ export default function TeacherClassroomDetailView({
   };
 
   const handleViewProfile = (studentId: string) => {
-    setSelectedStudentId(studentId);
-    setShowStudentProfileModal(true);
-  };
-
-  const handleCloseStudentProfile = () => {
-    setShowStudentProfileModal(false);
-    setSelectedStudentId(null);
+    const { setViewModalOpen } = useStudentManagementStore.getState();
+    setViewModalOpen(true, studentId);
   };
 
   return (
@@ -557,16 +547,8 @@ export default function TeacherClassroomDetailView({
         )}
       </div>
 
-      {showStudentProfileModal && selectedStudentId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4">
-            <StudentProfile
-              studentId={selectedStudentId}
-              onClose={handleCloseStudentProfile}
-            />
-          </div>
-        </div>
-      )}
+      <ViewStudentModal />
+      <EditStudentModal />
     </div>
   );
 }
