@@ -163,17 +163,19 @@ export const submitResults = async (req: Request, res: Response) => {
 
 // @desc    Get student results
 // @route   GET /api/teacher/results/:studentId
-// @access  Private/Teacher
+// @access  Private/Teacher, Admin
 export const getStudentResults = async (req: Request, res: Response) => {
   try {
     const { studentId } = req.params;
-    const teacherId = req.user?._id;
+    const userId = req.user?._id;
+    const userRole = req.user?.role;
 
     // Debug logging
     console.log("getStudentResults called with:", {
       studentId,
       studentIdType: typeof studentId,
-      teacherId,
+      userId,
+      userRole,
     });
 
     if (!studentId) {
@@ -185,16 +187,19 @@ export const getStudentResults = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid studentId format" });
     }
 
-    // Verify teacher has access to this student
-    const classroom = await Classroom.findOne({
-      teacherId,
-      students: studentId,
-    });
-
-    if (!classroom) {
-      return res.status(403).json({
-        message: "You don't have permission to view results for this student",
+    // Allow admins to view any student's results without classroom restrictions
+    if (userRole !== "admin" && userRole !== "superadmin") {
+      // For teachers, verify they have access to this student
+      const classroom = await Classroom.findOne({
+        teacherId: userId,
+        students: studentId,
       });
+
+      if (!classroom) {
+        return res.status(403).json({
+          message: "You don't have permission to view results for this student",
+        });
+      }
     }
 
     const student = await Student.findById(studentId)

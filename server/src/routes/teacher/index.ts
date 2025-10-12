@@ -16,20 +16,24 @@ import {
 const router = express.Router();
 
 // Apply auth middleware to all routes
-router.use(protect, authorize("teacher"));
+router.use(protect);
 
 // Attendance routes
 router.post("/attendance", markAttendance);
 router.get("/attendance", getAttendanceHistory);
 
 // Results routes
-router.post("/results", submitResults);
-router.get("/results/students", getClassroomStudents);
-router.get("/results/:studentId", getStudentResults);
+router.post("/results", authorize("teacher"), submitResults);
+router.get("/results/students", authorize("teacher"), getClassroomStudents);
+router.get("/results/:studentId", getStudentResults); // Allow admins and teachers
 
 // Classroom routes
-router.get("/classroom", getClassroomDetails);
-router.get("/classrooms", getTeacherClassrooms);
-router.get("/classrooms/:classroomId/subjects", getClassroomSubjects);
+router.get("/classroom", authorize("teacher"), getClassroomDetails);
+router.get("/classrooms", authorize("teacher"), getTeacherClassrooms);
+router.get(
+  "/classrooms/:classroomId/subjects",
+  authorize("teacher"),
+  getClassroomSubjects
+);
 
 export default router;

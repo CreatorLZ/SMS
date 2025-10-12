@@ -7,7 +7,6 @@ import { useUsersQuery } from "@/hooks/useUsersQuery";
 import { useClassroomsQuery } from "@/hooks/useClassroomsQuery";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
 import { useAuthStore } from "@/store/authStore";
-import { useStudentResults } from "@/hooks/useResults";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "./button";
@@ -104,15 +103,6 @@ export default function EditStudentModal() {
 
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
-
-  // Results data - only query when we have a valid studentId
-  const { data: studentResults, isLoading: resultsLoading } = useStudentResults(
-    selectedStudentId || ""
-  );
-
-  // Memoize whether results should be shown (only when studentId is valid)
-  const shouldLoadResults =
-    selectedStudentId && /^[0-9a-fA-F]{24}$/.test(selectedStudentId);
 
   // Debug logging for selectedStudentId
   console.log(
@@ -449,7 +439,7 @@ export default function EditStudentModal() {
             {/* Tab Navigation */}
             <div className="border-b border-gray-600 p-2 md:p-4 bg-gray-100/10">
               <div className="flex gap-2 text-xs">
-                {["STUDENT", "GUARDIAN", "RESULTS"].map((tab) => (
+                {["STUDENT", "GUARDIAN"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -854,190 +844,6 @@ export default function EditStudentModal() {
                       </div>
                     </div>
                   </form>
-                </div>
-              )}
-
-              {activeTab === "RESULTS" && (
-                <div>
-                  <div className="border-b border-gray-600 mb-4 pb-2">
-                    <div className="text-sm font-bold">
-                      STUDENT RESULTS DATABASE
-                    </div>
-                    <div className="text-xs">
-                      VIEW ACADEMIC PERFORMANCE RECORDS
-                    </div>
-                  </div>
-
-                  {resultsLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="text-center text-xs">
-                        <Database className="w-8 h-8 animate-spin text-gray-600 mx-auto mb-4" />
-                        <div>[LOADING RESULTS...]</div>
-                      </div>
-                    </div>
-                  ) : studentResults && studentResults.length > 0 ? (
-                    <div className="space-y-6">
-                      {studentResults.map((result, index) => (
-                        <div
-                          key={index}
-                          className="border border-gray-600 p-4 bg-gray-100/10"
-                        >
-                          <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
-                            TERM: {result.term.toUpperCase()} {result.year} |
-                            UPDATED:{" "}
-                            {result.updatedAt
-                              ? new Date(result.updatedAt).toLocaleDateString()
-                              : "UNKNOWN"}
-                          </div>
-                          <div className="space-y-3 text-xs">
-                            {/* Subject Scores */}
-                            <div className="space-y-2">
-                              <div className="font-bold border-b border-gray-600 pb-1">
-                                SCORES:
-                              </div>
-                              {result.scores.map((score, scoreIndex) => (
-                                <div
-                                  key={scoreIndex}
-                                  className="flex flex-col md:flex-row border-b border-gray-600/20 py-1"
-                                >
-                                  <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
-                                    {score.subject.toUpperCase()}:
-                                  </div>
-                                  <div className="flex-1">
-                                    <span
-                                      className={`font-bold ${
-                                        score.totalScore >= 70
-                                          ? "text-green-600"
-                                          : score.totalScore >= 50
-                                          ? "text-yellow-600"
-                                          : "text-red-600"
-                                      }`}
-                                    >
-                                      {score.totalScore}/100
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* Average Score */}
-                            <div className="flex flex-col md:flex-row border-b border-gray-600/20 py-1">
-                              <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
-                                AVERAGE SCORE:
-                              </div>
-                              <div className="flex-1">
-                                <span className="font-bold text-lg">
-                                  {Math.round(
-                                    result.scores.reduce(
-                                      (sum, s) => sum + s.totalScore,
-                                      0
-                                    ) / result.scores.length
-                                  )}
-                                  /100
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Comments */}
-                            {result.comment && (
-                              <div className="border-b border-gray-600/20 py-2">
-                                <div className="font-bold mb-1">COMMENT:</div>
-                                <div className="text-gray-700 italic">
-                                  {result.comment}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Grade Calculation */}
-                            <div className="flex flex-col md:flex-row py-1">
-                              <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
-                                GRADE:
-                              </div>
-                              <div className="flex-1">
-                                <span
-                                  className={`font-bold text-lg ${
-                                    Math.round(
-                                      result.scores.reduce(
-                                        (sum, s) => sum + s.totalScore,
-                                        0
-                                      ) / result.scores.length
-                                    ) >= 70
-                                      ? "text-green-600"
-                                      : Math.round(
-                                          result.scores.reduce(
-                                            (sum, s) => sum + s.totalScore,
-                                            0
-                                          ) / result.scores.length
-                                        ) >= 50
-                                      ? "text-yellow-600"
-                                      : "text-red-600"
-                                  }`}
-                                >
-                                  {Math.round(
-                                    result.scores.reduce(
-                                      (sum, s) => sum + s.totalScore,
-                                      0
-                                    ) / result.scores.length
-                                  ) >= 70
-                                    ? "A"
-                                    : Math.round(
-                                        result.scores.reduce(
-                                          (sum, s) => sum + s.totalScore,
-                                          0
-                                        ) / result.scores.length
-                                      ) >= 60
-                                    ? "B"
-                                    : Math.round(
-                                        result.scores.reduce(
-                                          (sum, s) => sum + s.totalScore,
-                                          0
-                                        ) / result.scores.length
-                                      ) >= 50
-                                    ? "C"
-                                    : Math.round(
-                                        result.scores.reduce(
-                                          (sum, s) => sum + s.totalScore,
-                                          0
-                                        ) / result.scores.length
-                                      ) >= 40
-                                    ? "D"
-                                    : "F"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 border border-gray-600 bg-gray-100/10">
-                      <div className="text-xs">
-                        <Database className="w-12  text-gray-400 mx-auto mb-4" />
-                        <div className="font-bold mb-2">[NO RESULTS FOUND]</div>
-                        <div>STUDENT HAS NO ACADEMIC RECORDS</div>
-                        <div>IN THE DATABASE</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Permission Notice */}
-                  {user?.role === "teacher" && (
-                    <div className="mt-6 border border-yellow-500 bg-yellow-50 p-4">
-                      <div className="text-xs text-yellow-800">
-                        <div className="font-bold mb-1">
-                          [PERMISSION NOTICE]
-                        </div>
-                        <div>
-                          TEACHERS CAN ONLY VIEW RESULTS FOR STUDENTS IN THEIR
-                          ASSIGNED CLASSROOMS.
-                        </div>
-                        <div>
-                          TO SUBMIT OR UPDATE RESULTS, USE THE CLASSROOM
-                          MANAGEMENT INTERFACE.
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
