@@ -117,7 +117,15 @@ const studentSchema = new mongoose_1.Schema({
     },
     relationshipToStudent: {
         type: String,
-        enum: ["Father", "Mother", "Guardian"],
+        enum: [
+            "Father",
+            "Mother",
+            "Guardian",
+            "Uncle",
+            "Aunt",
+            "Grandparent",
+            "Other",
+        ],
         required: true,
     },
     currentClass: {
@@ -175,6 +183,42 @@ const studentSchema = new mongoose_1.Schema({
                 required: [true, "Fee amount is required"],
                 min: [0, "Fee amount cannot be negative"],
             },
+            amountPaid: {
+                type: Number,
+                default: 0,
+                min: [0, "Amount paid cannot be negative"],
+            },
+            paymentHistory: [
+                {
+                    amount: {
+                        type: Number,
+                        required: [true, "Payment amount is required"],
+                        min: [0, "Payment amount cannot be negative"],
+                    },
+                    paymentDate: {
+                        type: Date,
+                        default: Date.now,
+                    },
+                    paymentMethod: {
+                        type: String,
+                        enum: [
+                            "cash",
+                            "bank_transfer",
+                            "online",
+                            "check",
+                            "mobile_money",
+                        ],
+                        required: [true, "Payment method is required"],
+                    },
+                    receiptNumber: {
+                        type: String,
+                    },
+                    updatedBy: {
+                        type: mongoose_1.Schema.Types.ObjectId,
+                        ref: "User",
+                    },
+                },
+            ],
             paymentDate: {
                 type: Date,
             },

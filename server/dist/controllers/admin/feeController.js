@@ -411,13 +411,19 @@ const deleteFeeStructure = (req, res) => __awaiter(void 0, void 0, void 0, funct
     }
 });
 exports.deleteFeeStructure = deleteFeeStructure;
-// @desc    Mark student fee as paid
+// @desc    Mark student fee as paid (supports partial payments)
 // @route   POST /api/admin/fees/students/:studentId/pay
 // @access  Private/Admin
 const markFeePaid = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
+    var _a, _b, _c;
     try {
-        const { term, session, paymentMethod, receiptNumber } = req.body;
+        const { term, session, paymentAmount, paymentMethod, receiptNumber } = req.body;
+        // Validate payment amount
+        if (!paymentAmount || paymentAmount <= 0) {
+            return res
+                .status(400)
+                .json({ message: "Valid payment amount is required" });
+        }
         const student = yield Student_1.Student.findById(req.params.studentId);
         if (!student) {
             return res.status(404).json({ message: "Student not found" });
@@ -427,29 +433,60 @@ const markFeePaid = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         if (termFeeIndex === -1) {
             return res.status(404).json({ message: "Term fee record not found" });
         }
+        const termFee = student.termFees[termFeeIndex];
+        const currentPaid = termFee.amountPaid || 0;
+        const newAmountPaid = currentPaid + paymentAmount;
+        // Check if payment exceeds the total amount
+        if (newAmountPaid > termFee.amount) {
+            return res.status(400).json({
+                message: `Payment amount exceeds remaining balance. Remaining: ₦${termFee.amount - currentPaid}`,
+            });
+        }
         // Generate receipt number if not provided
         const finalReceiptNumber = receiptNumber || `RCP-${Date.now()}-${student.studentId}`;
+        // Create payment record
+        const paymentRecord = {
+            amount: paymentAmount,
+            paymentDate: new Date(),
+            paymentMethod: paymentMethod || "cash",
+            receiptNumber: finalReceiptNumber,
+            updatedBy: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id,
+        };
         // Update the fee record
-        student.termFees[termFeeIndex].paid = true;
-        student.termFees[termFeeIndex].viewable = true;
-        student.termFees[termFeeIndex].paymentDate = new Date();
-        student.termFees[termFeeIndex].paymentMethod = paymentMethod || "cash";
-        student.termFees[termFeeIndex].receiptNumber = finalReceiptNumber;
-        if ((_a = req.user) === null || _a === void 0 ? void 0 : _a._id) {
-            student.termFees[termFeeIndex].updatedBy = req.user._id;
+        termFee.amountPaid = newAmountPaid;
+        termFee.paymentHistory = termFee.paymentHistory || [];
+        termFee.paymentHistory.push(paymentRecord);
+        // Check if fully paid
+        const isFullyPaid = newAmountPaid >= termFee.amount;
+        termFee.paid = isFullyPaid;
+        if (isFullyPaid) {
+            termFee.viewable = true;
+            termFee.paymentDate = new Date();
+            termFee.paymentMethod = paymentMethod || "cash";
+            termFee.receiptNumber = finalReceiptNumber;
+        }
+        if ((_b = req.user) === null || _b === void 0 ? void 0 : _b._id) {
+            termFee.updatedBy = req.user._id;
         }
         yield student.save();
         // Create audit log
+        const paymentType = isFullyPaid
+            ? "fully paid"
+            : `partial payment of ₦${paymentAmount}`;
         yield AuditLog_1.AuditLog.create({
-            userId: (_b = req.user) === null || _b === void 0 ? void 0 : _b._id,
+            userId: (_c = req.user) === null || _c === void 0 ? void 0 : _c._id,
             actionType: "FEE_PAYMENT",
-            description: `Marked fee as paid for ${student.fullName} (${term} ${session}) - Receipt: ${finalReceiptNumber}`,
+            description: `Fee ${paymentType} for ${student.fullName} (${term} ${session}) - Receipt: ${finalReceiptNumber} - Balance: ₦${termFee.amount - newAmountPaid}`,
             targetId: student._id,
         });
         res.json({
-            message: "Fee marked as paid successfully",
+            message: isFullyPaid
+                ? "Fee fully paid successfully"
+                : "Partial payment recorded successfully",
             termFee: student.termFees[termFeeIndex],
             receiptNumber: finalReceiptNumber,
+            remainingBalance: termFee.amount - newAmountPaid,
+            isFullyPaid,
         });
     }
     catch (error) {
@@ -526,6 +563,8 @@ const getStudentFees = (req, res) => __awaiter(void 0, void 0, void 0, function*
                         pinCode: generatePinCode(),
                         viewable: false,
                         amount: feeStructure.amount,
+                        amountPaid: 0,
+                        paymentHistory: [],
                         paymentDate: undefined,
                         updatedBy: (_c = req.user) === null || _c === void 0 ? void 0 : _c._id,
                     });
@@ -601,30 +640,36 @@ const getArrears = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             const key = `${fs.classroomId._id}-${fs.termId.name}-${sessionName}`;
             feeStructureMap.set(key, fs);
         });
-        // Filter students with unpaid fees that have corresponding fee structures
+        // Filter students with outstanding fees that have corresponding fee structures
         const arrearsData = students
             .map((student) => {
             var _a;
-            let unpaidFees = student.termFees.filter((fee) => {
+            let outstandingFees = student.termFees.filter((fee) => {
                 var _a;
                 // Only include fees that have a corresponding fee structure
                 const feeKey = `${(_a = student.classroomId) === null || _a === void 0 ? void 0 : _a._id}-${fee.term}-${fee.session}`;
-                return !fee.paid && feeStructureMap.has(feeKey);
+                if (!feeStructureMap.has(feeKey))
+                    return false;
+                // Include if not fully paid (amountPaid < amount)
+                const amountPaid = fee.amountPaid || 0;
+                return amountPaid < fee.amount;
             });
             // Filter by specific term/session if provided
             if (term && session) {
-                unpaidFees = unpaidFees.filter((fee) => fee.term === term && fee.session === session);
+                outstandingFees = outstandingFees.filter((fee) => fee.term === term && fee.session === session);
             }
-            // Only include students with unpaid fees
-            if (unpaidFees.length > 0) {
+            // Only include students with outstanding fees
+            if (outstandingFees.length > 0) {
+                // Calculate total outstanding amount
+                const totalOutstanding = outstandingFees.reduce((sum, fee) => sum + (fee.amount - (fee.amountPaid || 0)), 0);
                 return {
                     _id: student._id,
                     fullName: student.fullName,
                     studentId: student.studentId,
                     currentClass: student.currentClass,
                     classroom: ((_a = student.classroomId) === null || _a === void 0 ? void 0 : _a.name) || "N/A",
-                    unpaidFees,
-                    totalUnpaid: unpaidFees.reduce((sum, fee) => sum + (fee.amount || 0), 0),
+                    outstandingFees: outstandingFees.map((fee) => (Object.assign(Object.assign({}, fee), { amountPaid: fee.amountPaid || 0, balance: fee.amount - (fee.amountPaid || 0) }))),
+                    totalOutstanding,
                 };
             }
             return null;
@@ -1061,17 +1106,23 @@ const getFeeHealthCheck = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 if (admissionDate > termEnd)
                     continue;
                 const feeKey = `${term.name}-${((_a = term.sessionId) === null || _a === void 0 ? void 0 : _a.name) || "Unknown Session"}`;
-                const hasFee = student.termFees.some((fee) => {
+                const existingFee = student.termFees.find((fee) => {
                     var _a;
                     return fee.term === term.name &&
                         fee.session === ((_a = term.sessionId) === null || _a === void 0 ? void 0 : _a.name);
                 });
-                if (!hasFee) {
+                if (!existingFee) {
                     missingFees.push({
                         term: term.name,
                         year: term.year,
                         expectedAmount: feeStructure.amount,
                     });
+                }
+                else {
+                    // Check if fee amount matches
+                    if (existingFee.amount !== feeStructure.amount) {
+                        // This will be handled in the amount mismatch check below
+                    }
                 }
             }
             if (missingFees.length > 0) {

@@ -155,17 +155,19 @@ const submitResults = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 exports.submitResults = submitResults;
 // @desc    Get student results
 // @route   GET /api/teacher/results/:studentId
-// @access  Private/Teacher
+// @access  Private/Teacher, Admin
 const getStudentResults = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     try {
         const { studentId } = req.params;
-        const teacherId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+        const userRole = (_b = req.user) === null || _b === void 0 ? void 0 : _b.role;
         // Debug logging
         console.log("getStudentResults called with:", {
             studentId,
             studentIdType: typeof studentId,
-            teacherId,
+            userId,
+            userRole,
         });
         if (!studentId) {
             return res.status(400).json({ message: "studentId is required" });
@@ -174,15 +176,18 @@ const getStudentResults = (req, res) => __awaiter(void 0, void 0, void 0, functi
             console.error(`ERROR: Invalid studentId format: ${studentId}`);
             return res.status(400).json({ message: "Invalid studentId format" });
         }
-        // Verify teacher has access to this student
-        const classroom = yield Classroom_1.Classroom.findOne({
-            teacherId,
-            students: studentId,
-        });
-        if (!classroom) {
-            return res.status(403).json({
-                message: "You don't have permission to view results for this student",
+        // Allow admins to view any student's results without classroom restrictions
+        if (userRole !== "admin" && userRole !== "superadmin") {
+            // For teachers, verify they have access to this student
+            const classroom = yield Classroom_1.Classroom.findOne({
+                teacherId: userId,
+                students: studentId,
             });
+            if (!classroom) {
+                return res.status(403).json({
+                    message: "You don't have permission to view results for this student",
+                });
+            }
         }
         const student = yield Student_1.Student.findById(studentId)
             .select("fullName studentId results")

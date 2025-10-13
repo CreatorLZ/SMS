@@ -82,7 +82,17 @@ export default function EditStudentModal() {
     admissionDate: "",
     status: "",
     photo: "",
+    // Emergency contact fields
+    emergencyContactName: "",
+    emergencyContactRelationship: "",
+    emergencyContactPhone: "",
   });
+
+  // Parent linking state
+  const [parentSearchQuery, setParentSearchQuery] = useState("");
+  const [showParentDropdown, setShowParentDropdown] = useState(false);
+  const [selectedParentForLinking, setSelectedParentForLinking] =
+    useState<any>(null);
 
   const [assignedClassroomName, setAssignedClassroomName] =
     useState<string>("");
@@ -195,18 +205,17 @@ export default function EditStudentModal() {
         address: completeStudentData.address || "",
         location: completeStudentData.location || "",
         parentName:
-          completeStudentData.emergencyContact?.name ||
-          completeStudentData.parentName ||
-          "",
+          currentLinkedParent?.name || completeStudentData.parentName || "",
         parentPhone:
-          completeStudentData.phoneNumber ||
-          completeStudentData.parentPhone ||
-          "",
-        parentEmail: completeStudentData.email || "",
-        relationshipToStudent:
-          completeStudentData.emergencyContact?.relationship ||
-          completeStudentData.relationshipToStudent ||
-          "",
+          currentLinkedParent?.phone || completeStudentData.parentPhone || "",
+        parentEmail: currentLinkedParent?.email || "N/A",
+        relationshipToStudent: completeStudentData.relationshipToStudent || "",
+        // Emergency contact fields
+        emergencyContactName: completeStudentData.emergencyContact?.name || "",
+        emergencyContactRelationship:
+          completeStudentData.emergencyContact?.relationship || "",
+        emergencyContactPhone:
+          completeStudentData.emergencyContact?.phoneNumber || "",
         admissionDate: toDateInputValue(
           completeStudentData.enrollmentDate ||
             completeStudentData.admissionDate
@@ -230,15 +239,42 @@ export default function EditStudentModal() {
     if (!selectedStudentId) return;
 
     try {
+      // Prepare data for submission
+      const submitData = { ...formData };
+
+      // Handle parent relationship changes
+      const originalParentId = findParentId(selectedStudentId);
+      const parentChanged = originalParentId !== formData.parentId;
+
+      if (parentChanged) {
+        // Include parentId in submission - the server will handle the relationship updates
+        (submitData as any).parentId = formData.parentId || null;
+      }
+
+      // Handle emergency contact data
+      if (
+        formData.emergencyContactName ||
+        formData.emergencyContactRelationship ||
+        formData.emergencyContactPhone
+      ) {
+        (submitData as any).emergencyContact = {
+          name: formData.emergencyContactName || undefined,
+          relationship: formData.emergencyContactRelationship || undefined,
+          phoneNumber: formData.emergencyContactPhone || undefined,
+        };
+      }
+
       await updateStudentMutation.mutateAsync({
         id: selectedStudentId,
-        data: formData,
+        data: submitData,
       });
       showToastMessage("Student updated successfully!", "success");
 
-      // Invalidate classroom queries to refresh classroom views with updated student data
+      // Invalidate queries to refresh all related data
       queryClient.invalidateQueries({ queryKey: ["classrooms"] });
       queryClient.invalidateQueries({ queryKey: ["teacher-classrooms"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] }); // Refresh parent data
+      queryClient.invalidateQueries({ queryKey: ["students"] });
 
       setEditModalOpen(false);
     } catch (error: any) {
@@ -253,6 +289,32 @@ export default function EditStudentModal() {
   // Filter only parent users
   const parentUsers =
     users?.data?.filter((user) => user.role === "parent") || [];
+
+  // Filter parents based on search query
+  const filteredParents = parentUsers.filter(
+    (parent) =>
+      parent.name.toLowerCase().includes(parentSearchQuery.toLowerCase()) ||
+      parent.email.toLowerCase().includes(parentSearchQuery.toLowerCase())
+  );
+
+  // Get current linked parent details
+  const currentLinkedParent = parentUsers.find(
+    (parent) => parent._id === formData.parentId
+  );
+
+  // Handle parent selection
+  const handleParentSelect = (parent: any) => {
+    setFormData({ ...formData, parentId: parent._id });
+    setSelectedParentForLinking(parent);
+    setParentSearchQuery("");
+    setShowParentDropdown(false);
+  };
+
+  // Handle parent unlinking
+  const handleParentUnlink = () => {
+    setFormData({ ...formData, parentId: "" });
+    setSelectedParentForLinking(null);
+  };
 
   if (!isEditModalOpen || !selectedStudentId) return null;
 
@@ -709,10 +771,129 @@ export default function EditStudentModal() {
                   </div>
 
                   <form className="space-y-6">
-                    {/* Primary Guardian */}
+                    {/* Parent Account Linking */}
                     <div className="border border-gray-600 p-4 bg-gray-100/20">
                       <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
-                        PRIMARY GUARDIAN EDIT
+                        PARENT ACCOUNT LINKING
+                      </div>
+                      <div className="space-y-4 text-xs">
+                        {/* Current Linked Parent Display */}
+                        {currentLinkedParent && (
+                          <div className="border border-green-500/30 bg-green-50 p-3 rounded">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Users className="w-4 h-4 text-green-600" />
+                                <span className="font-bold text-green-800">
+                                  CURRENTLY LINKED:
+                                </span>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleParentUnlink}
+                                className="text-red-600 border-red-300 hover:bg-red-50"
+                              >
+                                <X className="w-3 h-3 mr-1" />
+                                Unlink
+                              </Button>
+                            </div>
+                            <div className="mt-2 space-y-1">
+                              <div>
+                                <strong>Name:</strong>{" "}
+                                {currentLinkedParent.name}
+                              </div>
+                              <div>
+                                <strong>Email:</strong>{" "}
+                                {currentLinkedParent.email}
+                              </div>
+                              <div>
+                                <strong>Linked Students:</strong>{" "}
+                                {currentLinkedParent.linkedStudentIds?.length ||
+                                  0}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Parent Search and Selection */}
+                        <div className="space-y-2">
+                          <div className="flex flex-col md:flex-row">
+                            <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                              LINK PARENT ACCOUNT:
+                            </div>
+                            <div className="flex-1 relative">
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  value={parentSearchQuery}
+                                  onChange={(e) => {
+                                    setParentSearchQuery(e.target.value);
+                                    setShowParentDropdown(true);
+                                  }}
+                                  onFocus={() => setShowParentDropdown(true)}
+                                  className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 pr-8"
+                                  placeholder="Search parent accounts..."
+                                  disabled={!!currentLinkedParent}
+                                />
+                                <Users className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                              </div>
+
+                              {/* Parent Dropdown */}
+                              {showParentDropdown && !currentLinkedParent && (
+                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                  {filteredParents.length > 0 ? (
+                                    filteredParents.map((parent) => (
+                                      <div
+                                        key={parent._id}
+                                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                        onClick={() =>
+                                          handleParentSelect(parent)
+                                        }
+                                      >
+                                        <div className="font-medium">
+                                          {parent.name}
+                                        </div>
+                                        <div className="text-xs text-gray-600">
+                                          {parent.email}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                          {parent.linkedStudentIds?.length || 0}{" "}
+                                          linked students
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="px-3 py-2 text-gray-500 text-sm">
+                                      {parentSearchQuery
+                                        ? "No parents found matching search"
+                                        : "No parent accounts available"}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {currentLinkedParent && (
+                            <div className="text-xs text-green-600 bg-green-50 p-2 rounded border border-green-200">
+                              ✓ Parent account linked successfully. Changes will
+                              be saved when you click "SAVE CHANGES".
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Primary Guardian Contact Info */}
+                    <div className="border border-gray-600 p-4 bg-gray-100/20">
+                      <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1 flex items-center gap-2">
+                        PRIMARY GUARDIAN CONTACT INFO
+                        {currentLinkedParent && (
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                            LINKED ACCOUNT
+                          </span>
+                        )}
                       </div>
                       <div className="space-y-4 text-xs">
                         <div className="flex flex-col md:flex-row">
@@ -729,10 +910,20 @@ export default function EditStudentModal() {
                                   parentName: e.target.value,
                                 })
                               }
-                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
+                              className={`w-full border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 ${
+                                currentLinkedParent
+                                  ? "bg-gray-100 cursor-not-allowed"
+                                  : "bg-transparent"
+                              }`}
                               placeholder="Enter parent name"
                               required
+                              readOnly={!!currentLinkedParent}
                             />
+                            {currentLinkedParent && (
+                              <div className="text-xs text-green-600 mt-1">
+                                Managed by linked parent account
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex flex-col md:flex-row">
@@ -800,6 +991,9 @@ export default function EditStudentModal() {
                                 Other
                               </option>
                             </select>
+                            <div className="text-xs text-gray-600 mt-1">
+                              Relationship to the student (always editable)
+                            </div>
                           </div>
                         </div>
                         <div className="flex flex-col md:flex-row">
@@ -816,10 +1010,20 @@ export default function EditStudentModal() {
                                   parentPhone: e.target.value,
                                 })
                               }
-                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
+                              className={`w-full border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 ${
+                                currentLinkedParent
+                                  ? "bg-gray-100 cursor-not-allowed"
+                                  : "bg-transparent"
+                              }`}
                               placeholder="Enter parent phone"
                               required
+                              readOnly={!!currentLinkedParent}
                             />
+                            {currentLinkedParent && (
+                              <div className="text-xs text-green-600 mt-1">
+                                Phone managed by linked parent account
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex flex-col md:flex-row">
@@ -836,8 +1040,145 @@ export default function EditStudentModal() {
                                   parentEmail: e.target.value,
                                 })
                               }
+                              className={`w-full border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 ${
+                                currentLinkedParent
+                                  ? "bg-gray-100 cursor-not-allowed"
+                                  : "bg-transparent"
+                              }`}
+                              placeholder={
+                                currentLinkedParent ? "" : "Enter parent email"
+                              }
+                              readOnly={!!currentLinkedParent}
+                            />
+                            {currentLinkedParent && (
+                              <div className="text-xs text-green-600 mt-1">
+                                Email managed by linked parent account
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Emergency Contact Info */}
+                    <div className="border border-gray-600 p-4 bg-gray-100/20">
+                      <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
+                        EMERGENCY CONTACT INFO
+                      </div>
+                      <div className="space-y-4 text-xs">
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            NAME:
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={formData.emergencyContactName}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  emergencyContactName: e.target.value,
+                                })
+                              }
                               className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
-                              placeholder="Enter parent email"
+                              placeholder="Enter emergency contact name"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            RELATIONSHIP:
+                          </div>
+                          <div className="flex-1">
+                            <select
+                              value={formData.emergencyContactRelationship}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  emergencyContactRelationship: e.target.value,
+                                })
+                              }
+                              className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600"
+                            >
+                              <option
+                                value=""
+                                className="bg-white text-gray-800"
+                              >
+                                Select relationship
+                              </option>
+                              <option
+                                value="Father"
+                                className="bg-white text-gray-800"
+                              >
+                                Father
+                              </option>
+                              <option
+                                value="Mother"
+                                className="bg-white text-gray-800"
+                              >
+                                Mother
+                              </option>
+                              <option
+                                value="Guardian"
+                                className="bg-white text-gray-800"
+                              >
+                                Guardian
+                              </option>
+                              <option
+                                value="Uncle"
+                                className="bg-white text-gray-800"
+                              >
+                                Uncle
+                              </option>
+                              <option
+                                value="Aunt"
+                                className="bg-white text-gray-800"
+                              >
+                                Aunt
+                              </option>
+                              <option
+                                value="Grandparent"
+                                className="bg-white text-gray-800"
+                              >
+                                Grandparent
+                              </option>
+                              <option
+                                value="Neighbor"
+                                className="bg-white text-gray-800"
+                              >
+                                Neighbor
+                              </option>
+                              <option
+                                value="Teacher"
+                                className="bg-white text-gray-800"
+                              >
+                                Teacher
+                              </option>
+                              <option
+                                value="Other"
+                                className="bg-white text-gray-800"
+                              >
+                                Other
+                              </option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            PHONE:
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="tel"
+                              value={formData.emergencyContactPhone}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  emergencyContactPhone: e.target.value,
+                                })
+                              }
+                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
+                              placeholder="Enter emergency contact phone"
                             />
                           </div>
                         </div>

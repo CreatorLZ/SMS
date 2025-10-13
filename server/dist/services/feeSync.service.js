@@ -88,6 +88,8 @@ function syncStudentFeesForClassroomBatched(classroomId, userId) {
                                         pinCode: generatePinCode(),
                                         viewable: false,
                                         amount,
+                                        amountPaid: 0,
+                                        paymentHistory: [],
                                         paymentDate: null,
                                         updatedBy: userId
                                             ? new mongoose_1.default.Types.ObjectId(userId)
@@ -387,6 +389,8 @@ function backfillMissingFees(userId) {
                                             pinCode: generatePinCode(),
                                             viewable: false,
                                             amount: missingFee.amount,
+                                            amountPaid: 0,
+                                            paymentHistory: [],
                                             paymentDate: null,
                                             updatedBy: userId
                                                 ? new mongoose_1.default.Types.ObjectId(userId)

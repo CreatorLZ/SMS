@@ -430,7 +430,7 @@ exports.createStudent = createStudent;
 // @route   PUT /api/admin/students/:id
 // @access  Private/Admin
 const updateStudent = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     try {
         const { id } = req.params;
         const { firstName, lastName, studentId, currentClass, parentId, gender, dateOfBirth, address, location, email, parentName, parentPhone, relationshipToStudent, admissionDate, emergencyContact, } = req.body;
@@ -500,19 +500,26 @@ const updateStudent = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const updatedStudent = yield Student_1.Student.findByIdAndUpdate(id, updateData, {
             new: true,
         });
-        // Handle parent relationship
-        if (parentId) {
-            // Remove from old parent's linked students
-            yield User_1.User.updateMany({ linkedStudentIds: id }, { $pull: { linkedStudentIds: id } });
-            // Add to new parent's linked students
-            yield User_1.User.findByIdAndUpdate(parentId, {
-                $addToSet: { linkedStudentIds: id },
-            });
+        // Handle parent relationship changes
+        const originalParentId = (_a = student.parentId) === null || _a === void 0 ? void 0 : _a.toString();
+        if (parentId !== originalParentId) {
+            // Remove from old parent's linked students (if there was an old parent)
+            if (originalParentId) {
+                yield User_1.User.findByIdAndUpdate(originalParentId, {
+                    $pull: { linkedStudentIds: id },
+                });
+            }
+            // Add to new parent's linked students (if a new parent is specified)
+            if (parentId) {
+                yield User_1.User.findByIdAndUpdate(parentId, {
+                    $addToSet: { linkedStudentIds: id },
+                });
+            }
         }
         // Create audit log (don't fail the operation if audit logging fails)
         try {
             yield AuditLog_1.AuditLog.create({
-                userId: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id,
+                userId: (_b = req.user) === null || _b === void 0 ? void 0 : _b._id,
                 actionType: "STUDENT_UPDATE",
                 description: `Updated student ${firstName} ${lastName} (${studentId})`,
                 targetId: id,
@@ -1186,18 +1193,42 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 }
             }
         }
-        // Update user with validation enabled
-        const updatedUser = yield User_1.User.findByIdAndUpdate(id, {
+        // Prepare update data carefully to avoid corrupting linkedStudentIds
+        const updateData = {
             name,
             email,
             role,
             status,
             phone: phone !== undefined ? phone : undefined,
             passportPhoto: passportPhoto !== undefined ? passportPhoto : undefined,
-            linkedStudentIds: role === "parent" ? linkedStudentIds : undefined,
-            subjectSpecialization: role === "teacher" ? subjectSpecialization : undefined,
-            assignedClassId: role === "teacher" ? assignedClassId : undefined,
-        }, { new: true, runValidators: true }).select("-password -refreshTokens");
+        };
+        // Handle linkedStudentIds carefully - only set if explicitly provided for parent role
+        if (role === "parent") {
+            // If linkedStudentIds is explicitly provided, use it; otherwise keep existing
+            if (linkedStudentIds !== undefined) {
+                updateData.linkedStudentIds = linkedStudentIds;
+            }
+            // For parent role, if linkedStudentIds is not provided, don't modify it
+        }
+        else {
+            // For non-parent roles, clear linkedStudentIds
+            updateData.linkedStudentIds = undefined;
+        }
+        // Handle teacher-specific fields
+        if (role === "teacher") {
+            updateData.subjectSpecialization = subjectSpecialization;
+            updateData.assignedClassId = assignedClassId;
+        }
+        else {
+            // Clear teacher-specific fields for non-teacher roles
+            updateData.subjectSpecialization = undefined;
+            updateData.assignedClassId = undefined;
+        }
+        // Update user with validation enabled
+        const updatedUser = yield User_1.User.findByIdAndUpdate(id, updateData, {
+            new: true,
+            runValidators: true,
+        }).select("-password -refreshTokens");
         // Update classroom's teacherId if assigned
         if (role === "teacher" && assignedClassId) {
             yield Classroom_1.Classroom.findByIdAndUpdate(assignedClassId, { teacherId: id });

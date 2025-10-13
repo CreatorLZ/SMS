@@ -193,9 +193,6 @@ export default function UserTable() {
                     Status
                   </th>
                   <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Linked Students
-                  </th>
-                  <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -270,32 +267,6 @@ export default function UserTable() {
                         )}
                         {user.status}
                       </Badge>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-muted-foreground">
-                        {user.role === "parent" && user.linkedStudentIds ? (
-                          <div className="flex flex-wrap gap-1">
-                            {user.linkedStudentIds
-                              .slice(0, 2)
-                              .map((student) => (
-                                <Badge
-                                  key={student._id}
-                                  variant="outline"
-                                  className="text-xs"
-                                >
-                                  {student.fullName}
-                                </Badge>
-                              ))}
-                            {user.linkedStudentIds.length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{user.linkedStudentIds.length - 2} more
-                              </Badge>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
@@ -428,32 +399,6 @@ export default function UserTable() {
                   </Button>
                 </div>
               </div>
-
-              {user.role === "parent" &&
-                user.linkedStudentIds &&
-                user.linkedStudentIds.length > 0 && (
-                  <div className="mt-3 pt-3 border-t">
-                    <div className="text-xs text-muted-foreground mb-2">
-                      Linked Students:
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {user.linkedStudentIds.slice(0, 3).map((student) => (
-                        <Badge
-                          key={student._id}
-                          variant="outline"
-                          className="text-xs"
-                        >
-                          {student.fullName}
-                        </Badge>
-                      ))}
-                      {user.linkedStudentIds.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{user.linkedStudentIds.length - 3} more
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                )}
             </CardContent>
           </Card>
         ))}

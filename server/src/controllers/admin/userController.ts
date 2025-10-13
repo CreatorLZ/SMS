@@ -571,18 +571,23 @@ export const updateStudent = async (req: Request, res: Response) => {
       new: true,
     });
 
-    // Handle parent relationship
-    if (parentId) {
-      // Remove from old parent's linked students
-      await User.updateMany(
-        { linkedStudentIds: id },
-        { $pull: { linkedStudentIds: id } }
-      );
+    // Handle parent relationship changes
+    const originalParentId = student.parentId?.toString();
 
-      // Add to new parent's linked students
-      await User.findByIdAndUpdate(parentId, {
-        $addToSet: { linkedStudentIds: id },
-      });
+    if (parentId !== originalParentId) {
+      // Remove from old parent's linked students (if there was an old parent)
+      if (originalParentId) {
+        await User.findByIdAndUpdate(originalParentId, {
+          $pull: { linkedStudentIds: id },
+        });
+      }
+
+      // Add to new parent's linked students (if a new parent is specified)
+      if (parentId) {
+        await User.findByIdAndUpdate(parentId, {
+          $addToSet: { linkedStudentIds: id },
+        });
+      }
     }
 
     // Create audit log (don't fail the operation if audit logging fails)
@@ -1384,23 +1389,43 @@ export const updateUser = async (req: Request, res: Response) => {
       }
     }
 
+    // Prepare update data carefully to avoid corrupting linkedStudentIds
+    const updateData: any = {
+      name,
+      email,
+      role,
+      status,
+      phone: phone !== undefined ? phone : undefined,
+      passportPhoto: passportPhoto !== undefined ? passportPhoto : undefined,
+    };
+
+    // Handle linkedStudentIds carefully - only set if explicitly provided for parent role
+    if (role === "parent") {
+      // If linkedStudentIds is explicitly provided, use it; otherwise keep existing
+      if (linkedStudentIds !== undefined) {
+        updateData.linkedStudentIds = linkedStudentIds;
+      }
+      // For parent role, if linkedStudentIds is not provided, don't modify it
+    } else {
+      // For non-parent roles, clear linkedStudentIds
+      updateData.linkedStudentIds = undefined;
+    }
+
+    // Handle teacher-specific fields
+    if (role === "teacher") {
+      updateData.subjectSpecialization = subjectSpecialization;
+      updateData.assignedClassId = assignedClassId;
+    } else {
+      // Clear teacher-specific fields for non-teacher roles
+      updateData.subjectSpecialization = undefined;
+      updateData.assignedClassId = undefined;
+    }
+
     // Update user with validation enabled
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
-      {
-        name,
-        email,
-        role,
-        status,
-        phone: phone !== undefined ? phone : undefined,
-        passportPhoto: passportPhoto !== undefined ? passportPhoto : undefined,
-        linkedStudentIds: role === "parent" ? linkedStudentIds : undefined,
-        subjectSpecialization:
-          role === "teacher" ? subjectSpecialization : undefined,
-        assignedClassId: role === "teacher" ? assignedClassId : undefined,
-      },
-      { new: true, runValidators: true }
-    ).select("-password -refreshTokens");
+    const updatedUser = await User.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    }).select("-password -refreshTokens");
 
     // Update classroom's teacherId if assigned
     if (role === "teacher" && assignedClassId) {
