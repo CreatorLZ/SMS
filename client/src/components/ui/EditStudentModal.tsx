@@ -196,6 +196,10 @@ export default function EditStudentModal() {
     );
   };
 
+  // Filter only parent users
+  const parentUsers =
+    users?.data?.filter((user) => user.role === "parent") || [];
+
   useEffect(() => {
     if (
       completeStudentData &&
@@ -329,10 +333,6 @@ export default function EditStudentModal() {
       );
     }
   };
-
-  // Filter only parent users
-  const parentUsers =
-    users?.data?.filter((user) => user.role === "parent") || [];
 
   // Filter parents based on search query
   const filteredParents = parentUsers.filter(
