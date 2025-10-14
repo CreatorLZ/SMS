@@ -153,7 +153,8 @@ export default function ViewStudentModal() {
         },
         {
           label: "Parent Phone",
-          value: completeStudentData.parentPhone || "N/A",
+          value:
+            linkedParent?.phone || completeStudentData.parentPhone || "N/A",
         },
         {
           label: "Parent Email",
@@ -441,7 +442,9 @@ export default function ViewStudentModal() {
                               PHONE:
                             </div>
                             <div>
-                              {completeStudentData.parentPhone || "N/A"}
+                              {linkedParent?.phone ||
+                                completeStudentData.parentPhone ||
+                                "N/A"}
                             </div>
                           </div>
                           <div className="flex flex-col md:flex-row">

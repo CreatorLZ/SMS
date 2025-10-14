@@ -75,6 +75,8 @@ export default function EditStudentModal() {
     dateOfBirth: "",
     address: "",
     location: "",
+    phoneNumber: "", // Student's own phone number
+    email: "", // Student's own email
     parentName: "",
     parentPhone: "",
     parentEmail: "",
@@ -122,6 +124,37 @@ export default function EditStudentModal() {
   );
 
   const [formInitialized, setFormInitialized] = useState(false);
+
+  // Reset form initialization when selectedStudentId changes
+  useEffect(() => {
+    setFormInitialized(false);
+    // Reset form data to initial empty state
+    setFormData({
+      firstName: "",
+      lastName: "",
+      studentId: "",
+      currentClass: "",
+      classroomId: "",
+      parentId: "",
+      gender: "",
+      dateOfBirth: "",
+      address: "",
+      location: "",
+      phoneNumber: "", // Student's own phone number
+      email: "", // Student's own email
+      parentName: "",
+      parentPhone: "",
+      parentEmail: "",
+      relationshipToStudent: "",
+      admissionDate: "",
+      status: "",
+      photo: "",
+      // Emergency contact fields
+      emergencyContactName: "",
+      emergencyContactRelationship: "",
+      emergencyContactPhone: "",
+    });
+  }, [selectedStudentId]);
 
   const showToastMessage = (message: string, type: "success" | "error") => {
     if (type === "success") {
@@ -172,6 +205,11 @@ export default function EditStudentModal() {
     ) {
       const parentId = findParentId(completeStudentData._id);
 
+      // Get the linked parent data using the found parentId
+      const linkedParent = parentUsers.find(
+        (parent) => parent._id === parentId
+      );
+
       // Find the current classroom assignment
       let currentClassroomId = (completeStudentData as any).classroomId || "";
       let currentClassName = (completeStudentData as any).currentClass || "";
@@ -193,7 +231,7 @@ export default function EditStudentModal() {
       const firstName = nameParts[0] || "";
       const lastName = nameParts.slice(1).join(" ") || "";
 
-      setFormData({
+      const newFormData = {
         firstName: firstName,
         lastName: lastName,
         studentId: completeStudentData.studentId || "",
@@ -204,11 +242,12 @@ export default function EditStudentModal() {
         dateOfBirth: toDateInputValue(completeStudentData.dateOfBirth),
         address: completeStudentData.address || "",
         location: completeStudentData.location || "",
-        parentName:
-          currentLinkedParent?.name || completeStudentData.parentName || "",
+        phoneNumber: completeStudentData.phoneNumber || "", // Student's own phone number
+        email: completeStudentData.email || "", // Student's own email
+        parentName: linkedParent?.name || completeStudentData.parentName || "",
         parentPhone:
-          currentLinkedParent?.phone || completeStudentData.parentPhone || "",
-        parentEmail: currentLinkedParent?.email || "N/A",
+          linkedParent?.phone || completeStudentData.parentPhone || "",
+        parentEmail: linkedParent?.email || "N/A",
         relationshipToStudent: completeStudentData.relationshipToStudent || "",
         // Emergency contact fields
         emergencyContactName: completeStudentData.emergencyContact?.name || "",
@@ -222,7 +261,12 @@ export default function EditStudentModal() {
         ),
         status: completeStudentData.status || "active",
         photo: completeStudentData.passportPhoto || "", // Use the actual photo field
-      });
+      };
+
+      console.log("Setting form data:", newFormData);
+      console.log("Parent phone in form data:", newFormData.parentPhone);
+
+      setFormData(newFormData);
 
       setFormInitialized(true);
     }
@@ -721,38 +765,37 @@ export default function EditStudentModal() {
                       </div>
 
                       <div className="flex border-b border-gray-600/20 py-2">
-                        <div className="w-48 font-bold">EMAIL:</div>
+                        <div className="w-48 font-bold">STUDENT EMAIL:</div>
                         <div className="flex-1">
                           <input
                             type="email"
-                            value={formData.parentEmail}
+                            value={formData.email}
                             onChange={(e) =>
                               setFormData({
                                 ...formData,
-                                parentEmail: e.target.value,
+                                email: e.target.value,
                               })
                             }
                             className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
-                            placeholder="Enter email"
+                            placeholder="Enter student's email"
                           />
                         </div>
                       </div>
 
                       <div className="flex border-b border-gray-600/20 py-2">
-                        <div className="w-48 font-bold">PHONE:</div>
+                        <div className="w-48 font-bold">STUDENT PHONE:</div>
                         <div className="flex-1">
                           <input
                             type="tel"
-                            value={formData.parentPhone}
+                            value={formData.phoneNumber}
                             onChange={(e) =>
                               setFormData({
                                 ...formData,
-                                parentPhone: e.target.value,
+                                phoneNumber: e.target.value,
                               })
                             }
                             className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
-                            placeholder="Enter phone"
-                            required
+                            placeholder="Enter student's phone"
                           />
                         </div>
                       </div>

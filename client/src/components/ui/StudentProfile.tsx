@@ -480,7 +480,9 @@ export default function StudentProfile({
                   <Calendar className="h-5 w-5 text-gray-400" />
                   <span className="text-sm">
                     Enrolled:{" "}
-                    {new Date(student.enrollmentDate).toLocaleDateString()}
+                    {student.enrollmentDate
+                      ? new Date(student.enrollmentDate).toLocaleDateString()
+                      : "Not provided"}
                   </span>
                 </div>
               </div>

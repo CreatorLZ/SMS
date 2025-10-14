@@ -1,24 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    reactCompiler: true,
-  },
-
-  // Enable bundle analyzer in development
-  ...(process.env.ANALYZE === "true" && {
-    webpack: (config: any) => {
-      if (process.env.NODE_ENV === "development") {
-        config.plugins.push(
-          new (require("webpack-bundle-analyzer").BundleAnalyzerPlugin)({
-            analyzerMode: "server",
-            openAnalyzer: true,
-          })
-        );
-      }
-      return config;
-    },
-  }),
+  reactCompiler: true,
 
   // Image optimization
   images: {
