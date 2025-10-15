@@ -14,11 +14,20 @@ import {
   BookOpen,
   Users as UsersIcon,
   X,
+  Terminal,
+  Database,
 } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
 export default function CreateUserModal() {
   const { isCreateModalOpen, setCreateModalOpen } = useUserManagementStore();
   const createUserMutation = useCreateUserMutation();
+  const [activeTab, setActiveTab] = useState("USER");
+  const [currentTime] = useState(
+    new Date().toLocaleTimeString("en-US", { hour12: false })
+  );
+
+  const { user } = useAuthStore();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -27,8 +36,6 @@ export default function CreateUserModal() {
     role: "parent",
     phone: "",
     linkedStudentIds: [] as string[],
-    subjectSpecialization: "",
-    assignedClassId: "",
   });
 
   const showToastMessage = (message: string, type: "success" | "error") => {
@@ -37,6 +44,27 @@ export default function CreateUserModal() {
     } else {
       toast.error(message);
     }
+  };
+
+  const getSecurityLevel = (role: string) => {
+    switch (role) {
+      case "superadmin":
+        return "LEVEL-10";
+      case "admin":
+        return "LEVEL-7";
+      case "teacher":
+        return "LEVEL-5";
+      case "parent":
+        return "LEVEL-3";
+      case "student":
+        return "LEVEL-2";
+      default:
+        return "LEVEL-1";
+    }
+  };
+
+  const getDisplayRole = (role: string) => {
+    return role?.toUpperCase() || "UNKNOWN";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,13 +88,6 @@ export default function CreateUserModal() {
             linkedStudentIds: formData.linkedStudentIds,
           };
           break;
-        case "teacher":
-          submitData = {
-            ...baseData,
-            subjectSpecialization: formData.subjectSpecialization,
-            assignedClassId: formData.assignedClassId,
-          };
-          break;
         default:
           submitData = baseData;
       }
@@ -81,8 +102,6 @@ export default function CreateUserModal() {
         role: "parent",
         phone: "",
         linkedStudentIds: [],
-        subjectSpecialization: "",
-        assignedClassId: "",
       });
     } catch (error: any) {
       showToastMessage(
@@ -99,269 +118,300 @@ export default function CreateUserModal() {
       // Reset role-specific fields when role changes
       phone: "",
       linkedStudentIds: [],
-      subjectSpecialization: "",
-      assignedClassId: "",
     });
   };
 
   if (!isCreateModalOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto scale-in">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <User className="w-6 h-6" />
-            Create New User
-          </h2>
-          <button
-            onClick={() => setCreateModalOpen(false)}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-6 h-6" />
-          </button>
+    <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4">
+      {/* Retro CRT scanlines effect */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-10"
+        style={{
+          background: `repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(75, 85, 99, 0.1) 2px,
+            rgba(75, 85, 99, 0.1) 4px
+          )`,
+        }}
+      />
+
+      {/* Main Terminal Container */}
+      <div className="w-full max-w-6xl max-h-[95vh] bg-white border-4 border-gray-600 font-mono text-gray-800 shadow-2xl relative overflow-hidden">
+        {/* Terminal Header */}
+        <div className="border-b-2 border-gray-600 p-2 md:p-4 bg-gray-100/20">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 md:gap-4">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+                <span className="text-xs md:text-sm font-bold">
+                  MY SCHOOL INTERNATIONAL SCHOOLS
+                </span>
+              </div>
+              <div className="text-xs">USER CREATION SYSTEM v0.0.1</div>
+            </div>
+            <div className="flex items-center gap-2 md:gap-6 text-xs">
+              <span>TIME: {currentTime}</span>
+              <span>USER: {getDisplayRole(user?.role || "")}</span>
+              <span>SECURITY: {getSecurityLevel(user?.role || "")}</span>
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Basic Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="name"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Full Name *
-                  </label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    placeholder="Enter user's full name"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label
-                    htmlFor="email"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Email Address *
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    placeholder="Enter email address"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="password"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Password *
-                  </label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
-                    placeholder="Enter password"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label
-                    htmlFor="phone"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Phone Number
-                  </label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData({ ...formData, phone: e.target.value })
-                    }
-                    placeholder="Enter phone number"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="role"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    User Role *
-                  </label>
-                  <select
-                    id="role"
-                    value={formData.role}
-                    onChange={(e) => handleRoleChange(e.target.value)}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    required
-                  >
-                    <option value="parent">Parent</option>
-                    <option value="teacher">Teacher</option>
-                    <option value="admin">Admin</option>
-                    <option value="superadmin">Super Admin</option>
-                  </select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Role-specific Information */}
-          {formData.role === "teacher" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BookOpen className="w-5 h-5" />
-                  Teacher Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="subjectSpecialization"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Subject Specialization
-                    </label>
-                    <Input
-                      id="subjectSpecialization"
-                      type="text"
-                      value={formData.subjectSpecialization}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          subjectSpecialization: e.target.value,
-                        })
-                      }
-                      placeholder="e.g., Mathematics, English"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="assignedClassId"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Assigned Class ID (Optional)
-                    </label>
-                    <Input
-                      id="assignedClassId"
-                      type="text"
-                      value={formData.assignedClassId}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          assignedClassId: e.target.value,
-                        })
-                      }
-                      placeholder="Classroom ID to assign"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {formData.role === "parent" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <UsersIcon className="w-5 h-5" />
-                  Parent Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="linkedStudentIds"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Linked Student IDs (Optional)
-                  </label>
-                  <Input
-                    id="linkedStudentIds"
-                    type="text"
-                    value={formData.linkedStudentIds.join(", ")}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        linkedStudentIds: e.target.value
-                          .split(",")
-                          .map((id) => id.trim())
-                          .filter((id) => id),
-                      })
-                    }
-                    placeholder="Comma-separated student IDs"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Separator />
-
-          {/* Form Actions */}
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setCreateModalOpen(false)}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={createUserMutation.isPending}
-              className="w-full sm:w-auto"
-            >
-              {createUserMutation.isPending ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Creating User...
-                </>
-              ) : (
-                <>
-                  <User className="w-4 h-4 mr-2" />
-                  Create User
-                </>
-              )}
-            </Button>
+        {/* Sub Header */}
+        <div className="border-b border-gray-600 p-2 md:p-3 bg-gray-100/10 text-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-1">
+            <span>[CREATING NEW USER ACCOUNT...]</span>
+            <span>CONNECTION: SECURE | MODE: CREATE</span>
           </div>
-        </form>
+        </div>
 
-        <div className="p-6"></div>
+        <div className="flex flex-col h-[calc(95vh-120px)]">
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-600 p-2 md:p-4 bg-gray-100/10">
+            <div className="flex gap-2 text-xs">
+              {["USER", "ROLE-SPECIFIC"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-3 md:px-4 py-2 border border-gray-600 transition-all duration-200 text-xs md:text-sm ${
+                    activeTab === tab
+                      ? "bg-gray-600 text-white font-bold"
+                      : "bg-gray-50 hover:bg-gray-100/20"
+                  }`}
+                >
+                  {tab === "ROLE-SPECIFIC" ? `${tab} INFO` : `${tab} INFO`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 p-4 md:p-6 overflow-y-auto custom-scrollbar">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {activeTab === "USER" && (
+                <div>
+                  <div className="border-b border-gray-600 mb-4 pb-2">
+                    <div className="text-sm font-bold">
+                      USER ACCOUNT CREATION
+                    </div>
+                    <div className="text-xs">ENTER BASIC USER DATA BELOW</div>
+                  </div>
+
+                  <div className="space-y-1 text-xs font-mono">
+                    {/* Full Name and Email */}
+                    <div className="flex flex-col md:flex-row border-b border-gray-600/20 py-2">
+                      <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
+                        FULL NAME:
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={formData.name}
+                          onChange={(e) =>
+                            setFormData({ ...formData, name: e.target.value })
+                          }
+                          className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
+                          placeholder="Enter user's full name"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row border-b border-gray-600/20 py-2">
+                      <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
+                        EMAIL ADDRESS:
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) =>
+                            setFormData({ ...formData, email: e.target.value })
+                          }
+                          className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
+                          placeholder="Enter email address"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex border-b border-gray-600/20 py-2">
+                      <div className="w-48 font-bold">PASSWORD:</div>
+                      <div className="flex-1">
+                        <input
+                          type="password"
+                          value={formData.password}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              password: e.target.value,
+                            })
+                          }
+                          className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
+                          placeholder="Enter password"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex border-b border-gray-600/20 py-2">
+                      <div className="w-48 font-bold">PHONE NUMBER:</div>
+                      <div className="flex-1">
+                        <input
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) =>
+                            setFormData({ ...formData, phone: e.target.value })
+                          }
+                          className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
+                          placeholder="Enter phone number"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex border-b border-gray-600/20 py-2">
+                      <div className="w-48 font-bold">USER ROLE:</div>
+                      <div className="flex-1">
+                        <select
+                          value={formData.role}
+                          onChange={(e) => handleRoleChange(e.target.value)}
+                          className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600"
+                          required
+                        >
+                          <option value="" className="bg-white text-gray-800">
+                            Select user role
+                          </option>
+                          <option
+                            value="parent"
+                            className="bg-white text-gray-800"
+                          >
+                            Parent
+                          </option>
+                          <option
+                            value="admin"
+                            className="bg-white text-gray-800"
+                          >
+                            Admin
+                          </option>
+                          <option
+                            value="superadmin"
+                            className="bg-white text-gray-800"
+                          >
+                            Super Admin
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "ROLE-SPECIFIC" && (
+                <div>
+                  <div className="border-b border-gray-600 mb-4 pb-2">
+                    <div className="text-sm font-bold">
+                      ROLE-SPECIFIC INFORMATION
+                    </div>
+                    <div className="text-xs">
+                      ENTER ROLE-SPECIFIC DATA BELOW
+                    </div>
+                  </div>
+
+                  {formData.role === "parent" && (
+                    <div className="space-y-1 text-xs font-mono">
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">
+                          LINKED STUDENT IDS:
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.linkedStudentIds.join(", ")}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                linkedStudentIds: e.target.value
+                                  .split(",")
+                                  .map((id) => id.trim())
+                                  .filter((id) => id),
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
+                            placeholder="Comma-separated student IDs (optional)"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {formData.role === "admin" && (
+                    <div className="space-y-1 text-xs font-mono">
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">
+                          ADMIN ACCESS LEVEL:
+                        </div>
+                        <div className="flex-1">
+                          <span className="text-green-600 font-bold">
+                            FULL SYSTEM ACCESS
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {formData.role === "superadmin" && (
+                    <div className="space-y-1 text-xs font-mono">
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">
+                          SUPER ADMIN ACCESS:
+                        </div>
+                        <div className="flex-1">
+                          <span className="text-red-600 font-bold animate-pulse">
+                            UNLIMITED SYSTEM ACCESS
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </form>
+          </div>
+
+          {/* Command Bar */}
+          <div className="border-t-2 border-gray-600 p-3 md:p-4 bg-gray-100/20">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="text-xs">
+                [CREATION SESSION ACTIVE] | [MODE: USER-CREATE] | [STATUS:
+                READY]
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <button
+                  onClick={handleSubmit}
+                  disabled={createUserMutation.isPending}
+                  className="px-4 py-2 border border-gray-600 bg-gray-50 hover:bg-gray-600 hover:text-white transition-colors text-xs font-bold disabled:opacity-50"
+                >
+                  {createUserMutation.isPending
+                    ? "[CREATING...]"
+                    : "[CREATE USER]"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCreateModalOpen(false)}
+                  className="px-4 py-2 border border-red-500 bg-gray-50 hover:bg-red-500 transition-colors text-xs font-bold"
+                >
+                  [CANCEL]
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

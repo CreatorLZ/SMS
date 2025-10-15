@@ -14,6 +14,38 @@ export interface IUser extends Document {
   subjectSpecializations?: string[];
   subjectSpecialization?: string; // Keep for backward compatibility
   status: "active" | "inactive";
+  phone?: string;
+  // Additional teacher information fields
+  dateOfBirth?: Date;
+  gender?: "Male" | "Female" | "Other";
+  nationality?: string;
+  stateOfOrigin?: string;
+  localGovernmentArea?: string;
+  address?: string;
+  alternativePhone?: string;
+  personalEmail?: string;
+  emergencyContact?: {
+    name?: string;
+    relationship?: string;
+    phoneNumber?: string;
+  };
+  qualification?: string;
+  yearsOfExperience?: number;
+  previousSchool?: string;
+  employmentStartDate?: Date;
+  // Optional professional development fields
+  teachingLicenseNumber?: string;
+  employmentType?: "Full-time" | "Part-time" | "Contract";
+  maritalStatus?: "Single" | "Married" | "Divorced" | "Widowed";
+  nationalIdNumber?: string;
+  bankInformation?: {
+    bankName?: string;
+    accountNumber?: string;
+    accountName?: string;
+  };
+  bloodGroup?: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+  knownAllergies?: string;
+  medicalConditions?: string;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 

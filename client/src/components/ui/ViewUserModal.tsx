@@ -174,6 +174,94 @@ export default function ViewUserModal({
     },
   ];
 
+  const teacherPersonalDetails = [
+    {
+      label: "DATE OF BIRTH",
+      value: (user as any).dateOfBirth
+        ? new Date((user as any).dateOfBirth).toLocaleDateString()
+        : "Not specified",
+    },
+    {
+      label: "GENDER",
+      value: (user as any).gender || "Not specified",
+    },
+    {
+      label: "NATIONALITY",
+      value: (user as any).nationality || "Not specified",
+    },
+    {
+      label: "STATE OF ORIGIN",
+      value: (user as any).stateOfOrigin || "Not specified",
+    },
+    {
+      label: "LOCAL GOVERNMENT AREA",
+      value: (user as any).localGovernmentArea || "Not specified",
+    },
+    {
+      label: "ADDRESS",
+      value: (user as any).address || "Not specified",
+    },
+    {
+      label: "ALTERNATIVE PHONE",
+      value: (user as any).alternativePhone || "Not specified",
+    },
+    {
+      label: "PERSONAL EMAIL",
+      value: (user as any).personalEmail || "Not specified",
+    },
+  ];
+
+  const teacherProfessionalDetails = [
+    {
+      label: "QUALIFICATION",
+      value: (user as any).qualification || "Not specified",
+    },
+    {
+      label: "YEARS OF EXPERIENCE",
+      value: (user as any).yearsOfExperience
+        ? `${(user as any).yearsOfExperience} years`
+        : "Not specified",
+    },
+    {
+      label: "PREVIOUS SCHOOL",
+      value: (user as any).previousSchool || "Not specified",
+    },
+    {
+      label: "EMPLOYMENT START DATE",
+      value: (user as any).employmentStartDate
+        ? new Date((user as any).employmentStartDate).toLocaleDateString()
+        : "Not specified",
+    },
+    {
+      label: "EMPLOYMENT TYPE",
+      value: (user as any).employmentType || "Not specified",
+    },
+    {
+      label: "MARITAL STATUS",
+      value: (user as any).maritalStatus || "Not specified",
+    },
+    {
+      label: "TEACHING LICENSE NUMBER",
+      value: (user as any).teachingLicenseNumber || "Not specified",
+    },
+    {
+      label: "NATIONAL ID NUMBER",
+      value: (user as any).nationalIdNumber || "Not specified",
+    },
+    {
+      label: "BLOOD GROUP",
+      value: (user as any).bloodGroup || "Not specified",
+    },
+    {
+      label: "KNOWN ALLERGIES",
+      value: (user as any).knownAllergies || "None specified",
+    },
+    {
+      label: "MEDICAL CONDITIONS",
+      value: (user as any).medicalConditions || "None specified",
+    },
+  ];
+
   const parentDetails = [
     {
       label: "LINKED STUDENTS",
@@ -283,19 +371,35 @@ export default function ViewUserModal({
             {/* Tab Navigation */}
             <div className="border-b border-gray-600 p-2 md:p-4 bg-gray-100/10">
               <div className="flex gap-2 text-xs">
-                {["USER", "DETAILS"].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-3 md:px-4 py-2 border border-gray-600 transition-all duration-200 text-xs md:text-sm ${
-                      activeTab === tab
-                        ? "bg-gray-600 text-white font-bold"
-                        : "bg-gray-50 hover:bg-gray-100/20"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+                {user.role === "teacher"
+                  ? ["USER", "PERSONAL", "PROFESSIONAL", "SUBJECTS"].map(
+                      (tab) => (
+                        <button
+                          key={tab}
+                          onClick={() => setActiveTab(tab)}
+                          className={`px-3 md:px-4 py-2 border border-gray-600 transition-all duration-200 text-xs md:text-sm ${
+                            activeTab === tab
+                              ? "bg-gray-600 text-white font-bold"
+                              : "bg-gray-50 hover:bg-gray-100/20"
+                          }`}
+                        >
+                          {tab}
+                        </button>
+                      )
+                    )
+                  : ["USER", "DETAILS"].map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-3 md:px-4 py-2 border border-gray-600 transition-all duration-200 text-xs md:text-sm ${
+                          activeTab === tab
+                            ? "bg-gray-600 text-white font-bold"
+                            : "bg-gray-50 hover:bg-gray-100/20"
+                        }`}
+                      >
+                        {tab}
+                      </button>
+                    ))}
               </div>
             </div>
 
@@ -326,7 +430,209 @@ export default function ViewUserModal({
                 </div>
               )}
 
-              {activeTab === "DETAILS" && (
+              {activeTab === "PERSONAL" && user.role === "teacher" && (
+                <div>
+                  <div className="border-b border-gray-600 mb-4 pb-2">
+                    <div className="text-sm font-bold">
+                      PERSONAL INFORMATION
+                    </div>
+                    <div className="text-xs">TEACHER PERSONAL DETAILS</div>
+                  </div>
+
+                  <div className="space-y-1 text-xs font-mono">
+                    {teacherPersonalDetails.map((detail, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col md:flex-row border-b border-gray-600/20 py-2"
+                      >
+                        <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
+                          {detail.label}:
+                        </div>
+                        <div className="flex-1">{detail.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Emergency Contact */}
+                  {(user as any).emergencyContact && (
+                    <div className="border border-gray-600 p-4 bg-gray-100/20 mt-4">
+                      <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
+                        EMERGENCY CONTACT INFORMATION
+                      </div>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            NAME:
+                          </div>
+                          <div className="flex-1">
+                            {(user as any).emergencyContact.name ||
+                              "Not specified"}
+                          </div>
+                        </div>
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            RELATIONSHIP:
+                          </div>
+                          <div className="flex-1">
+                            {(user as any).emergencyContact.relationship ||
+                              "Not specified"}
+                          </div>
+                        </div>
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            PHONE:
+                          </div>
+                          <div className="flex-1">
+                            {(user as any).emergencyContact.phoneNumber ||
+                              "Not specified"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "PROFESSIONAL" && user.role === "teacher" && (
+                <div>
+                  <div className="border-b border-gray-600 mb-4 pb-2">
+                    <div className="text-sm font-bold">
+                      PROFESSIONAL INFORMATION
+                    </div>
+                    <div className="text-xs">TEACHER PROFESSIONAL DETAILS</div>
+                  </div>
+
+                  <div className="space-y-1 text-xs font-mono">
+                    {teacherProfessionalDetails.map((detail, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col md:flex-row border-b border-gray-600/20 py-2"
+                      >
+                        <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
+                          {detail.label}:
+                        </div>
+                        <div className="flex-1">{detail.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Bank Information */}
+                  {(user as any).bankInformation && (
+                    <div className="border border-gray-600 p-4 bg-gray-100/20 mt-4">
+                      <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
+                        BANKING INFORMATION
+                      </div>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            BANK NAME:
+                          </div>
+                          <div className="flex-1">
+                            {(user as any).bankInformation.bankName ||
+                              "Not specified"}
+                          </div>
+                        </div>
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            ACCOUNT NUMBER:
+                          </div>
+                          <div className="flex-1">
+                            {(user as any).bankInformation.accountNumber ||
+                              "Not specified"}
+                          </div>
+                        </div>
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            ACCOUNT NAME:
+                          </div>
+                          <div className="flex-1">
+                            {(user as any).bankInformation.accountName ||
+                              "Not specified"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "SUBJECTS" && user.role === "teacher" && (
+                <div>
+                  <div className="border-b border-gray-600 mb-4 pb-2">
+                    <div className="text-sm font-bold">
+                      SUBJECT SPECIALIZATIONS
+                    </div>
+                    <div className="text-xs">
+                      TEACHING SUBJECTS AND CLASSROOM ASSIGNMENTS
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Basic teacher details */}
+                    <div className="space-y-1 text-xs font-mono">
+                      {teacherDetails.map((detail, index) => (
+                        <div
+                          key={index}
+                          className="flex flex-col md:flex-row border-b border-gray-600/20 py-2"
+                        >
+                          <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
+                            {detail.label}:
+                          </div>
+                          <div className="flex-1">{detail.value}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Assigned Classrooms - Full Display */}
+                    <div>
+                      <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
+                        ASSIGNED CLASSROOMS
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {user.assignedClasses &&
+                        user.assignedClasses.length > 0 ? (
+                          user.assignedClasses.map(
+                            (classroom: any, index: number) => (
+                              <div
+                                key={`classroom-${
+                                  classroom._id || `fallback-${index}`
+                                }`}
+                                className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full border border-green-200"
+                              >
+                                <Database className="w-3 h-3" />
+                                <span className="font-medium">
+                                  {classroom.name}
+                                </span>
+                              </div>
+                            )
+                          )
+                        ) : user.assignedClassId ? (
+                          <div
+                            key={`single-classroom-${
+                              user.assignedClassId._id || "single"
+                            }`}
+                            className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full border border-green-200"
+                          >
+                            <Database className="w-3 h-3" />
+                            <span className="font-medium">
+                              {user.assignedClassId.name}
+                            </span>
+                          </div>
+                        ) : (
+                          <div
+                            key="no-classrooms"
+                            className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full"
+                          >
+                            No classrooms assigned
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "DETAILS" && user.role !== "teacher" && (
                 <div>
                   <div className="border-b border-gray-600 mb-4 pb-2">
                     <div className="text-sm font-bold">
@@ -338,72 +644,6 @@ export default function ViewUserModal({
                   </div>
 
                   <div className="space-y-6">
-                    {/* Role-specific details */}
-                    {user.role === "teacher" && teacherDetails.length > 0 && (
-                      <div className="space-y-4">
-                        {/* Basic teacher details */}
-                        <div className="space-y-1 text-xs font-mono">
-                          {teacherDetails.map((detail, index) => (
-                            <div
-                              key={index}
-                              className="flex flex-col md:flex-row border-b border-gray-600/20 py-2"
-                            >
-                              <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
-                                {detail.label}:
-                              </div>
-                              <div className="flex-1">{detail.value}</div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Assigned Classrooms - Full Display */}
-                        <div>
-                          <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
-                            ASSIGNED CLASSROOMS
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {user.assignedClasses &&
-                            user.assignedClasses.length > 0 ? (
-                              user.assignedClasses.map(
-                                (classroom: any, index: number) => (
-                                  <div
-                                    key={`classroom-${
-                                      classroom._id || `fallback-${index}`
-                                    }`}
-                                    className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full border border-green-200"
-                                  >
-                                    <Database className="w-3 h-3" />
-                                    <span className="font-medium">
-                                      {classroom.name}
-                                    </span>
-                                  </div>
-                                )
-                              )
-                            ) : user.assignedClassId ? (
-                              <div
-                                key={`single-classroom-${
-                                  user.assignedClassId._id || "single"
-                                }`}
-                                className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full border border-green-200"
-                              >
-                                <Database className="w-3 h-3" />
-                                <span className="font-medium">
-                                  {user.assignedClassId.name}
-                                </span>
-                              </div>
-                            ) : (
-                              <div
-                                key="no-classrooms"
-                                className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full"
-                              >
-                                No classrooms assigned
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
                     {user.role === "parent" && parentDetails.length > 0 && (
                       <div className="space-y-1 text-xs font-mono">
                         {parentDetails.map((detail, index) => (

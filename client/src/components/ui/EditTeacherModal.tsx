@@ -53,6 +53,37 @@ export default function EditTeacherModal({
     photo: "",
     subjectSpecializations: [] as string[],
     assignedClasses: [] as string[],
+    // Additional teacher information
+    dateOfBirth: "",
+    gender: "",
+    nationality: "",
+    stateOfOrigin: "",
+    localGovernmentArea: "",
+    address: "",
+    alternativePhone: "",
+    personalEmail: "",
+    emergencyContact: {
+      name: "",
+      relationship: "",
+      phoneNumber: "",
+    },
+    qualification: "",
+    yearsOfExperience: "",
+    previousSchool: "",
+    employmentStartDate: "",
+    // Optional fields
+    teachingLicenseNumber: "",
+    employmentType: "",
+    maritalStatus: "",
+    nationalIdNumber: "",
+    bankInformation: {
+      bankName: "",
+      accountNumber: "",
+      accountName: "",
+    },
+    bloodGroup: "",
+    knownAllergies: "",
+    medicalConditions: "",
   });
 
   const getSecurityLevel = (role: string) => {
@@ -113,6 +144,43 @@ export default function EditTeacherModal({
         photo: teacher.passportPhoto || "",
         subjectSpecializations: subjects,
         assignedClasses,
+        // Additional teacher information
+        dateOfBirth: (teacher as any).dateOfBirth
+          ? new Date((teacher as any).dateOfBirth).toISOString().split("T")[0]
+          : "",
+        gender: (teacher as any).gender || "",
+        nationality: (teacher as any).nationality || "",
+        stateOfOrigin: (teacher as any).stateOfOrigin || "",
+        localGovernmentArea: (teacher as any).localGovernmentArea || "",
+        address: (teacher as any).address || "",
+        alternativePhone: (teacher as any).alternativePhone || "",
+        personalEmail: (teacher as any).personalEmail || "",
+        emergencyContact: {
+          name: (teacher as any).emergencyContact?.name || "",
+          relationship: (teacher as any).emergencyContact?.relationship || "",
+          phoneNumber: (teacher as any).emergencyContact?.phoneNumber || "",
+        },
+        qualification: (teacher as any).qualification || "",
+        yearsOfExperience: (teacher as any).yearsOfExperience?.toString() || "",
+        previousSchool: (teacher as any).previousSchool || "",
+        employmentStartDate: (teacher as any).employmentStartDate
+          ? new Date((teacher as any).employmentStartDate)
+              .toISOString()
+              .split("T")[0]
+          : "",
+        // Optional fields
+        teachingLicenseNumber: (teacher as any).teachingLicenseNumber || "",
+        employmentType: (teacher as any).employmentType || "",
+        maritalStatus: (teacher as any).maritalStatus || "",
+        nationalIdNumber: (teacher as any).nationalIdNumber || "",
+        bankInformation: {
+          bankName: (teacher as any).bankInformation?.bankName || "",
+          accountNumber: (teacher as any).bankInformation?.accountNumber || "",
+          accountName: (teacher as any).bankInformation?.accountName || "",
+        },
+        bloodGroup: (teacher as any).bloodGroup || "",
+        knownAllergies: (teacher as any).knownAllergies || "",
+        medicalConditions: (teacher as any).medicalConditions || "",
       });
     }
   }, [teacher]);
@@ -135,6 +203,41 @@ export default function EditTeacherModal({
         subjectSpecializations:
           formData.subjectSpecializations.length > 0
             ? formData.subjectSpecializations
+            : undefined,
+        // Personal information
+        dateOfBirth: formData.dateOfBirth || undefined,
+        gender: formData.gender || undefined,
+        nationality: formData.nationality || undefined,
+        stateOfOrigin: formData.stateOfOrigin || undefined,
+        localGovernmentArea: formData.localGovernmentArea || undefined,
+        address: formData.address || undefined,
+        alternativePhone: formData.alternativePhone || undefined,
+        personalEmail: formData.personalEmail || undefined,
+        emergencyContact:
+          formData.emergencyContact.name ||
+          formData.emergencyContact.relationship ||
+          formData.emergencyContact.phoneNumber
+            ? formData.emergencyContact
+            : undefined,
+        // Professional information
+        qualification: formData.qualification || undefined,
+        yearsOfExperience: formData.yearsOfExperience
+          ? parseInt(formData.yearsOfExperience)
+          : undefined,
+        previousSchool: formData.previousSchool || undefined,
+        employmentStartDate: formData.employmentStartDate || undefined,
+        employmentType: formData.employmentType || undefined,
+        maritalStatus: formData.maritalStatus || undefined,
+        teachingLicenseNumber: formData.teachingLicenseNumber || undefined,
+        nationalIdNumber: formData.nationalIdNumber || undefined,
+        bloodGroup: formData.bloodGroup || undefined,
+        knownAllergies: formData.knownAllergies || undefined,
+        medicalConditions: formData.medicalConditions || undefined,
+        bankInformation:
+          formData.bankInformation.bankName ||
+          formData.bankInformation.accountNumber ||
+          formData.bankInformation.accountName
+            ? formData.bankInformation
             : undefined,
       };
 
@@ -334,19 +437,21 @@ export default function EditTeacherModal({
             {/* Tab Navigation */}
             <div className="border-b border-gray-600 p-2 md:p-4 bg-gray-100/10">
               <div className="flex gap-2 text-xs">
-                {["TEACHER", "SUBJECTS"].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-3 md:px-4 py-2 border border-gray-600 transition-all duration-200 text-xs md:text-sm ${
-                      activeTab === tab
-                        ? "bg-gray-600 text-white font-bold"
-                        : "bg-gray-50 hover:bg-gray-100/20"
-                    }`}
-                  >
-                    {tab} EDIT
-                  </button>
-                ))}
+                {["TEACHER", "PERSONAL", "PROFESSIONAL", "SUBJECTS"].map(
+                  (tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-3 md:px-4 py-2 border border-gray-600 transition-all duration-200 text-xs md:text-sm ${
+                        activeTab === tab
+                          ? "bg-gray-600 text-white font-bold"
+                          : "bg-gray-50 hover:bg-gray-100/20"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  )
+                )}
               </div>
             </div>
 
@@ -447,6 +552,667 @@ export default function EditTeacherModal({
                               INACTIVE
                             </option>
                           </select>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {activeTab === "PERSONAL" && (
+                <div>
+                  <div className="border-b border-gray-600 mb-4 pb-2">
+                    <div className="text-sm font-bold">
+                      PERSONAL INFORMATION EDIT
+                    </div>
+                    <div className="text-xs">MODIFY PERSONAL DETAILS BELOW</div>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-1 text-xs font-mono">
+                      {/* Date of Birth and Gender */}
+                      <div className="flex flex-col md:flex-row border-b border-gray-600/20 py-2">
+                        <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
+                          DATE OF BIRTH:
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="date"
+                            value={formData.dateOfBirth}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                dateOfBirth: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">GENDER:</div>
+                        <div className="flex-1">
+                          <select
+                            value={formData.gender}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                gender: e.target.value,
+                              })
+                            }
+                            className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                          >
+                            <option value="" className="bg-white text-gray-800">
+                              Select gender
+                            </option>
+                            <option
+                              value="Male"
+                              className="bg-white text-gray-800"
+                            >
+                              Male
+                            </option>
+                            <option
+                              value="Female"
+                              className="bg-white text-gray-800"
+                            >
+                              Female
+                            </option>
+                            <option
+                              value="Other"
+                              className="bg-white text-gray-800"
+                            >
+                              Other
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Nationality and State */}
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">NATIONALITY:</div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.nationality}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                nationality: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter nationality"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">STATE OF ORIGIN:</div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.stateOfOrigin}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                stateOfOrigin: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter state of origin"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">LOCAL GOVERNMENT:</div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.localGovernmentArea}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                localGovernmentArea: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter local government area"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Address and Contact */}
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">ADDRESS:</div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.address}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                address: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter full address"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">ALTERNATIVE PHONE:</div>
+                        <div className="flex-1">
+                          <input
+                            type="tel"
+                            value={formData.alternativePhone}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                alternativePhone: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter alternative phone"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">PERSONAL EMAIL:</div>
+                        <div className="flex-1">
+                          <input
+                            type="email"
+                            value={formData.personalEmail}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                personalEmail: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter personal email"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Emergency Contact */}
+                    <div className="border border-gray-600 p-4 bg-gray-100/20">
+                      <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
+                        EMERGENCY CONTACT INFORMATION
+                      </div>
+                      <div className="space-y-4 text-xs">
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            NAME:
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={formData.emergencyContact.name}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  emergencyContact: {
+                                    ...formData.emergencyContact,
+                                    name: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                              placeholder="Enter emergency contact name"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            RELATIONSHIP:
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={formData.emergencyContact.relationship}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  emergencyContact: {
+                                    ...formData.emergencyContact,
+                                    relationship: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                              placeholder="Enter relationship"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            PHONE:
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="tel"
+                              value={formData.emergencyContact.phoneNumber}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  emergencyContact: {
+                                    ...formData.emergencyContact,
+                                    phoneNumber: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                              placeholder="Enter emergency contact phone"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {activeTab === "PROFESSIONAL" && (
+                <div>
+                  <div className="border-b border-gray-600 mb-4 pb-2">
+                    <div className="text-sm font-bold">
+                      PROFESSIONAL INFORMATION EDIT
+                    </div>
+                    <div className="text-xs">
+                      MODIFY PROFESSIONAL DETAILS BELOW
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-1 text-xs font-mono">
+                      {/* Qualification and Experience */}
+                      <div className="flex flex-col md:flex-row border-b border-gray-600/20 py-2">
+                        <div className="w-full md:w-48 font-bold mb-1 md:mb-0">
+                          QUALIFICATION:
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.qualification}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                qualification: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter qualification"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">
+                          YEARS OF EXPERIENCE:
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="number"
+                            value={formData.yearsOfExperience}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                yearsOfExperience: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter years of experience"
+                            min="0"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">PREVIOUS SCHOOL:</div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.previousSchool}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                previousSchool: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter previous school"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">
+                          EMPLOYMENT START DATE:
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="date"
+                            value={formData.employmentStartDate}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                employmentStartDate: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Employment and License */}
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">EMPLOYMENT TYPE:</div>
+                        <div className="flex-1">
+                          <select
+                            value={formData.employmentType}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                employmentType: e.target.value,
+                              })
+                            }
+                            className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                          >
+                            <option value="" className="bg-white text-gray-800">
+                              Select employment type
+                            </option>
+                            <option
+                              value="Full-time"
+                              className="bg-white text-gray-800"
+                            >
+                              Full-time
+                            </option>
+                            <option
+                              value="Part-time"
+                              className="bg-white text-gray-800"
+                            >
+                              Part-time
+                            </option>
+                            <option
+                              value="Contract"
+                              className="bg-white text-gray-800"
+                            >
+                              Contract
+                            </option>
+                            <option
+                              value="Temporary"
+                              className="bg-white text-gray-800"
+                            >
+                              Temporary
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">MARITAL STATUS:</div>
+                        <div className="flex-1">
+                          <select
+                            value={formData.maritalStatus}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                maritalStatus: e.target.value,
+                              })
+                            }
+                            className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                          >
+                            <option value="" className="bg-white text-gray-800">
+                              Select marital status
+                            </option>
+                            <option
+                              value="Single"
+                              className="bg-white text-gray-800"
+                            >
+                              Single
+                            </option>
+                            <option
+                              value="Married"
+                              className="bg-white text-gray-800"
+                            >
+                              Married
+                            </option>
+                            <option
+                              value="Divorced"
+                              className="bg-white text-gray-800"
+                            >
+                              Divorced
+                            </option>
+                            <option
+                              value="Widowed"
+                              className="bg-white text-gray-800"
+                            >
+                              Widowed
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">TEACHING LICENSE:</div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.teachingLicenseNumber}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                teachingLicenseNumber: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter teaching license number"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">NATIONAL ID:</div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.nationalIdNumber}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                nationalIdNumber: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter national ID number"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Health Information */}
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">BLOOD GROUP:</div>
+                        <div className="flex-1">
+                          <select
+                            value={formData.bloodGroup}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                bloodGroup: e.target.value,
+                              })
+                            }
+                            className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                          >
+                            <option value="" className="bg-white text-gray-800">
+                              Select blood group
+                            </option>
+                            <option
+                              value="A+"
+                              className="bg-white text-gray-800"
+                            >
+                              A+
+                            </option>
+                            <option
+                              value="A-"
+                              className="bg-white text-gray-800"
+                            >
+                              A-
+                            </option>
+                            <option
+                              value="B+"
+                              className="bg-white text-gray-800"
+                            >
+                              B+
+                            </option>
+                            <option
+                              value="B-"
+                              className="bg-white text-gray-800"
+                            >
+                              B-
+                            </option>
+                            <option
+                              value="AB+"
+                              className="bg-white text-gray-800"
+                            >
+                              AB+
+                            </option>
+                            <option
+                              value="AB-"
+                              className="bg-white text-gray-800"
+                            >
+                              AB-
+                            </option>
+                            <option
+                              value="O+"
+                              className="bg-white text-gray-800"
+                            >
+                              O+
+                            </option>
+                            <option
+                              value="O-"
+                              className="bg-white text-gray-800"
+                            >
+                              O-
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">KNOWN ALLERGIES:</div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.knownAllergies}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                knownAllergies: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter known allergies"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">
+                          MEDICAL CONDITIONS:
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.medicalConditions}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                medicalConditions: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter medical conditions"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bank Information */}
+                    <div className="border border-gray-600 p-4 bg-gray-100/20">
+                      <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
+                        BANKING INFORMATION
+                      </div>
+                      <div className="space-y-4 text-xs">
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            BANK NAME:
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={formData.bankInformation.bankName}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  bankInformation: {
+                                    ...formData.bankInformation,
+                                    bankName: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                              placeholder="Enter bank name"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            ACCOUNT NUMBER:
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={formData.bankInformation.accountNumber}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  bankInformation: {
+                                    ...formData.bankInformation,
+                                    accountNumber: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                              placeholder="Enter account number"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                            ACCOUNT NAME:
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={formData.bankInformation.accountName}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  bankInformation: {
+                                    ...formData.bankInformation,
+                                    accountName: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                              placeholder="Enter account name"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
