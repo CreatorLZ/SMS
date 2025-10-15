@@ -1,4 +1,6 @@
 import type { NextConfig } from "next";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
@@ -15,7 +17,7 @@ const nextConfig: NextConfig = {
 
   // Turbopack configuration to set the correct root directory
   turbopack: {
-    root: __dirname, // Points to the client/ directory
+    root: dirname(fileURLToPath(import.meta.url)), // Points to the client/ directory
   },
 };
 
