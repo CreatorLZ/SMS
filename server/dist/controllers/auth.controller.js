@@ -93,11 +93,12 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (!isMatch) {
             return res.status(401).json({ message: "Invalid credentials" });
         }
+        // Clear existing refresh tokens for this user
+        user.refreshTokens = [];
         // Generate tokens
         const accessToken = generateAccessToken(user);
         const refreshToken = generateRefreshToken(user);
         // Store refresh token
-        user.refreshTokens = user.refreshTokens || [];
         user.refreshTokens.push(refreshToken);
         yield user.save();
         // Set refresh token in HTTP-only cookie
@@ -182,9 +183,8 @@ const refresh = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         // Generate new tokens (rotation)
         const newAccessToken = generateAccessToken(user);
         const newRefreshToken = generateRefreshToken(user);
-        // Update refresh tokens (rotation)
-        user.refreshTokens = user.refreshTokens.filter((token) => token !== refreshToken);
-        user.refreshTokens.push(newRefreshToken);
+        // Update refresh tokens (rotation) - replace all tokens with just the new one to prevent accumulation
+        user.refreshTokens = [newRefreshToken];
         yield user.save();
         // Set new refresh token cookie
         res.cookie("refreshToken", newRefreshToken, {
@@ -219,9 +219,8 @@ const devSuperAdminLogin = (req, res) => __awaiter(void 0, void 0, void 0, funct
         // Generate tokens
         const accessToken = generateAccessToken(superAdmin);
         const refreshToken = generateRefreshToken(superAdmin);
-        // Add refresh token to user's refreshTokens array
-        superAdmin.refreshTokens = superAdmin.refreshTokens || [];
-        superAdmin.refreshTokens.push(refreshToken);
+        // Add refresh token to user's refreshTokens array (clear existing first)
+        superAdmin.refreshTokens = [refreshToken];
         yield superAdmin.save();
         // Set refresh token cookie
         res.cookie("refreshToken", refreshToken, {

@@ -189,6 +189,46 @@ export default function EditTeacherModal({
     e.preventDefault();
     if (!teacher) return;
 
+    // Validation for emergency contact
+
+    if (
+      (formData.emergencyContact.name ||
+        formData.emergencyContact.relationship ||
+        formData.emergencyContact.phoneNumber) &&
+      !(
+        formData.emergencyContact.name &&
+        formData.emergencyContact.relationship &&
+        formData.emergencyContact.phoneNumber
+      )
+    ) {
+      showToastMessage(
+        "Emergency contact information must be complete or all fields left empty.",
+        "error"
+      );
+
+      return;
+    }
+
+    // Validation for bank information
+
+    if (
+      (formData.bankInformation.bankName ||
+        formData.bankInformation.accountNumber ||
+        formData.bankInformation.accountName) &&
+      !(
+        formData.bankInformation.bankName &&
+        formData.bankInformation.accountNumber &&
+        formData.bankInformation.accountName
+      )
+    ) {
+      showToastMessage(
+        "Bank information must be complete or all fields left empty.",
+        "error"
+      );
+
+      return;
+    }
+
     try {
       const submitData = {
         name: formData.name,
@@ -214,8 +254,8 @@ export default function EditTeacherModal({
         alternativePhone: formData.alternativePhone || undefined,
         personalEmail: formData.personalEmail || undefined,
         emergencyContact:
-          formData.emergencyContact.name ||
-          formData.emergencyContact.relationship ||
+          formData.emergencyContact.name &&
+          formData.emergencyContact.relationship &&
           formData.emergencyContact.phoneNumber
             ? formData.emergencyContact
             : undefined,
@@ -234,8 +274,8 @@ export default function EditTeacherModal({
         knownAllergies: formData.knownAllergies || undefined,
         medicalConditions: formData.medicalConditions || undefined,
         bankInformation:
-          formData.bankInformation.bankName ||
-          formData.bankInformation.accountNumber ||
+          formData.bankInformation.bankName &&
+          formData.bankInformation.accountNumber &&
           formData.bankInformation.accountName
             ? formData.bankInformation
             : undefined,
@@ -738,81 +778,6 @@ export default function EditTeacherModal({
                         </div>
                       </div>
                     </div>
-
-                    {/* Emergency Contact */}
-                    <div className="border border-gray-600 p-4 bg-gray-100/20">
-                      <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
-                        EMERGENCY CONTACT INFORMATION
-                      </div>
-                      <div className="space-y-4 text-xs">
-                        <div className="flex flex-col md:flex-row">
-                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
-                            NAME:
-                          </div>
-                          <div className="flex-1">
-                            <input
-                              type="text"
-                              value={formData.emergencyContact.name}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  emergencyContact: {
-                                    ...formData.emergencyContact,
-                                    name: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
-                              placeholder="Enter emergency contact name"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex flex-col md:flex-row">
-                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
-                            RELATIONSHIP:
-                          </div>
-                          <div className="flex-1">
-                            <input
-                              type="text"
-                              value={formData.emergencyContact.relationship}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  emergencyContact: {
-                                    ...formData.emergencyContact,
-                                    relationship: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
-                              placeholder="Enter relationship"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex flex-col md:flex-row">
-                          <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
-                            PHONE:
-                          </div>
-                          <div className="flex-1">
-                            <input
-                              type="tel"
-                              value={formData.emergencyContact.phoneNumber}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  emergencyContact: {
-                                    ...formData.emergencyContact,
-                                    phoneNumber: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
-                              placeholder="Enter emergency contact phone"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   </form>
                 </div>
               )}
@@ -943,6 +908,84 @@ export default function EditTeacherModal({
                               className="bg-white text-gray-800"
                             >
                               Contract
+                              {/* Emergency Contact */}
+                              <div className="border border-gray-600 p-4 bg-gray-100/20">
+                                <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
+                                  EMERGENCY CONTACT INFORMATION
+                                </div>
+                                <div className="space-y-4 text-xs">
+                                  <div className="flex flex-col md:flex-row">
+                                    <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                                      NAME:
+                                    </div>
+                                    <div className="flex-1">
+                                      <input
+                                        type="text"
+                                        value={formData.emergencyContact.name}
+                                        onChange={(e) =>
+                                          setFormData({
+                                            ...formData,
+                                            emergencyContact: {
+                                              ...formData.emergencyContact,
+                                              name: e.target.value,
+                                            },
+                                          })
+                                        }
+                                        className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                                        placeholder="Enter emergency contact name"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col md:flex-row">
+                                    <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                                      RELATIONSHIP:
+                                    </div>
+                                    <div className="flex-1">
+                                      <input
+                                        type="text"
+                                        value={
+                                          formData.emergencyContact.relationship
+                                        }
+                                        onChange={(e) =>
+                                          setFormData({
+                                            ...formData,
+                                            emergencyContact: {
+                                              ...formData.emergencyContact,
+                                              relationship: e.target.value,
+                                            },
+                                          })
+                                        }
+                                        className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                                        placeholder="Enter relationship"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col md:flex-row">
+                                    <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                                      PHONE:
+                                    </div>
+                                    <div className="flex-1">
+                                      <input
+                                        type="tel"
+                                        value={
+                                          formData.emergencyContact.phoneNumber
+                                        }
+                                        onChange={(e) =>
+                                          setFormData({
+                                            ...formData,
+                                            emergencyContact: {
+                                              ...formData.emergencyContact,
+                                              phoneNumber: e.target.value,
+                                            },
+                                          })
+                                        }
+                                        className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                                        placeholder="Enter emergency contact phone"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             </option>
                             <option
                               value="Temporary"

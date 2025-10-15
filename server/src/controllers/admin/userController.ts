@@ -972,12 +972,108 @@ export const createTeacher = async (req: Request, res: Response) => {
       subjectSpecializations,
       subjectSpecialization,
       assignedClassId,
+      // Additional teacher fields
+      dateOfBirth,
+      gender,
+      nationality,
+      stateOfOrigin,
+      localGovernmentArea,
+      address,
+      alternativePhone,
+      personalEmail,
+      emergencyContact,
+      qualification,
+      yearsOfExperience,
+      previousSchool,
+      employmentStartDate,
+      teachingLicenseNumber,
+      employmentType,
+      maritalStatus,
+      nationalIdNumber,
+      bankInformation,
+      bloodGroup,
+      knownAllergies,
+      medicalConditions,
     } = req.body;
 
     // Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
+    }
+
+    // Validation for additional fields
+    if (gender && !["Male", "Female", "Other"].includes(gender)) {
+      return res
+        .status(400)
+        .json({ message: "Gender must be Male, Female, or Other" });
+    }
+
+    if (dateOfBirth && new Date(dateOfBirth) > new Date()) {
+      return res
+        .status(400)
+        .json({ message: "Date of birth cannot be in the future" });
+    }
+
+    if (employmentStartDate && new Date(employmentStartDate) > new Date()) {
+      return res
+        .status(400)
+        .json({ message: "Employment start date cannot be in the future" });
+    }
+
+    if (
+      yearsOfExperience !== undefined &&
+      (yearsOfExperience < 0 || !Number.isInteger(yearsOfExperience))
+    ) {
+      return res.status(400).json({
+        message: "Years of experience must be a non-negative integer",
+      });
+    }
+
+    if (alternativePhone && !/^\d+$/.test(alternativePhone)) {
+      return res
+        .status(400)
+        .json({ message: "Alternative phone must contain only digits" });
+    }
+
+    // Validate emergency contact - ensure all sub-fields are present or none at all
+    if (emergencyContact && typeof emergencyContact === "object") {
+      const { name, relationship, phoneNumber } = emergencyContact;
+      const hasAnyField = name || relationship || phoneNumber;
+      const hasAllFields = name && relationship && phoneNumber;
+
+      if (hasAnyField && !hasAllFields) {
+        return res.status(400).json({
+          message:
+            "Emergency contact must include name, relationship, and phone number, or be completely empty",
+        });
+      }
+
+      if (phoneNumber && !/^\d+$/.test(phoneNumber)) {
+        return res.status(400).json({
+          message: "Emergency contact phone must contain only digits",
+        });
+      }
+    }
+
+    // Validate bank information - ensure all sub-fields are present or none at all
+    if (bankInformation && typeof bankInformation === "object") {
+      const { bankName, accountNumber, accountName } = bankInformation;
+      const hasAnyField = bankName || accountNumber || accountName;
+      const hasAllFields = bankName && accountNumber && accountName;
+
+      if (hasAnyField && !hasAllFields) {
+        return res.status(400).json({
+          message:
+            "Bank information must include bank name, account number, and account name, or be completely empty",
+        });
+      }
+
+      if (accountNumber && !/^\d+$/.test(accountNumber)) {
+        return res.status(400).json({
+          message: "Bank account number must contain only digits",
+        });
+      }
     }
 
     // If assignedClassId is provided, check if classroom exists and is not already assigned
@@ -993,13 +1089,37 @@ export const createTeacher = async (req: Request, res: Response) => {
       }
     }
 
-    // Prepare teacher data - handle subject specializations
+    // Prepare teacher data - handle subject specializations and additional fields
     const teacherData: any = {
       name,
       email,
       password,
       role: "teacher",
       assignedClassId,
+      // Additional teacher fields
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      gender,
+      nationality,
+      stateOfOrigin,
+      localGovernmentArea,
+      address,
+      alternativePhone,
+      personalEmail,
+      emergencyContact: emergencyContact || undefined,
+      qualification,
+      yearsOfExperience,
+      previousSchool,
+      employmentStartDate: employmentStartDate
+        ? new Date(employmentStartDate)
+        : undefined,
+      teachingLicenseNumber,
+      employmentType,
+      maritalStatus,
+      nationalIdNumber,
+      bankInformation: bankInformation || undefined,
+      bloodGroup,
+      knownAllergies,
+      medicalConditions,
     };
 
     // Handle subject specializations - prefer array format but support both
@@ -1103,6 +1223,28 @@ export const updateTeacher = async (req: Request, res: Response) => {
       status,
       phone,
       passportPhoto,
+      // Additional teacher fields
+      dateOfBirth,
+      gender,
+      nationality,
+      stateOfOrigin,
+      localGovernmentArea,
+      address,
+      alternativePhone,
+      personalEmail,
+      emergencyContact,
+      qualification,
+      yearsOfExperience,
+      previousSchool,
+      employmentStartDate,
+      teachingLicenseNumber,
+      employmentType,
+      maritalStatus,
+      nationalIdNumber,
+      bankInformation,
+      bloodGroup,
+      knownAllergies,
+      medicalConditions,
     } = req.body;
 
     // Check if teacher exists
@@ -1116,6 +1258,64 @@ export const updateTeacher = async (req: Request, res: Response) => {
       const existingUser = await User.findOne({ email });
       if (existingUser) {
         return res.status(400).json({ message: "Email already exists" });
+      }
+    }
+
+    // Validation for additional teacher fields
+    if (gender && !["Male", "Female", "Other"].includes(gender)) {
+      return res
+        .status(400)
+        .json({ message: "Gender must be Male, Female, or Other" });
+    }
+
+    if (dateOfBirth && new Date(dateOfBirth) > new Date()) {
+      return res
+        .status(400)
+        .json({ message: "Date of birth cannot be in the future" });
+    }
+
+    if (employmentStartDate && new Date(employmentStartDate) > new Date()) {
+      return res
+        .status(400)
+        .json({ message: "Employment start date cannot be in the future" });
+    }
+
+    if (
+      yearsOfExperience !== undefined &&
+      (yearsOfExperience < 0 || !Number.isInteger(yearsOfExperience))
+    ) {
+      return res.status(400).json({
+        message: "Years of experience must be a non-negative integer",
+      });
+    }
+
+    if (alternativePhone && !/^\d+$/.test(alternativePhone)) {
+      return res
+        .status(400)
+        .json({ message: "Alternative phone must contain only digits" });
+    }
+
+    // Validate emergency contact if provided
+    if (emergencyContact && typeof emergencyContact === "object") {
+      if (
+        emergencyContact.phoneNumber &&
+        !/^\d+$/.test(emergencyContact.phoneNumber)
+      ) {
+        return res.status(400).json({
+          message: "Emergency contact phone must contain only digits",
+        });
+      }
+    }
+
+    // Validate bank information if provided
+    if (bankInformation && typeof bankInformation === "object") {
+      if (
+        bankInformation.accountNumber &&
+        !/^\d+$/.test(bankInformation.accountNumber)
+      ) {
+        return res.status(400).json({
+          message: "Bank account number must contain only digits",
+        });
       }
     }
 
@@ -1193,6 +1393,30 @@ export const updateTeacher = async (req: Request, res: Response) => {
       status,
       phone,
       passportPhoto: passportPhoto !== undefined ? passportPhoto : undefined,
+      // Additional teacher fields
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      gender,
+      nationality,
+      stateOfOrigin,
+      localGovernmentArea,
+      address,
+      alternativePhone,
+      personalEmail,
+      emergencyContact: emergencyContact || undefined,
+      qualification,
+      yearsOfExperience,
+      previousSchool,
+      employmentStartDate: employmentStartDate
+        ? new Date(employmentStartDate)
+        : undefined,
+      teachingLicenseNumber,
+      employmentType,
+      maritalStatus,
+      nationalIdNumber,
+      bankInformation: bankInformation || undefined,
+      bloodGroup,
+      knownAllergies,
+      medicalConditions,
     };
 
     // Handle subject specializations - prefer array format but support both

@@ -82,6 +82,38 @@ export default function CreateTeacherModal({
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
+    // Validation for emergency contact
+    if (
+      (formData.emergencyContact.name ||
+        formData.emergencyContact.relationship ||
+        formData.emergencyContact.phoneNumber) &&
+      !(
+        formData.emergencyContact.name &&
+        formData.emergencyContact.relationship &&
+        formData.emergencyContact.phoneNumber
+      )
+    ) {
+      toast.error(
+        "Emergency contact information must be complete or all fields left empty."
+      );
+      return;
+    }
+    // Validation for bank information
+    if (
+      (formData.bankInformation.bankName ||
+        formData.bankInformation.accountNumber ||
+        formData.bankInformation.accountName) &&
+      !(
+        formData.bankInformation.bankName &&
+        formData.bankInformation.accountNumber &&
+        formData.bankInformation.accountName
+      )
+    ) {
+      toast.error(
+        "Bank information must be complete or all fields left empty."
+      );
+      return;
+    }
     e.preventDefault();
     try {
       const submitData = {
@@ -101,8 +133,8 @@ export default function CreateTeacherModal({
         alternativePhone: formData.alternativePhone || undefined,
         personalEmail: formData.personalEmail || undefined,
         emergencyContact:
-          formData.emergencyContact.name ||
-          formData.emergencyContact.relationship ||
+          formData.emergencyContact.name &&
+          formData.emergencyContact.relationship &&
           formData.emergencyContact.phoneNumber
             ? formData.emergencyContact
             : undefined,
@@ -121,8 +153,8 @@ export default function CreateTeacherModal({
         knownAllergies: formData.knownAllergies || undefined,
         medicalConditions: formData.medicalConditions || undefined,
         bankInformation:
-          formData.bankInformation.bankName ||
-          formData.bankInformation.accountNumber ||
+          formData.bankInformation.bankName &&
+          formData.bankInformation.accountNumber &&
           formData.bankInformation.accountName
             ? formData.bankInformation
             : undefined,
@@ -674,6 +706,358 @@ export default function CreateTeacherModal({
                               className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600"
                               placeholder="Enter emergency contact phone"
                             />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Employment and License */}
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">EMPLOYMENT TYPE:</div>
+
+                        <div className="flex-1">
+                          <select
+                            value={formData.employmentType}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+
+                                employmentType: e.target.value,
+                              })
+                            }
+                            className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                          >
+                            <option value="" className="bg-white text-gray-800">
+                              Select employment type
+                            </option>
+
+                            <option
+                              value="Full-time"
+                              className="bg-white text-gray-800"
+                            >
+                              Full-time
+                            </option>
+
+                            <option
+                              value="Part-time"
+                              className="bg-white text-gray-800"
+                            >
+                              Part-time
+                            </option>
+
+                            <option
+                              value="Contract"
+                              className="bg-white text-gray-800"
+                            >
+                              Contract
+                            </option>
+
+                            <option
+                              value="Temporary"
+                              className="bg-white text-gray-800"
+                            >
+                              Temporary
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">MARITAL STATUS:</div>
+
+                        <div className="flex-1">
+                          <select
+                            value={formData.maritalStatus}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+
+                                maritalStatus: e.target.value,
+                              })
+                            }
+                            className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                          >
+                            <option value="" className="bg-white text-gray-800">
+                              Select marital status
+                            </option>
+
+                            <option
+                              value="Single"
+                              className="bg-white text-gray-800"
+                            >
+                              Single
+                            </option>
+
+                            <option
+                              value="Married"
+                              className="bg-white text-gray-800"
+                            >
+                              Married
+                            </option>
+
+                            <option
+                              value="Divorced"
+                              className="bg-white text-gray-800"
+                            >
+                              Divorced
+                            </option>
+
+                            <option
+                              value="Widowed"
+                              className="bg-white text-gray-800"
+                            >
+                              Widowed
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">TEACHING LICENSE:</div>
+
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.teachingLicenseNumber}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+
+                                teachingLicenseNumber: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter teaching license number"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">NATIONAL ID:</div>
+
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.nationalIdNumber}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+
+                                nationalIdNumber: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter national ID number"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Health Information */}
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">BLOOD GROUP:</div>
+
+                        <div className="flex-1">
+                          <select
+                            value={formData.bloodGroup}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+
+                                bloodGroup: e.target.value,
+                              })
+                            }
+                            className="w-full bg-white border border-gray-600/30 px-2 py-1 text-gray-800 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                          >
+                            <option value="" className="bg-white text-gray-800">
+                              Select blood group
+                            </option>
+
+                            <option
+                              value="A+"
+                              className="bg-white text-gray-800"
+                            >
+                              A+
+                            </option>
+
+                            <option
+                              value="A-"
+                              className="bg-white text-gray-800"
+                            >
+                              A-
+                            </option>
+
+                            <option
+                              value="B+"
+                              className="bg-white text-gray-800"
+                            >
+                              B+
+                            </option>
+
+                            <option
+                              value="B-"
+                              className="bg-white text-gray-800"
+                            >
+                              B-
+                            </option>
+
+                            <option
+                              value="AB+"
+                              className="bg-white text-gray-800"
+                            >
+                              AB+
+                            </option>
+
+                            <option
+                              value="AB-"
+                              className="bg-white text-gray-800"
+                            >
+                              AB-
+                            </option>
+
+                            <option
+                              value="O+"
+                              className="bg-white text-gray-800"
+                            >
+                              O+
+                            </option>
+
+                            <option
+                              value="O-"
+                              className="bg-white text-gray-800"
+                            >
+                              O-
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">KNOWN ALLERGIES:</div>
+
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.knownAllergies}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+
+                                knownAllergies: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter known allergies"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex border-b border-gray-600/20 py-2">
+                        <div className="w-48 font-bold">
+                          MEDICAL CONDITIONS:
+                        </div>
+
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={formData.medicalConditions}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+
+                                medicalConditions: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                            placeholder="Enter medical conditions"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Bank Information */}
+
+                      <div className="border border-gray-600 p-4 bg-gray-100/20">
+                        <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1">
+                          BANKING INFORMATION
+                        </div>
+
+                        <div className="space-y-4 text-xs">
+                          <div className="flex flex-col md:flex-row">
+                            <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                              BANK NAME:
+                            </div>
+
+                            <div className="flex-1">
+                              <input
+                                type="text"
+                                value={formData.bankInformation.bankName}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+
+                                    bankInformation: {
+                                      ...formData.bankInformation,
+
+                                      bankName: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                                placeholder="Enter bank name"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col md:flex-row">
+                            <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                              ACCOUNT NUMBER:
+                            </div>
+
+                            <div className="flex-1">
+                              <input
+                                type="text"
+                                value={formData.bankInformation.accountNumber}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+
+                                    bankInformation: {
+                                      ...formData.bankInformation,
+
+                                      accountNumber: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                                placeholder="Enter account number"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col md:flex-row">
+                            <div className="w-full md:w-40 font-bold mb-1 md:mb-0">
+                              ACCOUNT NAME:
+                            </div>
+
+                            <div className="flex-1">
+                              <input
+                                type="text"
+                                value={formData.bankInformation.accountName}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+
+                                    bankInformation: {
+                                      ...formData.bankInformation,
+
+                                      accountName: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 font-mono text-xs"
+                                placeholder="Enter account name"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>

@@ -125,6 +125,138 @@ const userSchema = new mongoose_1.Schema({
         required: false,
         trim: true,
     },
+    // Additional teacher information fields
+    dateOfBirth: {
+        type: Date,
+        required: false,
+    },
+    gender: {
+        type: String,
+        enum: ["Male", "Female", "Other"],
+        required: false,
+    },
+    nationality: {
+        type: String,
+        required: false,
+        trim: true,
+        default: "Nigerian",
+    },
+    stateOfOrigin: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    localGovernmentArea: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    address: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    alternativePhone: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    personalEmail: {
+        type: String,
+        required: false,
+        lowercase: true,
+        trim: true,
+    },
+    emergencyContact: {
+        name: {
+            type: String,
+            required: false,
+            trim: true,
+        },
+        relationship: {
+            type: String,
+            required: false,
+            trim: true,
+        },
+        phoneNumber: {
+            type: String,
+            required: false,
+            trim: true,
+        },
+    },
+    qualification: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    yearsOfExperience: {
+        type: Number,
+        required: false,
+        min: 0,
+    },
+    previousSchool: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    employmentStartDate: {
+        type: Date,
+        required: false,
+    },
+    // Optional professional development fields
+    teachingLicenseNumber: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    employmentType: {
+        type: String,
+        enum: ["Full-time", "Part-time", "Contract"],
+        required: false,
+        default: "Full-time",
+    },
+    maritalStatus: {
+        type: String,
+        enum: ["Single", "Married", "Divorced", "Widowed"],
+        required: false,
+    },
+    nationalIdNumber: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    bankInformation: {
+        bankName: {
+            type: String,
+            required: false,
+            trim: true,
+        },
+        accountNumber: {
+            type: String,
+            required: false,
+            trim: true,
+        },
+        accountName: {
+            type: String,
+            required: false,
+            trim: true,
+        },
+    },
+    bloodGroup: {
+        type: String,
+        enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+        required: false,
+    },
+    knownAllergies: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    medicalConditions: {
+        type: String,
+        required: false,
+        trim: true,
+    },
 }, {
     timestamps: true,
 });
