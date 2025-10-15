@@ -6,6 +6,7 @@ import StudentTable from "../../../components/ui/StudentTable";
 import CreateStudentModal from "../../../components/ui/CreateStudentModal";
 import EditStudentModal from "../../../components/ui/EditStudentModal";
 import ViewStudentModal from "../../../components/ui/ViewStudentModal";
+import DataLoading from "../../../components/ui/data-loading";
 import { useStudentManagementStore } from "../../../store/studentManagementStore";
 import { useStudentsQuery } from "../../../hooks/useStudentsQuery";
 import { STUDENT_CLASSES } from "../../../constants/classes";
@@ -247,7 +248,11 @@ export default function AdminStudentsPage() {
           </Card>
 
           {/* Student Table */}
-          <StudentTable />
+          {isLoading ? (
+            <DataLoading message="Loading students..." />
+          ) : (
+            <StudentTable />
+          )}
 
           {/* Enhanced Pagination */}
           {studentsResponse?.pagination &&

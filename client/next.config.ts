@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+
+  // Turbopack configuration to set the correct root directory
+  turbopack: {
+    root: __dirname, // Points to the client/ directory
+  },
 };
 
 export default nextConfig;

@@ -102,12 +102,14 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Clear existing refresh tokens for this user
+    user.refreshTokens = [];
+
     // Generate tokens
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
     // Store refresh token
-    user.refreshTokens = user.refreshTokens || [];
     user.refreshTokens.push(refreshToken);
     await user.save();
 
@@ -189,7 +191,7 @@ export const refresh = async (req: Request, res: Response) => {
         refreshToken,
         process.env.JWT_REFRESH_SECRET!
       ) as JwtPayload;
-    } catch (error) {
+    } catch (error: any) {
       return res.status(401).json({ message: "Invalid refresh token" });
     }
 
@@ -203,11 +205,8 @@ export const refresh = async (req: Request, res: Response) => {
     const newAccessToken = generateAccessToken(user);
     const newRefreshToken = generateRefreshToken(user);
 
-    // Update refresh tokens (rotation)
-    user.refreshTokens = user.refreshTokens.filter(
-      (token: string) => token !== refreshToken
-    );
-    user.refreshTokens.push(newRefreshToken);
+    // Update refresh tokens (rotation) - replace all tokens with just the new one to prevent accumulation
+    user.refreshTokens = [newRefreshToken];
     await user.save();
 
     // Set new refresh token cookie
@@ -249,9 +248,8 @@ export const devSuperAdminLogin = async (
     const accessToken = generateAccessToken(superAdmin);
     const refreshToken = generateRefreshToken(superAdmin);
 
-    // Add refresh token to user's refreshTokens array
-    superAdmin.refreshTokens = superAdmin.refreshTokens || [];
-    superAdmin.refreshTokens.push(refreshToken);
+    // Add refresh token to user's refreshTokens array (clear existing first)
+    superAdmin.refreshTokens = [refreshToken];
     await superAdmin.save();
 
     // Set refresh token cookie

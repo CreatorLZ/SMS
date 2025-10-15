@@ -1,6 +1,6 @@
 "use client";
 
-const FeesLoading = () => {
+const TeachersLoading = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="animate-pulse">
@@ -35,4 +35,4 @@ const FeesLoading = () => {
   );
 };
 
-export default FeesLoading;
+export default TeachersLoading;

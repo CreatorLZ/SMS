@@ -6,6 +6,7 @@ import { Button } from "./button";
 import { Badge } from "./badge";
 import { Card, CardContent } from "./card";
 import { Skeleton } from "./skeleton";
+import DataLoading from "./data-loading";
 import { useState, useRef, useEffect } from "react";
 import {
   Edit,
@@ -73,17 +74,7 @@ export default function StudentTable() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <DataLoading message="Loading student data..." />;
   }
 
   // Error state

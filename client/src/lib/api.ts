@@ -89,7 +89,7 @@ api.interceptors.response.use(
         // Retry the original request with new token
         originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
         return api(originalRequest);
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         // Refresh failed, logout user
         processQueue(refreshError, null);
         useAuthStore.getState().logout();
