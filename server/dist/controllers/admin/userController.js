@@ -46,6 +46,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAuditLogs = exports.updateStudentPassportPhoto = exports.deleteUser = exports.updateUser = exports.getUserById = exports.deleteTeacher = exports.updateTeacher = exports.getTeacherById = exports.getTeachers = exports.createTeacher = exports.uploadBulkResults = exports.downloadResultsTemplate = exports.toggleStudentStatus = exports.updateStudent = exports.createStudent = exports.getStudentById = exports.getStudents = exports.getUsers = exports.getGradingScales = exports.registerUser = void 0;
+const mongoose_1 = __importDefault(require("mongoose"));
 const User_1 = require("../../models/User");
 const Student_1 = require("../../models/Student");
 const Classroom_1 = require("../../models/Classroom");
@@ -59,7 +60,7 @@ const studentIdGenerator_1 = require("../../utils/studentIdGenerator");
 const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        const { name, email, password, role, phone, studentId, currentClass, linkedStudentIds, subjectSpecialization, assignedClassId, } = req.body;
+        const { name, email, password, role, phone, studentId, currentClass, linkedStudentIds, subjectSpecialization, assignedClasses, } = req.body;
         // Check if user already exists
         const userExists = yield User_1.User.findOne({ email });
         if (userExists) {
@@ -86,9 +87,9 @@ const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             phone: phone || undefined,
             linkedStudentIds: role === "parent" ? linkedStudentIds : undefined,
             subjectSpecialization: role === "teacher" ? subjectSpecialization : undefined,
-            assignedClassId: role === "teacher" && assignedClassId && assignedClassId.trim() !== ""
-                ? assignedClassId
-                : undefined,
+            assignedClasses: role === "teacher" && assignedClasses && assignedClasses.length > 0
+                ? assignedClasses
+                : [],
         });
         // Create Student record if role is student
         let studentRecord = null;
@@ -824,7 +825,7 @@ exports.uploadBulkResults = uploadBulkResults;
 const createTeacher = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        const { name, email, password, subjectSpecializations, subjectSpecialization, assignedClassId, 
+        const { name, email, password, subjectSpecializations, subjectSpecialization, assignedClasses, 
         // Additional teacher fields
         dateOfBirth, gender, nationality, stateOfOrigin, localGovernmentArea, address, alternativePhone, personalEmail, emergencyContact, qualification, yearsOfExperience, previousSchool, employmentStartDate, teachingLicenseNumber, employmentType, maritalStatus, nationalIdNumber, bankInformation, bloodGroup, knownAllergies, medicalConditions, } = req.body;
         // Check if user already exists
@@ -891,82 +892,105 @@ const createTeacher = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 });
             }
         }
-        // If assignedClassId is provided, check if classroom exists and is not already assigned
-        if (assignedClassId) {
-            const classroom = yield Classroom_1.Classroom.findById(assignedClassId);
-            if (!classroom) {
-                return res.status(400).json({ message: "Classroom not found" });
+        // Use mongoose session and transaction to ensure atomicity
+        const session = yield mongoose_1.default.startSession();
+        session.startTransaction();
+        try {
+            // Check if classrooms exist and are available within transaction
+            if (assignedClasses && assignedClasses.length > 0) {
+                for (const classId of assignedClasses) {
+                    const classroom = yield Classroom_1.Classroom.findById(classId).session(session);
+                    if (!classroom) {
+                        yield session.abortTransaction();
+                        return res
+                            .status(400)
+                            .json({ message: `Classroom ${classId} not found` });
+                    }
+                    if (classroom.teacherId) {
+                        yield session.abortTransaction();
+                        return res.status(409).json({
+                            message: `Classroom "${classroom.name}" is no longer available - it was assigned to another teacher during processing`,
+                        });
+                    }
+                }
             }
-            if (classroom.teacherId) {
-                return res
-                    .status(400)
-                    .json({ message: "Classroom already has a teacher assigned" });
+            // Prepare teacher data - handle subject specializations and additional fields
+            const teacherData = {
+                name,
+                email,
+                password,
+                role: "teacher",
+                assignedClasses,
+                // Additional teacher fields
+                dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+                gender,
+                nationality,
+                stateOfOrigin,
+                localGovernmentArea,
+                address,
+                alternativePhone,
+                personalEmail,
+                emergencyContact: emergencyContact || undefined,
+                qualification,
+                yearsOfExperience,
+                previousSchool,
+                employmentStartDate: employmentStartDate
+                    ? new Date(employmentStartDate)
+                    : undefined,
+                teachingLicenseNumber,
+                employmentType,
+                maritalStatus,
+                nationalIdNumber,
+                bankInformation: bankInformation || undefined,
+                bloodGroup,
+                knownAllergies,
+                medicalConditions,
+            };
+            // Handle subject specializations - prefer array format but support both
+            if (subjectSpecializations && Array.isArray(subjectSpecializations)) {
+                // New array format
+                teacherData.subjectSpecializations = subjectSpecializations;
             }
-        }
-        // Prepare teacher data - handle subject specializations and additional fields
-        const teacherData = {
-            name,
-            email,
-            password,
-            role: "teacher",
-            assignedClassId,
-            // Additional teacher fields
-            dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-            gender,
-            nationality,
-            stateOfOrigin,
-            localGovernmentArea,
-            address,
-            alternativePhone,
-            personalEmail,
-            emergencyContact: emergencyContact || undefined,
-            qualification,
-            yearsOfExperience,
-            previousSchool,
-            employmentStartDate: employmentStartDate
-                ? new Date(employmentStartDate)
-                : undefined,
-            teachingLicenseNumber,
-            employmentType,
-            maritalStatus,
-            nationalIdNumber,
-            bankInformation: bankInformation || undefined,
-            bloodGroup,
-            knownAllergies,
-            medicalConditions,
-        };
-        // Handle subject specializations - prefer array format but support both
-        if (subjectSpecializations && Array.isArray(subjectSpecializations)) {
-            // New array format
-            teacherData.subjectSpecializations = subjectSpecializations;
-        }
-        else if (subjectSpecialization) {
-            // Fallback to old string format
-            teacherData.subjectSpecialization = subjectSpecialization;
-        }
-        // Create teacher
-        const teacher = yield User_1.User.create(teacherData);
-        // Update classroom's teacherId if assigned
-        if (assignedClassId) {
-            yield Classroom_1.Classroom.findByIdAndUpdate(assignedClassId, {
-                teacherId: teacher._id,
+            else if (subjectSpecialization) {
+                // Fallback to old string format
+                teacherData.subjectSpecialization = subjectSpecialization;
+            }
+            // Create teacher within transaction
+            const teacher = yield User_1.User.create([teacherData], { session });
+            // Update classrooms' teacherId if assigned within transaction
+            if (assignedClasses && assignedClasses.length > 0) {
+                for (const classId of assignedClasses) {
+                    yield Classroom_1.Classroom.findByIdAndUpdate(classId, { teacherId: teacher[0]._id }, { session });
+                }
+            }
+            // Commit the transaction
+            yield session.commitTransaction();
+            // Create audit log (outside transaction since it's not critical)
+            yield AuditLog_1.AuditLog.create({
+                userId: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id,
+                actionType: "TEACHER_CREATE",
+                description: `Created new teacher ${name} (${email})`,
+                targetId: teacher[0]._id,
+            });
+            res.status(201).json({
+                _id: teacher[0]._id,
+                name: teacher[0].name,
+                email: teacher[0].email,
+                role: teacher[0].role,
+                subjectSpecialization: teacher[0].subjectSpecialization,
+                assignedClasses: teacher[0].assignedClasses,
             });
         }
-        // Create audit log
-        yield AuditLog_1.AuditLog.create({
-            userId: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id,
-            actionType: "TEACHER_CREATE",
-            description: `Created new teacher ${name} (${email})`,
-            targetId: teacher._id,
-        });
-        res.status(201).json({
-            _id: teacher._id,
-            name: teacher.name,
-            email: teacher.email,
-            role: teacher.role,
-            subjectSpecialization: teacher.subjectSpecialization,
-            assignedClassId: teacher.assignedClassId,
-        });
+        catch (error) {
+            // Abort transaction on any error
+            yield session.abortTransaction();
+            throw error;
+        }
+        finally {
+            // Always end the session
+            session.endSession();
+        }
+        // Audit log and response are already handled inside the transaction block
     }
     catch (error) {
         res.status(500).json({
@@ -1221,13 +1245,41 @@ const deleteTeacher = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         if (!teacher) {
             return res.status(404).json({ message: "Teacher not found" });
         }
-        // Remove teacher from assigned classroom
-        if (teacher.assignedClassId) {
-            yield Classroom_1.Classroom.findByIdAndUpdate(teacher.assignedClassId, {
-                teacherId: null,
-            });
+        // Remove teacher from assigned classrooms with proper error handling
+        if (teacher.assignedClasses && teacher.assignedClasses.length > 0) {
+            const updatePromises = teacher.assignedClasses.map((classId) => __awaiter(void 0, void 0, void 0, function* () {
+                try {
+                    yield Classroom_1.Classroom.findByIdAndUpdate(classId, {
+                        teacherId: null,
+                    });
+                    return { classId, success: true };
+                }
+                catch (error) {
+                    return {
+                        classId,
+                        success: false,
+                        error: error instanceof Error ? error.message : String(error),
+                    };
+                }
+            }));
+            const results = yield Promise.allSettled(updatePromises);
+            // Check for any failures
+            const failures = results
+                .filter((result) => result.status === "fulfilled" && !result.value.success)
+                .map((result) => result.value);
+            // Log errors for failed updates
+            if (failures.length > 0) {
+                console.error("Failed to remove teacher from classrooms:", failures);
+                return res.status(500).json({
+                    message: "Failed to remove teacher from all assigned classrooms",
+                    errors: failures.map((f) => ({
+                        classId: f.classId,
+                        error: f.error,
+                    })),
+                });
+            }
         }
-        // Delete teacher
+        // Delete teacher only if all classroom updates succeeded
         yield User_1.User.findByIdAndDelete(id);
         // Create audit log
         yield AuditLog_1.AuditLog.create({
@@ -1255,8 +1307,7 @@ const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         const user = yield User_1.User.findById(id)
             .select("-password -refreshTokens")
             .populate("linkedStudentIds", "fullName studentId")
-            .populate("assignedClasses", "name")
-            .populate("assignedClassId", "name");
+            .populate("assignedClasses", "name");
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -1281,11 +1332,11 @@ exports.getUserById = getUserById;
 // @route   PATCH /api/admin/users/:id
 // @access  Private/Admin
 const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
+    var _a;
     try {
         const { id } = req.params;
         const { name, email, role, status, phone, passportPhoto } = req.body;
-        let { linkedStudentIds, subjectSpecialization, assignedClassId } = req.body;
+        let { linkedStudentIds, subjectSpecialization, assignedClassId, assignedClasses, } = req.body;
         // Check if user exists
         const user = yield User_1.User.findById(id);
         if (!user) {
@@ -1311,11 +1362,13 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             // Clear teacher-only fields
             subjectSpecialization = undefined;
             assignedClassId = undefined;
-            // Remove teacher from assigned classroom
-            if (user.assignedClassId) {
-                yield Classroom_1.Classroom.findByIdAndUpdate(user.assignedClassId, {
-                    teacherId: null,
-                });
+            // Remove teacher from assigned classrooms
+            if (user.assignedClasses && user.assignedClasses.length > 0) {
+                for (const classId of user.assignedClasses) {
+                    yield Classroom_1.Classroom.findByIdAndUpdate(classId, {
+                        teacherId: null,
+                    });
+                }
             }
         }
         // Handle parent demotion - clear linked students
@@ -1324,29 +1377,13 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         }
         // Handle classroom reassignment for teachers
         if (role === "teacher") {
-            if (assignedClassId !== ((_a = user.assignedClassId) === null || _a === void 0 ? void 0 : _a.toString())) {
-                // Remove teacher from old classroom
-                if (user.assignedClassId) {
-                    yield Classroom_1.Classroom.findByIdAndUpdate(user.assignedClassId, {
-                        teacherId: null,
-                    });
-                }
-                // Check if new classroom exists and is not already assigned
-                if (assignedClassId) {
-                    const classroom = yield Classroom_1.Classroom.findById(assignedClassId);
-                    if (!classroom) {
-                        return res.status(400).json({
-                            success: false,
-                            message: "Classroom not found",
-                        });
-                    }
-                    if (classroom.teacherId && classroom.teacherId.toString() !== id) {
-                        return res.status(400).json({
-                            success: false,
-                            message: "Classroom already has a teacher assigned",
-                        });
-                    }
-                }
+            // For now, keep this simple - the assignedClasses field should be handled by teacher-specific endpoints
+            // This general user update endpoint should not handle complex classroom assignments
+            if (assignedClassId !== undefined || assignedClasses !== undefined) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Use teacher management endpoints to assign classrooms",
+                });
             }
         }
         // Prepare update data carefully to avoid corrupting linkedStudentIds
@@ -1373,25 +1410,23 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         // Handle teacher-specific fields
         if (role === "teacher") {
             updateData.subjectSpecialization = subjectSpecialization;
-            updateData.assignedClassId = assignedClassId;
+            // Note: assignedClasses should be managed by teacher-specific endpoints
         }
         else {
             // Clear teacher-specific fields for non-teacher roles
             updateData.subjectSpecialization = undefined;
-            updateData.assignedClassId = undefined;
+            updateData.assignedClasses = undefined;
         }
         // Update user with validation enabled
         const updatedUser = yield User_1.User.findByIdAndUpdate(id, updateData, {
             new: true,
             runValidators: true,
         }).select("-password -refreshTokens");
-        // Update classroom's teacherId if assigned
-        if (role === "teacher" && assignedClassId) {
-            yield Classroom_1.Classroom.findByIdAndUpdate(assignedClassId, { teacherId: id });
-        }
+        // Note: Classroom assignments should be handled by teacher-specific endpoints
+        // This general user update endpoint does not handle classroom assignments
         // Create audit log
         yield AuditLog_1.AuditLog.create({
-            userId: (_b = req.user) === null || _b === void 0 ? void 0 : _b._id,
+            userId: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id,
             actionType: "USER_UPDATE",
             description: `Updated user ${name} (${email})`,
             targetId: id,
@@ -1434,11 +1469,15 @@ const deleteUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             });
         }
         // Handle teacher-specific cleanup before deactivation
-        if (user.role === "teacher" && user.assignedClassId) {
-            // Remove teacher from assigned classroom
-            yield Classroom_1.Classroom.findByIdAndUpdate(user.assignedClassId, {
-                teacherId: null,
-            });
+        if (user.role === "teacher" &&
+            user.assignedClasses &&
+            user.assignedClasses.length > 0) {
+            // Remove teacher from assigned classrooms
+            for (const classId of user.assignedClasses) {
+                yield Classroom_1.Classroom.findByIdAndUpdate(classId, {
+                    teacherId: null,
+                });
+            }
         }
         // Soft delete by setting status to inactive
         const updatedUser = yield User_1.User.findByIdAndUpdate(id, { status: "inactive" }, { new: true }).select("-password -refreshTokens");

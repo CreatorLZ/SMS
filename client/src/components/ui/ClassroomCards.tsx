@@ -112,10 +112,6 @@ export default function ClassroomCards({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {classrooms.map((classroom) => {
-        // Debug logging to identify null teacherId
-        if (!classroom.teacherId) {
-          console.error("Classroom with null teacherId:", classroom);
-        }
         const attendanceRate = canViewAttendance
           ? loadingRates
             ? 0

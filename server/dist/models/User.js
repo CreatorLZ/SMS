@@ -88,10 +88,6 @@ const userSchema = new mongoose_1.Schema({
             ref: "Student",
         },
     ],
-    assignedClassId: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: "Classroom",
-    },
     assignedClasses: {
         type: [mongoose_1.Schema.Types.ObjectId],
         ref: "Classroom",

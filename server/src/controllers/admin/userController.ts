@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { User } from "../../models/User";
 import { Student } from "../../models/Student";
 import { Classroom } from "../../models/Classroom";
@@ -1076,93 +1077,115 @@ export const createTeacher = async (req: Request, res: Response) => {
       }
     }
 
-    // If assignedClasses is provided, check if classrooms exist and are not already assigned
-    if (assignedClasses && assignedClasses.length > 0) {
-      for (const classId of assignedClasses) {
-        const classroom = await Classroom.findById(classId);
-        if (!classroom) {
-          return res
-            .status(400)
-            .json({ message: `Classroom ${classId} not found` });
-        }
-        if (classroom.teacherId) {
-          return res.status(400).json({
-            message: `Classroom "${classroom.name}" already has a teacher assigned`,
-          });
+    // Use mongoose session and transaction to ensure atomicity
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Check if classrooms exist and are available within transaction
+      if (assignedClasses && assignedClasses.length > 0) {
+        for (const classId of assignedClasses) {
+          const classroom = await Classroom.findById(classId).session(session);
+          if (!classroom) {
+            await session.abortTransaction();
+            return res
+              .status(400)
+              .json({ message: `Classroom ${classId} not found` });
+          }
+          if (classroom.teacherId) {
+            await session.abortTransaction();
+            return res.status(409).json({
+              message: `Classroom "${classroom.name}" is no longer available - it was assigned to another teacher during processing`,
+            });
+          }
         }
       }
-    }
 
-    // Prepare teacher data - handle subject specializations and additional fields
-    const teacherData: any = {
-      name,
-      email,
-      password,
-      role: "teacher",
-      assignedClasses,
-      // Additional teacher fields
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-      gender,
-      nationality,
-      stateOfOrigin,
-      localGovernmentArea,
-      address,
-      alternativePhone,
-      personalEmail,
-      emergencyContact: emergencyContact || undefined,
-      qualification,
-      yearsOfExperience,
-      previousSchool,
-      employmentStartDate: employmentStartDate
-        ? new Date(employmentStartDate)
-        : undefined,
-      teachingLicenseNumber,
-      employmentType,
-      maritalStatus,
-      nationalIdNumber,
-      bankInformation: bankInformation || undefined,
-      bloodGroup,
-      knownAllergies,
-      medicalConditions,
-    };
+      // Prepare teacher data - handle subject specializations and additional fields
+      const teacherData: any = {
+        name,
+        email,
+        password,
+        role: "teacher",
+        assignedClasses,
+        // Additional teacher fields
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        gender,
+        nationality,
+        stateOfOrigin,
+        localGovernmentArea,
+        address,
+        alternativePhone,
+        personalEmail,
+        emergencyContact: emergencyContact || undefined,
+        qualification,
+        yearsOfExperience,
+        previousSchool,
+        employmentStartDate: employmentStartDate
+          ? new Date(employmentStartDate)
+          : undefined,
+        teachingLicenseNumber,
+        employmentType,
+        maritalStatus,
+        nationalIdNumber,
+        bankInformation: bankInformation || undefined,
+        bloodGroup,
+        knownAllergies,
+        medicalConditions,
+      };
 
-    // Handle subject specializations - prefer array format but support both
-    if (subjectSpecializations && Array.isArray(subjectSpecializations)) {
-      // New array format
-      teacherData.subjectSpecializations = subjectSpecializations;
-    } else if (subjectSpecialization) {
-      // Fallback to old string format
-      teacherData.subjectSpecialization = subjectSpecialization;
-    }
-
-    // Create teacher
-    const teacher = await User.create(teacherData);
-
-    // Update classrooms' teacherId if assigned
-    if (assignedClasses && assignedClasses.length > 0) {
-      for (const classId of assignedClasses) {
-        await Classroom.findByIdAndUpdate(classId, {
-          teacherId: teacher._id,
-        });
+      // Handle subject specializations - prefer array format but support both
+      if (subjectSpecializations && Array.isArray(subjectSpecializations)) {
+        // New array format
+        teacherData.subjectSpecializations = subjectSpecializations;
+      } else if (subjectSpecialization) {
+        // Fallback to old string format
+        teacherData.subjectSpecialization = subjectSpecialization;
       }
+
+      // Create teacher within transaction
+      const teacher = await User.create([teacherData], { session });
+
+      // Update classrooms' teacherId if assigned within transaction
+      if (assignedClasses && assignedClasses.length > 0) {
+        for (const classId of assignedClasses) {
+          await Classroom.findByIdAndUpdate(
+            classId,
+            { teacherId: teacher[0]._id },
+            { session }
+          );
+        }
+      }
+
+      // Commit the transaction
+      await session.commitTransaction();
+
+      // Create audit log (outside transaction since it's not critical)
+      await AuditLog.create({
+        userId: req.user?._id,
+        actionType: "TEACHER_CREATE",
+        description: `Created new teacher ${name} (${email})`,
+        targetId: teacher[0]._id,
+      });
+
+      res.status(201).json({
+        _id: teacher[0]._id,
+        name: teacher[0].name,
+        email: teacher[0].email,
+        role: teacher[0].role,
+        subjectSpecialization: teacher[0].subjectSpecialization,
+        assignedClasses: teacher[0].assignedClasses,
+      });
+    } catch (error) {
+      // Abort transaction on any error
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      // Always end the session
+      session.endSession();
     }
 
-    // Create audit log
-    await AuditLog.create({
-      userId: req.user?._id,
-      actionType: "TEACHER_CREATE",
-      description: `Created new teacher ${name} (${email})`,
-      targetId: teacher._id,
-    });
-
-    res.status(201).json({
-      _id: teacher._id,
-      name: teacher.name,
-      email: teacher.email,
-      role: teacher.role,
-      subjectSpecialization: teacher.subjectSpecialization,
-      assignedClasses: teacher.assignedClasses,
-    });
+    // Audit log and response are already handled inside the transaction block
   } catch (error) {
     res.status(500).json({
       message: "Server error",
@@ -1359,35 +1382,65 @@ export const updateTeacher = async (req: Request, res: Response) => {
       }
     }
 
-    // Handle classroom reassignments
-    // 1. Remove teacher from classrooms they're no longer assigned to
-    const currentAssignedClasses = teacher.assignedClasses || [];
-    const currentAssignedClassIds = currentAssignedClasses.map((c) =>
-      c.toString()
-    );
+    // Handle classroom reassignments using transaction for atomicity
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    // If teacher had single classroom assignment, remove it
-    if (
-      teacher.assignedClassId &&
-      !currentAssignedClassIds.includes(teacher.assignedClassId.toString())
-    ) {
-      await Classroom.findByIdAndUpdate(teacher.assignedClassId, {
-        teacherId: null,
-      });
-    }
+    try {
+      // 1. Remove teacher from classrooms they're no longer assigned to
+      const currentAssignedClasses = teacher.assignedClasses || [];
+      const currentAssignedClassIds = currentAssignedClasses.map((c) =>
+        c.toString()
+      );
 
-    // Remove teacher from classrooms not in the new list
-    for (const currentClassId of currentAssignedClassIds) {
-      if (!newAssignedClasses.includes(currentClassId)) {
-        await Classroom.findByIdAndUpdate(currentClassId, {
-          teacherId: null,
-        });
+      // If teacher had single classroom assignment, remove it
+      if (
+        teacher.assignedClassId &&
+        !currentAssignedClassIds.includes(teacher.assignedClassId.toString())
+      ) {
+        await Classroom.findByIdAndUpdate(
+          teacher.assignedClassId,
+          { teacherId: null },
+          { session }
+        );
       }
-    }
 
-    // 2. Add teacher to new classrooms
-    for (const newClassId of newAssignedClasses) {
-      await Classroom.findByIdAndUpdate(newClassId, { teacherId: id });
+      // Remove teacher from classrooms not in the new list
+      for (const currentClassId of currentAssignedClassIds) {
+        if (!newAssignedClasses.includes(currentClassId)) {
+          await Classroom.findByIdAndUpdate(
+            currentClassId,
+            { teacherId: null },
+            { session }
+          );
+        }
+      }
+
+      // 2. Add teacher to new classrooms
+      for (const newClassId of newAssignedClasses) {
+        await Classroom.findByIdAndUpdate(
+          newClassId,
+          { teacherId: id },
+          { session }
+        );
+      }
+
+      // Commit the transaction
+      await session.commitTransaction();
+      console.log(
+        `Successfully updated classroom assignments for teacher ${name} (${email})`
+      );
+    } catch (error) {
+      // Abort transaction on any error
+      await session.abortTransaction();
+      console.error(
+        `Failed to update classroom assignments for teacher ${name} (${email}):`,
+        error
+      );
+      throw error; // Re-throw to be caught by outer error handler
+    } finally {
+      // Always end the session
+      session.endSession();
     }
 
     // Prepare update data - handle subject specializations and classrooms
@@ -1478,16 +1531,52 @@ export const deleteTeacher = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Teacher not found" });
     }
 
-    // Remove teacher from assigned classrooms
+    // Remove teacher from assigned classrooms with proper error handling
     if (teacher.assignedClasses && teacher.assignedClasses.length > 0) {
-      for (const classId of teacher.assignedClasses) {
-        await Classroom.findByIdAndUpdate(classId, {
-          teacherId: null,
+      const updatePromises = teacher.assignedClasses.map(async (classId) => {
+        try {
+          await Classroom.findByIdAndUpdate(classId, {
+            teacherId: null,
+          });
+          return { classId, success: true };
+        } catch (error) {
+          return {
+            classId,
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+      });
+
+      const results = await Promise.allSettled(updatePromises);
+
+      // Check for any failures
+      const failures = results
+        .filter(
+          (
+            result
+          ): result is PromiseFulfilledResult<{
+            classId: string;
+            success: boolean;
+            error?: string;
+          }> => result.status === "fulfilled" && !result.value.success
+        )
+        .map((result) => result.value);
+
+      // Log errors for failed updates
+      if (failures.length > 0) {
+        console.error("Failed to remove teacher from classrooms:", failures);
+        return res.status(500).json({
+          message: "Failed to remove teacher from all assigned classrooms",
+          errors: failures.map((f) => ({
+            classId: f.classId,
+            error: f.error,
+          })),
         });
       }
     }
 
-    // Delete teacher
+    // Delete teacher only if all classroom updates succeeded
     await User.findByIdAndDelete(id);
 
     // Create audit log
@@ -1547,7 +1636,12 @@ export const updateUser = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name, email, role, status, phone, passportPhoto } = req.body;
 
-    let { linkedStudentIds, subjectSpecialization, assignedClassId } = req.body;
+    let {
+      linkedStudentIds,
+      subjectSpecialization,
+      assignedClassId,
+      assignedClasses,
+    } = req.body;
 
     // Check if user exists
     const user = await User.findById(id);
@@ -1597,7 +1691,7 @@ export const updateUser = async (req: Request, res: Response) => {
     if (role === "teacher") {
       // For now, keep this simple - the assignedClasses field should be handled by teacher-specific endpoints
       // This general user update endpoint should not handle complex classroom assignments
-      if (assignedClassId) {
+      if (assignedClassId !== undefined || assignedClasses !== undefined) {
         return res.status(400).json({
           success: false,
           message: "Use teacher management endpoints to assign classrooms",
