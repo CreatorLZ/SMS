@@ -289,7 +289,7 @@ export default function ViewStudentModal() {
                   MY SCHOOL INTERNATIONAL SCHOOLS
                 </span>
               </div>
-              <div className="text-xs">STUDENT RECORD SYSTEM v2.4.1</div>
+              <div className="text-xs">STUDENT RECORD SYSTEM</div>
             </div>
             <div className="flex items-center gap-2 md:gap-6 text-xs">
               <span>TIME: {currentTime}</span>
@@ -303,7 +303,7 @@ export default function ViewStudentModal() {
         <div className="border-b border-gray-600 p-2 md:p-3 bg-gray-100/10 text-xs">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-1">
             <span>[ACCESSING STUDENT DATABASE...]</span>
-            <span>CONNECTION: SECURE | STATUS: ONLINE</span>
+            <span>CONNECTION: SECURE | MODE: VIEW</span>
           </div>
         </div>
 

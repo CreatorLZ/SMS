@@ -8,10 +8,6 @@ export interface Teacher {
   role: string;
   subjectSpecializations?: string[];
   subjectSpecialization?: string; // Keep for backward compatibility
-  assignedClassId?: {
-    _id: string;
-    name: string;
-  };
   assignedClasses?: {
     _id: string;
     name: string;

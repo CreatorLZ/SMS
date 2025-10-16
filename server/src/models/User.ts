@@ -43,10 +43,6 @@ const userSchema = new Schema(
         ref: "Student",
       },
     ],
-    assignedClassId: {
-      type: Schema.Types.ObjectId,
-      ref: "Classroom",
-    },
     assignedClasses: {
       type: [Schema.Types.ObjectId],
       ref: "Classroom",

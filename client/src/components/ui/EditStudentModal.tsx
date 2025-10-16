@@ -400,9 +400,9 @@ export default function EditStudentModal() {
       />
 
       {/* Main Terminal Container */}
-      <div className="w-full max-w-6xl max-h-[95vh] bg-white border-4 border-gray-600 font-mono text-gray-800 shadow-2xl relative overflow-hidden">
+      <div className="w-full max-w-6xl max-h-[95vh] bg-white border-4 border-gray-600 font-mono text-gray-800 shadow-2xl relative lg:ml-10 ">
         {/* Terminal Header */}
-        <div className="border-b-2 border-gray-600 p-2 md:p-4 bg-gray-100/20">
+        <div className="border-b-2 border-gray-600 p-2 md:p-4 bg-gray-100/20 ">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
             <div className="flex items-center gap-2 md:gap-4">
               <div className="flex items-center gap-2">
@@ -411,7 +411,7 @@ export default function EditStudentModal() {
                   MY SCHOOL INTERNATIONAL SCHOOLS
                 </span>
               </div>
-              <div className="text-xs">STUDENT EDIT SYSTEM v0.0.1</div>
+              <div className="text-xs">STUDENT EDIT SYSTEM</div>
             </div>
             <div className="flex items-center gap-2 md:gap-6 text-xs">
               <span>TIME: {currentTime}</span>
@@ -541,7 +541,7 @@ export default function EditStudentModal() {
           </div>
 
           {/* Right Panel - Main Content */}
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col ">
             {/* Tab Navigation */}
             <div className="border-b border-gray-600 p-2 md:p-4 bg-gray-100/10">
               <div className="flex gap-2 text-xs">

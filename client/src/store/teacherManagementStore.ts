@@ -7,10 +7,10 @@ interface Teacher {
   role: string;
   subjectSpecializations?: string[];
   subjectSpecialization?: string; // Keep for backward compatibility
-  assignedClassId?: {
+  assignedClasses?: {
     _id: string;
     name: string;
-  };
+  }[];
 }
 
 interface TeacherManagementState {

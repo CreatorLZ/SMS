@@ -17,7 +17,7 @@ interface AuthState {
     email: string;
     role: UserRole;
     linkedStudentIds?: string[];
-    assignedClassId?: string;
+    assignedClasses?: string[];
   } | null;
   loading: boolean; // Added for initialization
   setAuth: (token: string, user: AuthState["user"]) => void;

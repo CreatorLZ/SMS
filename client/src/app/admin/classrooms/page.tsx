@@ -48,8 +48,9 @@ export default function AdminClassroomsPage() {
   const stats = useMemo(() => {
     if (!classrooms) return { total: 0, teachers: 0, students: 0, avgSize: 0 };
 
-    const teachers = new Set(classrooms.map((c: Classroom) => c.teacherId._id))
-      .size;
+    const teachers = new Set(
+      classrooms.map((c: Classroom) => c.teacherId?._id).filter(Boolean)
+    ).size;
 
     const students = classrooms.reduce(
       (total: number, c: Classroom) => total + c.students.length,

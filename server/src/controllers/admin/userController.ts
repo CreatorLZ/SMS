@@ -34,7 +34,7 @@ export const registerUser = async (req: Request, res: Response) => {
       currentClass,
       linkedStudentIds,
       subjectSpecialization,
-      assignedClassId,
+      assignedClasses,
     } = req.body;
 
     // Check if user already exists
@@ -67,10 +67,10 @@ export const registerUser = async (req: Request, res: Response) => {
       linkedStudentIds: role === "parent" ? linkedStudentIds : undefined,
       subjectSpecialization:
         role === "teacher" ? subjectSpecialization : undefined,
-      assignedClassId:
-        role === "teacher" && assignedClassId && assignedClassId.trim() !== ""
-          ? assignedClassId
-          : undefined,
+      assignedClasses:
+        role === "teacher" && assignedClasses && assignedClasses.length > 0
+          ? assignedClasses
+          : [],
     });
 
     // Create Student record if role is student
@@ -971,7 +971,7 @@ export const createTeacher = async (req: Request, res: Response) => {
       password,
       subjectSpecializations,
       subjectSpecialization,
-      assignedClassId,
+      assignedClasses,
       // Additional teacher fields
       dateOfBirth,
       gender,
@@ -1076,16 +1076,20 @@ export const createTeacher = async (req: Request, res: Response) => {
       }
     }
 
-    // If assignedClassId is provided, check if classroom exists and is not already assigned
-    if (assignedClassId) {
-      const classroom = await Classroom.findById(assignedClassId);
-      if (!classroom) {
-        return res.status(400).json({ message: "Classroom not found" });
-      }
-      if (classroom.teacherId) {
-        return res
-          .status(400)
-          .json({ message: "Classroom already has a teacher assigned" });
+    // If assignedClasses is provided, check if classrooms exist and are not already assigned
+    if (assignedClasses && assignedClasses.length > 0) {
+      for (const classId of assignedClasses) {
+        const classroom = await Classroom.findById(classId);
+        if (!classroom) {
+          return res
+            .status(400)
+            .json({ message: `Classroom ${classId} not found` });
+        }
+        if (classroom.teacherId) {
+          return res.status(400).json({
+            message: `Classroom "${classroom.name}" already has a teacher assigned`,
+          });
+        }
       }
     }
 
@@ -1095,7 +1099,7 @@ export const createTeacher = async (req: Request, res: Response) => {
       email,
       password,
       role: "teacher",
-      assignedClassId,
+      assignedClasses,
       // Additional teacher fields
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       gender,
@@ -1134,11 +1138,13 @@ export const createTeacher = async (req: Request, res: Response) => {
     // Create teacher
     const teacher = await User.create(teacherData);
 
-    // Update classroom's teacherId if assigned
-    if (assignedClassId) {
-      await Classroom.findByIdAndUpdate(assignedClassId, {
-        teacherId: teacher._id,
-      });
+    // Update classrooms' teacherId if assigned
+    if (assignedClasses && assignedClasses.length > 0) {
+      for (const classId of assignedClasses) {
+        await Classroom.findByIdAndUpdate(classId, {
+          teacherId: teacher._id,
+        });
+      }
     }
 
     // Create audit log
@@ -1155,7 +1161,7 @@ export const createTeacher = async (req: Request, res: Response) => {
       email: teacher.email,
       role: teacher.role,
       subjectSpecialization: teacher.subjectSpecialization,
-      assignedClassId: teacher.assignedClassId,
+      assignedClasses: teacher.assignedClasses,
     });
   } catch (error) {
     res.status(500).json({
@@ -1472,11 +1478,13 @@ export const deleteTeacher = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Teacher not found" });
     }
 
-    // Remove teacher from assigned classroom
-    if (teacher.assignedClassId) {
-      await Classroom.findByIdAndUpdate(teacher.assignedClassId, {
-        teacherId: null,
-      });
+    // Remove teacher from assigned classrooms
+    if (teacher.assignedClasses && teacher.assignedClasses.length > 0) {
+      for (const classId of teacher.assignedClasses) {
+        await Classroom.findByIdAndUpdate(classId, {
+          teacherId: null,
+        });
+      }
     }
 
     // Delete teacher
@@ -1509,8 +1517,7 @@ export const getUserById = async (req: Request, res: Response) => {
     const user = await User.findById(id)
       .select("-password -refreshTokens")
       .populate("linkedStudentIds", "fullName studentId")
-      .populate("assignedClasses", "name")
-      .populate("assignedClassId", "name");
+      .populate("assignedClasses", "name");
 
     if (!user) {
       return res.status(404).json({
@@ -1571,11 +1578,13 @@ export const updateUser = async (req: Request, res: Response) => {
       subjectSpecialization = undefined;
       assignedClassId = undefined;
 
-      // Remove teacher from assigned classroom
-      if (user.assignedClassId) {
-        await Classroom.findByIdAndUpdate(user.assignedClassId, {
-          teacherId: null,
-        });
+      // Remove teacher from assigned classrooms
+      if (user.assignedClasses && user.assignedClasses.length > 0) {
+        for (const classId of user.assignedClasses) {
+          await Classroom.findByIdAndUpdate(classId, {
+            teacherId: null,
+          });
+        }
       }
     }
 
@@ -1586,30 +1595,13 @@ export const updateUser = async (req: Request, res: Response) => {
 
     // Handle classroom reassignment for teachers
     if (role === "teacher") {
-      if (assignedClassId !== user.assignedClassId?.toString()) {
-        // Remove teacher from old classroom
-        if (user.assignedClassId) {
-          await Classroom.findByIdAndUpdate(user.assignedClassId, {
-            teacherId: null,
-          });
-        }
-
-        // Check if new classroom exists and is not already assigned
-        if (assignedClassId) {
-          const classroom = await Classroom.findById(assignedClassId);
-          if (!classroom) {
-            return res.status(400).json({
-              success: false,
-              message: "Classroom not found",
-            });
-          }
-          if (classroom.teacherId && classroom.teacherId.toString() !== id) {
-            return res.status(400).json({
-              success: false,
-              message: "Classroom already has a teacher assigned",
-            });
-          }
-        }
+      // For now, keep this simple - the assignedClasses field should be handled by teacher-specific endpoints
+      // This general user update endpoint should not handle complex classroom assignments
+      if (assignedClassId) {
+        return res.status(400).json({
+          success: false,
+          message: "Use teacher management endpoints to assign classrooms",
+        });
       }
     }
 
@@ -1638,11 +1630,11 @@ export const updateUser = async (req: Request, res: Response) => {
     // Handle teacher-specific fields
     if (role === "teacher") {
       updateData.subjectSpecialization = subjectSpecialization;
-      updateData.assignedClassId = assignedClassId;
+      // Note: assignedClasses should be managed by teacher-specific endpoints
     } else {
       // Clear teacher-specific fields for non-teacher roles
       updateData.subjectSpecialization = undefined;
-      updateData.assignedClassId = undefined;
+      updateData.assignedClasses = undefined;
     }
 
     // Update user with validation enabled
@@ -1651,10 +1643,8 @@ export const updateUser = async (req: Request, res: Response) => {
       runValidators: true,
     }).select("-password -refreshTokens");
 
-    // Update classroom's teacherId if assigned
-    if (role === "teacher" && assignedClassId) {
-      await Classroom.findByIdAndUpdate(assignedClassId, { teacherId: id });
-    }
+    // Note: Classroom assignments should be handled by teacher-specific endpoints
+    // This general user update endpoint does not handle classroom assignments
 
     // Create audit log
     await AuditLog.create({
@@ -1703,11 +1693,17 @@ export const deleteUser = async (req: Request, res: Response) => {
     }
 
     // Handle teacher-specific cleanup before deactivation
-    if (user.role === "teacher" && user.assignedClassId) {
-      // Remove teacher from assigned classroom
-      await Classroom.findByIdAndUpdate(user.assignedClassId, {
-        teacherId: null,
-      });
+    if (
+      user.role === "teacher" &&
+      user.assignedClasses &&
+      user.assignedClasses.length > 0
+    ) {
+      // Remove teacher from assigned classrooms
+      for (const classId of user.assignedClasses) {
+        await Classroom.findByIdAndUpdate(classId, {
+          teacherId: null,
+        });
+      }
     }
 
     // Soft delete by setting status to inactive

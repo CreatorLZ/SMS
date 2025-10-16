@@ -15,10 +15,6 @@ export interface User {
     fullName: string;
     studentId: string;
   }[]; // Populated student data for parent users
-  assignedClassId?: {
-    _id: string;
-    name: string;
-  }; // Populated classroom data for teachers (legacy)
   assignedClasses?: {
     _id: string;
     name: string;
