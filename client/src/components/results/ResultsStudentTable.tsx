@@ -106,6 +106,8 @@ export default function ResultsStudentTable({
         );
         break;
       case "Enter":
+      case " ": // Space key
+        event.preventDefault();
         if (focusedRowIndex !== null && filteredStudents[focusedRowIndex]) {
           handleEnterResults(filteredStudents[focusedRowIndex]._id);
         }
@@ -117,6 +119,18 @@ export default function ResultsStudentTable({
       case "End":
         event.preventDefault();
         setFocusedRowIndex(maxRows - 1);
+        break;
+      case "PageUp":
+        event.preventDefault();
+        setFocusedRowIndex((prev) =>
+          prev === null ? 0 : Math.max(0, prev - 10)
+        );
+        break;
+      case "PageDown":
+        event.preventDefault();
+        setFocusedRowIndex((prev) =>
+          prev === null ? 9 : Math.min(maxRows - 1, prev + 10)
+        );
         break;
       default:
         break;
@@ -136,7 +150,8 @@ export default function ResultsStudentTable({
       ref={tableRef}
       className="space-y-4"
       role="region"
-      aria-label="Student results table"
+      aria-label="Student results table with keyboard navigation support"
+      aria-describedby="table-keyboard-instructions"
     >
       {/* Search Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:space-x-2">
@@ -447,6 +462,14 @@ export default function ResultsStudentTable({
         Use arrow keys to navigate between students. Press Enter to open the
         result entry modal. Use search field to filter students by name or
         registration number.
+      </div>
+
+      {/* Keyboard Instructions */}
+      <div id="table-keyboard-instructions" className="sr-only">
+        Keyboard navigation: Use Tab to move between elements, Space or Enter to
+        activate buttons, Arrow keys to navigate table rows, Home/End to jump to
+        first/last row. Screen reader users can use standard table navigation
+        commands.
       </div>
     </div>
   );

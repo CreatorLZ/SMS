@@ -3,6 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { X, Download } from "lucide-react";
 import { StudentResult } from "@/hooks/useResults";
+import { useGradingScales } from "@/hooks/useGradingScales";
+import {
+  getGradeFromScore,
+  getGradeColorClass,
+  formatGrade,
+} from "@/lib/gradingUtils";
 import jsPDF from "jspdf";
 
 interface ViewResultsModalProps {
@@ -26,6 +32,8 @@ export default function ViewResultsModal({
   term,
   className,
 }: ViewResultsModalProps) {
+  const { data: gradingScales = [] } = useGradingScales();
+
   // Find the result for the current session and term
   const currentResult = results.find(
     (result) =>
@@ -92,16 +100,8 @@ export default function ViewResultsModal({
         }
 
         xPosition = 20;
-        const grade =
-          score.totalScore >= 70
-            ? "A"
-            : score.totalScore >= 60
-            ? "B"
-            : score.totalScore >= 50
-            ? "C"
-            : score.totalScore >= 45
-            ? "D"
-            : "F";
+        const gradeResult = getGradeFromScore(score.totalScore, gradingScales);
+        const grade = gradeResult.grade;
 
         const rowData = [
           score.subject,
@@ -109,7 +109,7 @@ export default function ViewResultsModal({
           score.assessments.ca2.toString(),
           score.assessments.exam.toString(),
           score.totalScore.toString(),
-          grade,
+          formatGrade(grade),
         ];
 
         rowData.forEach((data, index) => {
@@ -275,26 +275,19 @@ export default function ViewResultsModal({
                           </td>
                           <td className="py-3 px-2 text-center">
                             <Badge
-                              variant={
-                                score.totalScore >= 70
-                                  ? "default"
-                                  : score.totalScore >= 60
-                                  ? "secondary"
-                                  : score.totalScore >= 50
-                                  ? "outline"
-                                  : "destructive"
-                              }
-                              className="text-xs"
+                              className={`text-xs ${getGradeColorClass(
+                                getGradeFromScore(
+                                  score.totalScore,
+                                  gradingScales
+                                ).grade
+                              )}`}
                             >
-                              {score.totalScore >= 70
-                                ? "A"
-                                : score.totalScore >= 60
-                                ? "B"
-                                : score.totalScore >= 50
-                                ? "C"
-                                : score.totalScore >= 45
-                                ? "D"
-                                : "F"}
+                              {formatGrade(
+                                getGradeFromScore(
+                                  score.totalScore,
+                                  gradingScales
+                                ).grade
+                              )}
                             </Badge>
                           </td>
                         </tr>

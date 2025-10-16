@@ -52,14 +52,27 @@ export const useStudentsQuery = (
   search?: string,
   classId?: string,
   page = 1,
-  limit = 10
+  limit = 10,
+  forClassroomAssignment?: boolean,
+  classroomId?: string
 ) => {
   return useQuery<StudentsResponse>({
-    queryKey: ["students", search, classId, page, limit],
+    queryKey: [
+      "students",
+      search,
+      classId,
+      page,
+      limit,
+      forClassroomAssignment,
+      classroomId,
+    ],
     queryFn: async (): Promise<StudentsResponse> => {
       const params = new URLSearchParams();
       if (search) params.append("search", search);
       if (classId) params.append("classId", classId);
+      if (forClassroomAssignment)
+        params.append("forClassroomAssignment", "true");
+      if (classroomId) params.append("classroomId", classroomId);
       params.append("page", page.toString());
       params.append("limit", limit.toString());
 

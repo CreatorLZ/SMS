@@ -2,6 +2,8 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { GradingScale } from "../hooks/useGradingScales";
+import { getGradeFromScore, formatGrade } from "./gradingUtils";
 
 declare module "jspdf" {
   interface jsPDF {
@@ -35,7 +37,8 @@ export function generateStudentResultPDF(
   student: StudentResult,
   term: string,
   session: string,
-  className: string
+  className: string,
+  gradingScales: GradingScale[] = []
 ) {
   const doc = new jsPDF();
 
@@ -56,14 +59,17 @@ export function generateStudentResultPDF(
   doc.text(`Class: ${className}`, 20, 90);
 
   // Results table
-  const tableData = student.scores.map((score) => [
-    score.subject,
-    `${score.assessments.ca1}`,
-    `${score.assessments.ca2}`,
-    `${score.assessments.exam}`,
-    `${score.totalScore}/100`,
-    score.grade || "N/A",
-  ]);
+  const tableData = student.scores.map((score) => {
+    const gradeResult = getGradeFromScore(score.totalScore, gradingScales);
+    return [
+      score.subject,
+      `${score.assessments.ca1}`,
+      `${score.assessments.ca2}`,
+      `${score.assessments.exam}`,
+      `${score.totalScore}/100`,
+      formatGrade(gradeResult.grade),
+    ];
+  });
 
   doc.autoTable({
     head: [["Subject", "CA1 (20)", "CA2 (20)", "Exam (60)", "Total", "Grade"]],
@@ -110,7 +116,8 @@ export function generateClassBroadsheetPDF(
   students: StudentResult[],
   term: string,
   session: string,
-  className: string
+  className: string,
+  gradingScales: GradingScale[] = []
 ) {
   const doc = new jsPDF("landscape");
 
@@ -203,7 +210,8 @@ export function generateClassResultsPDF(
   students: StudentResult[],
   term: string,
   session: string,
-  className: string
+  className: string,
+  gradingScales: GradingScale[] = []
 ) {
   const doc = new jsPDF();
 
@@ -237,11 +245,14 @@ export function generateClassResultsPDF(
     currentY += 10;
 
     // Student results table
-    const studentTableData = student.scores.map((score) => [
-      score.subject,
-      `${score.totalScore}/100`,
-      score.grade || "N/A",
-    ]);
+    const studentTableData = student.scores.map((score) => {
+      const gradeResult = getGradeFromScore(score.totalScore, gradingScales);
+      return [
+        score.subject,
+        `${score.totalScore}/100`,
+        formatGrade(gradeResult.grade),
+      ];
+    });
 
     doc.autoTable({
       head: [["Subject", "Total Score", "Grade"]],

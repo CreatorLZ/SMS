@@ -20,6 +20,8 @@ import { useTeacherClassroomsQuery } from "@/hooks/useTeacherClassroomsQuery";
 import { useTeacherClassroomSubjectsQuery } from "@/hooks/useClassroomSubjectsQuery";
 import { useSubmitResult, useStudentResults } from "@/hooks/useResults";
 import { useSessionsQuery } from "@/hooks/useSessionsQuery";
+import { useGradingScales } from "@/hooks/useGradingScales";
+import { getGradeFromScore } from "@/lib/gradingUtils";
 
 const ratingOptions = [
   { value: "1", label: "1. Exceptional" },
@@ -45,6 +47,7 @@ export default function EnterStudentResultsPage() {
     useTeacherClassroomSubjectsQuery(classId || "");
   const { data: existingResults, isLoading: resultsLoading } =
     useStudentResults(studentId);
+  const { data: gradingScales = [] } = useGradingScales();
   const submitResult = useSubmitResult();
 
   const subjects = classroomSubjects?.subjects.map((s) => s.name) || [];
@@ -69,6 +72,7 @@ export default function EnterStudentResultsPage() {
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Local storage helpers
   const getStorageKey = () => {
@@ -164,6 +168,22 @@ export default function EnterStudentResultsPage() {
     field: "ca1" | "ca2" | "exam",
     value: string
   ) => {
+    // Validate score ranges
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue)) {
+      if (field === "ca1" || field === "ca2") {
+        if (numValue > 20) {
+          alert(`${field.toUpperCase()} score cannot exceed 20`);
+          return;
+        }
+      } else if (field === "exam") {
+        if (numValue > 60) {
+          alert("Exam score cannot exceed 60");
+          return;
+        }
+      }
+    }
+
     setScores((prev) => ({
       ...prev,
       [subject]: {
@@ -178,6 +198,22 @@ export default function EnterStudentResultsPage() {
     try {
       if (!session || !term) {
         throw new Error("Session and term are required");
+      }
+
+      // Validate that at least one subject has scores
+      const hasValidScores = subjects.some((subject) => {
+        const subjectScores = scores[subject];
+        if (!subjectScores) return false;
+        const ca1 = parseFloat(subjectScores.ca1) || 0;
+        const ca2 = parseFloat(subjectScores.ca2) || 0;
+        const exam = parseFloat(subjectScores.exam) || 0;
+        return ca1 > 0 || ca2 > 0 || exam > 0;
+      });
+
+      if (!hasValidScores) {
+        alert("Please enter scores for at least one subject");
+        setIsSaving(false);
+        return;
       }
 
       // Find the session data to get the year
@@ -197,6 +233,11 @@ export default function EnterStudentResultsPage() {
         const ca2 = parseFloat(subjectScores.ca2) || 0;
         const exam = parseFloat(subjectScores.exam) || 0;
         const totalScore = ca1 + ca2 + exam;
+
+        // Validate total score doesn't exceed 100
+        if (totalScore > 100) {
+          throw new Error(`Total score for ${subject} cannot exceed 100`);
+        }
 
         return {
           subject,
@@ -224,7 +265,9 @@ export default function EnterStudentResultsPage() {
       router.push("/teacher/results");
     } catch (error) {
       console.error("Error saving results:", error);
-      // TODO: Show error message to user
+      setSaveError(
+        error instanceof Error ? error.message : "Failed to save results"
+      );
     } finally {
       setIsSaving(false);
     }
@@ -303,6 +346,46 @@ export default function EnterStudentResultsPage() {
               </Button>
             </div>
           </div>
+
+          {/* Error Message */}
+          {saveError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    Error saving results
+                  </h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>{saveError}</p>
+                  </div>
+                  <div className="mt-4">
+                    <div className="-mx-2 -my-1.5 flex">
+                      <button
+                        type="button"
+                        className="bg-red-50 px-2 py-1.5 rounded-md text-sm font-medium text-red-800 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-red-50 focus:ring-red-600"
+                        onClick={() => setSaveError(null)}
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Context Info */}
           <div className="bg-muted/50 p-4 rounded-lg">

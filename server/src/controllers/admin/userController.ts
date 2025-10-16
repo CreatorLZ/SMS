@@ -222,21 +222,42 @@ export const getUsers = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const getStudents = async (req: Request, res: Response) => {
   try {
-    const { search, classId, page = 1, limit = 10 } = req.query;
+    const {
+      search,
+      classId,
+      page = 1,
+      limit = 10,
+      forClassroomAssignment,
+      classroomId,
+    } = req.query;
 
     let query: any = {};
 
-    // Add search filter
-    if (search) {
+    // Special handling for classroom assignment - fetch assigned + unassigned students
+    if (forClassroomAssignment === "true" && classroomId) {
+      // Fetch students who are either:
+      // 1. Already assigned to this classroom, OR
+      // 2. Active and not assigned to any classroom
       query.$or = [
-        { fullName: { $regex: search, $options: "i" } },
-        { studentId: { $regex: search, $options: "i" } },
+        { classroomId: classroomId }, // Students already in this classroom
+        {
+          status: "active",
+          $or: [{ classroomId: { $exists: false } }, { classroomId: null }],
+        }, // Active students not in any classroom
       ];
-    }
+    } else {
+      // Add search filter
+      if (search) {
+        query.$or = [
+          { fullName: { $regex: search, $options: "i" } },
+          { studentId: { $regex: search, $options: "i" } },
+        ];
+      }
 
-    // Add class filter
-    if (classId) {
-      query.currentClass = classId;
+      // Add class filter
+      if (classId) {
+        query.currentClass = classId;
+      }
     }
 
     const pageNum = parseInt(page as string, 10);
@@ -244,7 +265,7 @@ export const getStudents = async (req: Request, res: Response) => {
     const skip = (pageNum - 1) * limitNum;
 
     const students = await Student.find(query)
-      .select("fullName studentId currentClass status createdAt")
+      .select("fullName studentId currentClass status classroomId createdAt")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useStudentsQuery, Student } from "@/hooks/useStudentsQuery";
 import { useAssignStudentsMutation } from "@/hooks/useAssignStudentsMutation";
 import { useAddStudentsMutation } from "@/hooks/useAddStudentsMutation";
@@ -8,19 +8,52 @@ import { useClassroomManagementStore } from "@/store/classroomManagementStore";
 import { useStudentManagementStore } from "@/store/studentManagementStore";
 import { toast } from "sonner";
 import { Button } from "./button";
-import { Plus, UserMinus, Users, CheckCircle, XCircle } from "lucide-react";
+import { Input } from "./input";
+import {
+  Plus,
+  UserMinus,
+  Users,
+  CheckCircle,
+  XCircle,
+  Search,
+} from "lucide-react";
 
 export default function AssignStudentsModal() {
   const { isAssignModalOpen, selectedClassroomId, setAssignModalOpen } =
     useClassroomManagementStore();
   const { setCreateModalOpen, closeAllModals } = useStudentManagementStore();
 
-  const { data: studentsResponse } = useStudentsQuery();
-  // Filter only active students
-  const students =
-    studentsResponse?.students?.filter(
-      (student) => student.status === "active"
-    ) || [];
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const { data: studentsResponse } = useStudentsQuery(
+    undefined, // search - we'll handle client-side search
+    undefined, // classId
+    1, // page
+    1000, // limit - fetch more students for assignment
+    true, // forClassroomAssignment
+    selectedClassroomId || undefined // classroomId
+  );
+
+  // Filter students based on search term (client-side search for better UX)
+  const students = useMemo(() => {
+    if (!studentsResponse?.students) return [];
+
+    let filtered = studentsResponse.students;
+
+    // Apply search filter if search term exists
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (student) =>
+          student.fullName?.toLowerCase().includes(searchLower) ||
+          student.studentId?.toLowerCase().includes(searchLower) ||
+          student.currentClass?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return filtered;
+  }, [studentsResponse?.students, searchTerm]);
+
   const { data: classrooms } = useClassroomsQuery();
 
   const assignStudentsMutation = useAssignStudentsMutation();
@@ -41,6 +74,8 @@ export default function AssignStudentsModal() {
       const currentIds = currentClassroom.students.map((s) => s._id);
       setSelectedStudentIds(currentIds);
       setOriginalStudentIds(currentIds);
+      // Clear search when modal opens
+      setSearchTerm("");
     }
   }, [currentClassroom, isAssignModalOpen]);
 
@@ -162,6 +197,20 @@ export default function AssignStudentsModal() {
           <h2 className="text-2xl font-bold text-gray-900">
             Manage Students - {currentClassroom.name}
           </h2>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search students by name, ID, or class..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
 
         {/* Status Summary */}
