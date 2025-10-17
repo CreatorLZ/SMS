@@ -169,14 +169,14 @@ const getNavItems = (userRole?: string): NavItem[] => {
       tooltip: "Mark Attendance",
       roles: ["teacher"],
     },
-    {
-      href: "/teacher/students",
-      label: "My Students",
-      icon: Users,
-      color: "purple",
-      tooltip: "View Students",
-      roles: ["teacher"],
-    },
+    // {
+    //   href: "/teacher/students",
+    //   label: "My Students",
+    //   icon: Users,
+    //   color: "purple",
+    //   tooltip: "View Students",
+    //   roles: ["teacher"],
+    // },
     {
       href: "/teacher/results",
       label: "Results",
@@ -185,14 +185,14 @@ const getNavItems = (userRole?: string): NavItem[] => {
       tooltip: "Manage Results",
       roles: ["teacher"],
     },
-    {
-      href: "/teacher/reports",
-      label: "Reports",
-      icon: BarChart3,
-      color: "orange",
-      tooltip: "View Reports",
-      roles: ["teacher"],
-    },
+    // {
+    //   href: "/teacher/reports",
+    //   label: "Reports",
+    //   icon: BarChart3,
+    //   color: "orange",
+    //   tooltip: "View Reports",
+    //   roles: ["teacher"],
+    // },
   ];
 
   const studentItems: NavItem[] = [

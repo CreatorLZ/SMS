@@ -20,6 +20,7 @@ export default function TerminalLoginForm({
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [navigating, setNavigating] = useState(false);
 
   const setAuth = useAuthStore((s) => s.setAuth);
   const router = useRouter();
@@ -74,6 +75,7 @@ export default function TerminalLoginForm({
       }
 
       setAuth(authToken, user);
+      setNavigating(true);
       router.push(`/${portal}`);
     } catch (err: any) {
       setError(err?.response?.data?.message || "ACCESS DENIED - LOGIN FAILED");
@@ -92,6 +94,7 @@ export default function TerminalLoginForm({
         user: any;
       };
       setAuth(accessToken, user);
+      setNavigating(true);
       router.push("/admin");
     } catch (err: any) {
       setError(err?.response?.data?.message || "DEV ACCESS DENIED");
@@ -192,13 +195,18 @@ export default function TerminalLoginForm({
             <div className="flex flex-col gap-3 pt-4">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || navigating}
                 className="px-6 py-3 border-2 border-gray-600 bg-gray-50 hover:bg-gray-600 hover:text-white transition-all duration-200 text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     [AUTHENTICATING...]
+                  </div>
+                ) : navigating ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    [NAVIGATING...]
                   </div>
                 ) : (
                   `[LOGIN TO ${getShortPortalName()} PORTAL]`
@@ -210,10 +218,14 @@ export default function TerminalLoginForm({
                 <button
                   type="button"
                   onClick={handleDevLogin}
-                  disabled={loading}
+                  disabled={loading || navigating}
                   className="px-6 py-2 border border-gray-500 bg-gray-50 hover:bg-gray-500 hover:text-white transition-all duration-200 text-xs font-bold disabled:opacity-50"
                 >
-                  {loading ? "[AUTHENTICATING...]" : "[DEV SUPER ADMIN ACCESS]"}
+                  {loading
+                    ? "[AUTHENTICATING...]"
+                    : navigating
+                    ? "[NAVIGATING...]"
+                    : "[DEV SUPER ADMIN ACCESS]"}
                 </button>
               )}
             </div>
