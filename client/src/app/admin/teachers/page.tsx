@@ -125,7 +125,9 @@ export default function TeacherManagement() {
   const stats = useMemo(() => {
     if (!teachers) return { total: 0, assigned: 0, unassigned: 0, subjects: 0 };
 
-    const assigned = teachers.filter((t) => t.assignedClassId).length;
+    const assigned = teachers.filter(
+      (t) => t.assignedClasses && t.assignedClasses.length > 0
+    ).length;
     const unassigned = teachers.length - assigned;
 
     // Collect all unique subjects from all teachers

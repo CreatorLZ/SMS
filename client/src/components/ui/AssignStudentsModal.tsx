@@ -16,6 +16,10 @@ import {
   CheckCircle,
   XCircle,
   Search,
+  Terminal,
+  Database,
+  GraduationCap,
+  Users as UsersIcon,
 } from "lucide-react";
 
 export default function AssignStudentsModal() {
@@ -191,173 +195,250 @@ export default function AssignStudentsModal() {
   if (!isAssignModalOpen || !currentClassroom) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Manage Students - {currentClassroom.name}
-          </h2>
-        </div>
+    <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4">
+      {/* Retro CRT scanlines effect */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-10"
+        style={{
+          background: `repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(75, 85, 99, 0.1) 2px,
+            rgba(75, 85, 99, 0.1) 4px
+          )`,
+        }}
+      />
 
-        {/* Search Bar */}
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search students by name, ID, or class..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-
-        {/* Status Summary */}
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center space-x-4">
-              <span className="flex items-center space-x-1">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span>{assigned} Assigned</span>
-              </span>
-              <span className="flex items-center space-x-1">
-                <Plus className="h-4 w-4 text-blue-600" />
-                <span>{toAdd} To Add</span>
-              </span>
-              <span className="flex items-center space-x-1">
-                <XCircle className="h-4 w-4 text-red-600" />
-                <span>{toRemove} To Remove</span>
-              </span>
+      {/* Main Terminal Container */}
+      <div className="w-full max-w-4xl max-h-[95vh] bg-white border-4 border-gray-600 font-mono text-gray-800 shadow-2xl relative overflow-hidden">
+        {/* Terminal Header */}
+        <div className="border-b-2 border-gray-600 p-3 md:p-4 bg-gray-100/20">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 md:gap-4">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+                <span className="text-sm md:text-base font-bold">
+                  {currentClassroom.name.toUpperCase()}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Students List */}
-        <div className="mb-6">
-          <div className="max-h-96 overflow-y-auto border rounded-lg">
-            <div className="p-4 space-y-3">
-              {students?.map((student: Student) => {
-                const status = getStudentStatus(student._id);
-                return (
-                  <div
-                    key={student._id}
-                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                      status === "assigned"
-                        ? "bg-green-50 border-green-200"
-                        : status === "to-add"
-                        ? "bg-blue-50 border-blue-200"
-                        : status === "to-remove"
-                        ? "bg-red-50 border-red-200"
-                        : "bg-gray-50 border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        id={student._id}
-                        checked={selectedStudentIds.includes(student._id)}
-                        onChange={() => handleStudentToggle(student._id)}
-                        className="rounded border-gray-300"
-                      />
-                      <div>
-                        <label
-                          htmlFor={student._id}
-                          className="font-medium text-gray-900 cursor-pointer"
-                        >
-                          {student.fullName}
-                        </label>
-                        <p className="text-sm text-gray-600">
-                          ID: {student.studentId} | Class:{" "}
-                          {student.currentClass}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {status === "assigned" && (
-                        <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                          Assigned
-                        </span>
-                      )}
-                      {status === "to-add" && (
-                        <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                          To Add
-                        </span>
-                      )}
-                      {status === "to-remove" && (
-                        <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
-                          To Remove
-                        </span>
-                      )}
-                    </div>
+        {/* Sub Header */}
+        {/* <div className="border-b border-gray-600 p-3 md:p-4 bg-gray-100/10">
+          <div className="text-sm font-bold text-center">
+            Assigning Students to {currentClassroom.name}
+          </div>
+        </div> */}
+
+        <div className="flex flex-col h-[calc(95vh-120px)]">
+          {/* Content Area */}
+          <div className="flex-1 p-4 md:p-6 overflow-y-auto custom-scrollbar">
+            <div className="border-b border-gray-600 mb-4 pb-2">
+              <div className="text-sm font-bold">
+                STUDENT ASSIGNMENT MANAGEMENT
+              </div>
+              <div className="text-xs">
+                SELECT STUDENTS TO ASSIGN/REMOVE FROM CLASS
+              </div>
+            </div>
+
+            {/* Status Summary */}
+            <div className="mb-4 border border-gray-600 p-4 bg-gray-100/20">
+              <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1 flex items-center gap-2">
+                <Database className="w-4 h-4" />
+                ASSIGNMENT STATUS SUMMARY
+              </div>
+              <div className="space-y-2 text-xs">
+                <div className="flex flex-col md:flex-row border-b border-gray-600/20 py-1">
+                  <div className="w-full md:w-40 font-bold">
+                    CURRENTLY ASSIGNED:
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-green-600" />
+                    <span>{assigned} students</span>
+                  </div>
+                </div>
+                <div className="flex flex-col md:flex-row border-b border-gray-600/20 py-1">
+                  <div className="w-full md:w-40 font-bold">TO BE ADDED:</div>
+                  <div className="flex items-center gap-2">
+                    <Plus className="w-3 h-3 text-blue-600" />
+                    <span>{toAdd} students</span>
+                  </div>
+                </div>
+                <div className="flex flex-col md:flex-row border-b border-gray-600/20 py-1">
+                  <div className="w-full md:w-40 font-bold">TO BE REMOVED:</div>
+                  <div className="flex items-center gap-2">
+                    <XCircle className="w-3 h-3 text-red-600" />
+                    <span>{toRemove} students</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="mb-4">
+              <div className="border border-gray-600 p-4 bg-gray-100/20">
+                <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1 flex items-center gap-2">
+                  <Search className="w-4 h-4" />
+                  STUDENT SEARCH SYSTEM
+                </div>
+                <div className="flex flex-col md:flex-row">
+                  <div className="w-full md:w-40 font-bold mb-1 md:mb-0 text-xs">
+                    SEARCH QUERY:
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full bg-transparent border border-gray-600/30 px-2 py-1 text-gray-800 placeholder-gray-600 focus:outline-none focus:border-gray-600 text-xs"
+                      placeholder="Enter student name, ID, or class..."
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Students List */}
+            <div className="mb-6 border border-gray-600 p-4 bg-gray-100/20">
+              <div className="text-xs mb-3 font-bold border-b border-gray-600 pb-1 flex items-center gap-2">
+                <UsersIcon className="w-4 h-4" />
+                STUDENT DATABASE
+                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
+                  {students.length} students found
+                </span>
+              </div>
+              <div className="max-h-96 overflow-y-auto custom-scrollbar">
+                <div className="space-y-1 text-xs">
+                  {students?.map((student: Student) => {
+                    const status = getStudentStatus(student._id);
+                    const isSelected = selectedStudentIds.includes(student._id);
+                    return (
+                      <div
+                        key={student._id}
+                        onClick={() => handleStudentToggle(student._id)}
+                        className={`border border-gray-600/30 p-3 transition-all cursor-pointer hover:border-gray-600 hover:shadow-sm ${
+                          status === "assigned"
+                            ? "bg-green-50/50"
+                            : status === "to-add"
+                            ? "bg-blue-50/50"
+                            : status === "to-remove"
+                            ? "bg-red-50/50"
+                            : "bg-gray-50/50"
+                        } ${
+                          isSelected
+                            ? "ring-2 ring-blue-500 ring-opacity-50"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              id={student._id}
+                              checked={isSelected}
+                              onChange={(e) => {
+                                e.stopPropagation(); // Prevent double triggering
+                                handleStudentToggle(student._id);
+                              }}
+                              className="rounded border-gray-600"
+                            />
+                            <div>
+                              <div className="font-bold text-gray-900">
+                                {student.fullName}
+                              </div>
+                              <div className="text-xs text-gray-600 space-y-1">
+                                <div>STUDENT ID: {student.studentId}</div>
+                                <div>CURRENT CLASS: {student.currentClass}</div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {status === "assigned" && (
+                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 border border-green-300 rounded">
+                                ASSIGNED
+                              </span>
+                            )}
+                            {status === "to-add" && (
+                              <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-300 rounded">
+                                TO ADD
+                              </span>
+                            )}
+                            {status === "to-remove" && (
+                              <span className="px-2 py-1 text-xs bg-red-100 text-red-800 border border-red-300 rounded">
+                                TO REMOVE
+                              </span>
+                            )}
+                            {status === "unassigned" && (
+                              <span className="px-2 py-1 text-xs bg-gray-100 text-gray-800 border border-gray-300 rounded">
+                                AVAILABLE
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center justify-between">
-          <Button
-            type="button"
-            onClick={() => setAssignModalOpen(false)}
-            variant="outline"
-          >
-            Cancel
-          </Button>
+          {/* Command Bar */}
+          <div className="border-t-2 border-gray-600 p-3 md:p-4 bg-gray-100/20">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="text-sm font-bold">
+                {hasChanges ? "Changes Pending" : "Ready"}
+              </div>
 
-          <div className="flex space-x-2">
-            {toAdd > 0 && (
-              <Button
-                onClick={handleAddSelectedStudents}
-                disabled={assignStudentsMutation.isPending}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {assignStudentsMutation.isPending ? (
-                  "Adding..."
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add {toAdd} Students
-                  </>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <button
+                  onClick={() => setAssignModalOpen(false)}
+                  className="px-4 py-2 border border-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors text-xs font-bold"
+                >
+                  [CANCEL]
+                </button>
+
+                {toAdd > 0 && (
+                  <button
+                    onClick={handleAddSelectedStudents}
+                    disabled={assignStudentsMutation.isPending}
+                    className="px-4 py-2 border border-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white transition-colors text-xs font-bold disabled:opacity-50"
+                  >
+                    {assignStudentsMutation.isPending
+                      ? "[ADDING...]"
+                      : `[ADD ${toAdd} STUDENTS]`}
+                  </button>
                 )}
-              </Button>
-            )}
 
-            {toRemove > 0 && (
-              <Button
-                onClick={handleRemoveSelectedStudents}
-                disabled={removeStudentsMutation.isPending}
-                variant="destructive"
-              >
-                {removeStudentsMutation.isPending ? (
-                  "Removing..."
-                ) : (
-                  <>
-                    <UserMinus className="h-4 w-4 mr-2" />
-                    Remove {toRemove} Students
-                  </>
+                {toRemove > 0 && (
+                  <button
+                    onClick={handleRemoveSelectedStudents}
+                    disabled={removeStudentsMutation.isPending}
+                    className="px-4 py-2 border border-red-600 bg-red-50 hover:bg-red-600 hover:text-white transition-colors text-xs font-bold disabled:opacity-50"
+                  >
+                    {removeStudentsMutation.isPending
+                      ? "[REMOVING...]"
+                      : `[REMOVE ${toRemove} STUDENTS]`}
+                  </button>
                 )}
-              </Button>
-            )}
 
-            {hasChanges && (
-              <Button
-                onClick={handleBulkUpdate}
-                disabled={assignStudentsMutation.isPending}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {assignStudentsMutation.isPending ? (
-                  "Updating..."
-                ) : (
-                  <>
-                    <Users className="h-4 w-4 mr-2" />
-                    Update All
-                  </>
+                {hasChanges && (
+                  <button
+                    onClick={handleBulkUpdate}
+                    disabled={assignStudentsMutation.isPending}
+                    className="px-4 py-2 border border-green-600 bg-green-50 hover:bg-green-600 hover:text-white transition-colors text-xs font-bold disabled:opacity-50"
+                  >
+                    {assignStudentsMutation.isPending
+                      ? "[UPDATING...]"
+                      : "[UPDATE ALL]"}
+                  </button>
                 )}
-              </Button>
-            )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

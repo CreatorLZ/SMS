@@ -63,7 +63,7 @@ export default function ExportOptions({
         "Session",
         "Class",
       ];
-      const rows = [];
+      const rows: string[][] = [];
 
       students.forEach((student) => {
         student.scores.forEach((score) => {
