@@ -272,7 +272,7 @@ export const getStudents = async (req: Request, res: Response) => {
 
     const total = await Student.countDocuments(query);
 
-    // Get total active and inactive counts (not affected by search/class filters)
+    // Get total active and inactive counts (affected by search/class filters)
     const activeCount = await Student.countDocuments({
       ...query,
       status: "active",

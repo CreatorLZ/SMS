@@ -53,8 +53,8 @@ export default function AdminStudentsPage() {
     if (studentsResponse.stats) {
       return {
         total,
-        active: studentsResponse.stats.active,
-        inactive: studentsResponse.stats.inactive,
+        active: studentsResponse.stats?.active ?? 0,
+        inactive: studentsResponse.stats?.inactive ?? 0,
       };
     }
 

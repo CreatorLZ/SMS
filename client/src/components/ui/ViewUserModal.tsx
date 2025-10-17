@@ -607,19 +607,6 @@ export default function ViewUserModal({
                               </div>
                             )
                           )
-                        ) : user.assignedClasses &&
-                          user.assignedClasses.length > 0 ? (
-                          <div
-                            key={`single-classroom-${
-                              user.assignedClasses[0]._id || "single"
-                            }`}
-                            className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full border border-green-200"
-                          >
-                            <Database className="w-3 h-3" />
-                            <span className="font-medium">
-                              {user.assignedClasses[0].name}
-                            </span>
-                          </div>
                         ) : (
                           <div
                             key="no-classrooms"
