@@ -97,7 +97,7 @@ export default function EditUserModal() {
         currentClass: (currentUser as any).currentClass || "",
         linkedStudentIds: currentUser.linkedStudentIds?.map((s) => s._id) || [],
         subjectSpecialization: currentUser.subjectSpecialization || "",
-        assignedClassId: currentUser.assignedClassId?._id || "",
+        assignedClassId: currentUser.assignedClasses?.[0]?._id || "",
         roleDescription: "",
       });
     }
@@ -228,6 +228,7 @@ export default function EditUserModal() {
                     src={formData.photo || currentUser.passportPhoto}
                     alt="USER PHOTO"
                     className="w-full h-full object-cover"
+                    style={{ objectPosition: "50% 0%" }}
                   />
                 ) : (
                   <div className="text-center text-xs">

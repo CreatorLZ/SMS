@@ -191,7 +191,7 @@ export const getUsers = async (req: Request, res: Response) => {
     const users = await User.find(query)
       .select("-password -refreshTokens")
       .populate("linkedStudentIds", "fullName studentId")
-      .populate("assignedClassId", "name")
+      .populate("assignedClasses", "name")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum);
@@ -272,6 +272,16 @@ export const getStudents = async (req: Request, res: Response) => {
 
     const total = await Student.countDocuments(query);
 
+    // Get total active and inactive counts (not affected by search/class filters)
+    const activeCount = await Student.countDocuments({
+      ...query,
+      status: "active",
+    });
+    const inactiveCount = await Student.countDocuments({
+      ...query,
+      status: "inactive",
+    });
+
     res.json({
       students,
       pagination: {
@@ -279,6 +289,10 @@ export const getStudents = async (req: Request, res: Response) => {
         limit: limitNum,
         total,
         pages: Math.ceil(total / limitNum),
+      },
+      stats: {
+        active: activeCount,
+        inactive: inactiveCount,
       },
     });
   } catch (error) {

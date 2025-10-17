@@ -329,6 +329,7 @@ export default function ViewUserModal({
                     src={user.passportPhoto}
                     alt="USER PHOTO"
                     className="w-full h-full object-cover"
+                    style={{ objectPosition: "50% 0%" }}
                   />
                 ) : (
                   <div className="text-center text-xs">
@@ -606,16 +607,17 @@ export default function ViewUserModal({
                               </div>
                             )
                           )
-                        ) : user.assignedClassId ? (
+                        ) : user.assignedClasses &&
+                          user.assignedClasses.length > 0 ? (
                           <div
                             key={`single-classroom-${
-                              user.assignedClassId._id || "single"
+                              user.assignedClasses[0]._id || "single"
                             }`}
                             className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full border border-green-200"
                           >
                             <Database className="w-3 h-3" />
                             <span className="font-medium">
-                              {user.assignedClassId.name}
+                              {user.assignedClasses[0].name}
                             </span>
                           </div>
                         ) : (

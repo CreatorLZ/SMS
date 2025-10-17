@@ -46,6 +46,10 @@ export interface StudentsResponse {
     total: number;
     pages: number;
   };
+  stats?: {
+    active: number;
+    inactive: number;
+  };
 }
 
 export const useStudentsQuery = (

@@ -41,14 +41,26 @@ export default function AdminStudentsPage() {
     currentPage
   );
 
-  // Calculate statistics
+  // Calculate statistics - use server-provided stats if available, otherwise fallback to client-side calculation
   const stats = useMemo(() => {
     if (!studentsResponse?.students)
       return { total: 0, active: 0, inactive: 0 };
 
     const students = studentsResponse.students;
+    const total = studentsResponse.pagination?.total || 0;
+
+    // Use server-provided stats if available (for accurate totals across all pages)
+    if (studentsResponse.stats) {
+      return {
+        total,
+        active: studentsResponse.stats.active,
+        inactive: studentsResponse.stats.inactive,
+      };
+    }
+
+    // Fallback to client-side calculation (only for current page)
     return {
-      total: studentsResponse.pagination?.total || 0,
+      total,
       active: students.filter((s) => s.status === "active").length,
       inactive: students.filter((s) => s.status === "inactive").length,
     };

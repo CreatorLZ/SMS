@@ -441,6 +441,7 @@ export default function EditStudentModal() {
                     src={formData.photo || completeStudentData.passportPhoto}
                     alt="STUDENT PHOTO"
                     className="w-full h-full object-cover"
+                    style={{ objectPosition: "50% 0%" }}
                   />
                 ) : (
                   <div className="text-center text-xs">
