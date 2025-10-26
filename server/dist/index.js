@@ -36,6 +36,8 @@ const teacher_1 = __importDefault(require("./routes/teacher"));
 const student_1 = __importDefault(require("./routes/student"));
 // Import seed utility
 const seed_1 = require("./utils/seed");
+// Import cleanup utility
+const cleanupExpiredTokens_1 = require("./scripts/cleanupExpiredTokens");
 // Create Express app
 const app = (0, express_1.default)();
 // Middleware
@@ -59,6 +61,22 @@ mongoose_1.default
     console.log("MongoDB Connected");
     // Seed super admin on first run
     yield (0, seed_1.seedSuperAdmin)();
+    // Schedule token cleanup (runs every 24 hours)
+    setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            yield (0, cleanupExpiredTokens_1.cleanupExpiredTokens)();
+        }
+        catch (error) {
+            console.error("Token cleanup failed:", error);
+        }
+    }), 24 * 60 * 60 * 1000);
+    // Run initial cleanup on startup
+    try {
+        yield (0, cleanupExpiredTokens_1.cleanupExpiredTokens)();
+    }
+    catch (error) {
+        console.error("Initial token cleanup failed:", error);
+    }
 }))
     .catch((err) => console.log("MongoDB connection error:", err));
 // Basic health check route

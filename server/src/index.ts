@@ -27,6 +27,9 @@ import studentRoutes from "./routes/student";
 // Import seed utility
 import { seedSuperAdmin } from "./utils/seed";
 
+// Import cleanup utility
+import { cleanupExpiredTokens } from "./scripts/cleanupExpiredTokens";
+
 // Create Express app
 const app = express();
 
@@ -56,6 +59,22 @@ mongoose
     console.log("MongoDB Connected");
     // Seed super admin on first run
     await seedSuperAdmin();
+
+    // Schedule token cleanup (runs every 24 hours)
+    setInterval(async () => {
+      try {
+        await cleanupExpiredTokens();
+      } catch (error) {
+        console.error("Token cleanup failed:", error);
+      }
+    }, 24 * 60 * 60 * 1000);
+
+    // Run initial cleanup on startup
+    try {
+      await cleanupExpiredTokens();
+    } catch (error) {
+      console.error("Initial token cleanup failed:", error);
+    }
   })
   .catch((err) => console.log("MongoDB connection error:", err));
 

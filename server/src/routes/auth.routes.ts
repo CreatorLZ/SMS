@@ -1,5 +1,6 @@
 import express from "express";
 import { protect, authorize } from "../middleware/auth";
+import { checkTokenBlacklist } from "../middleware/tokenBlacklist";
 import {
   register,
   login,
@@ -21,8 +22,14 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // Protected routes
-router.post("/register", protect, authorize("admin", "superadmin"), register);
-router.post("/logout", protect, logout);
-router.get("/me", protect, getCurrentUser);
+router.post(
+  "/register",
+  protect,
+  checkTokenBlacklist,
+  authorize("admin", "superadmin"),
+  register
+);
+router.post("/logout", protect, checkTokenBlacklist, logout);
+router.get("/me", protect, checkTokenBlacklist, getCurrentUser);
 
 export default router;

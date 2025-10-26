@@ -188,9 +188,11 @@ export default function AdminDashboard() {
           pages: logsResponse.pagination.pages,
           users: logsResponse.logs
             ? new Set(
-                logsResponse.logs.map((log) =>
-                  typeof log.userId === "object" ? log.userId._id : log.userId
-                )
+                logsResponse.logs
+                  .filter((log) => log.userId !== null) // Filter out null userIds
+                  .map((log) =>
+                    typeof log.userId === "object" ? log.userId._id : log.userId
+                  )
               ).size
             : 0,
           actions: actionTypes.length,

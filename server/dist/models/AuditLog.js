@@ -39,7 +39,7 @@ const auditLogSchema = new mongoose_1.Schema({
     userId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "User",
-        required: [true, "User ID is required"],
+        required: false, // Optional for system actions
     },
     actionType: {
         type: String,
@@ -91,6 +91,11 @@ const auditLogSchema = new mongoose_1.Schema({
             "RESULT_SUBMIT",
             "FEE_RECONCILIATION",
             "FEE_AUTO_REPAIR",
+            "SYSTEM_CLEANUP", // Add system cleanup action
+            "ACCOUNT_LOCKOUT_CHECK",
+            "ACCOUNT_LOCKOUT_EXPIRED",
+            "ACCOUNT_LOCKOUT",
+            "ACCOUNT_UNLOCK",
         ],
     },
     description: {
@@ -99,6 +104,10 @@ const auditLogSchema = new mongoose_1.Schema({
     },
     targetId: {
         type: mongoose_1.Schema.Types.ObjectId,
+        required: false,
+    },
+    metadata: {
+        type: mongoose_1.Schema.Types.Mixed,
         required: false,
     },
     timestamp: {

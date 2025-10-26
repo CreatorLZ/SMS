@@ -46,6 +46,9 @@ export interface IUser extends Document {
   bloodGroup?: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
   knownAllergies?: string;
   medicalConditions?: string;
+  failedLoginAttempts?: number;
+  lockoutUntil?: Date;
+  lastFailedLogin?: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -53,6 +56,8 @@ export interface JwtPayload {
   id: string;
   role: string;
   email: string;
+  iat?: number;
+  exp?: number;
 }
 
 export interface TokenPayload {

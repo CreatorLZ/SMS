@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { IUser, JwtPayload } from "../types/auth.types";
 import { User } from "../models/User";
 import { AuditLog } from "../models/AuditLog";
+import { blacklistToken } from "../middleware/tokenBlacklist";
 
 // Token generation helpers
 const generateAccessToken = (user: IUser): string => {
@@ -141,8 +142,25 @@ export const login = async (req: Request, res: Response) => {
 export const logout = async (req: Request, res: Response) => {
   try {
     const refreshToken = req.cookies.refreshToken;
+    const accessToken = req.headers.authorization?.split(" ")[1];
 
     if (refreshToken) {
+      // Blacklist both access and refresh tokens
+      if (accessToken) {
+        await blacklistToken(
+          accessToken,
+          req.user!._id.toString(),
+          "logout",
+          req.user!._id.toString()
+        );
+      }
+      await blacklistToken(
+        refreshToken,
+        req.user!._id.toString(),
+        "logout",
+        req.user!._id.toString()
+      );
+
       // Remove refresh token from user
       await User.updateOne(
         { _id: req.user!._id },
@@ -205,8 +223,14 @@ export const refresh = async (req: Request, res: Response) => {
     const newAccessToken = generateAccessToken(user);
     const newRefreshToken = generateRefreshToken(user);
 
-    // Update refresh tokens (rotation) - replace all tokens with just the new one to prevent accumulation
-    user.refreshTokens = [newRefreshToken];
+    // Update refresh tokens (rotation) - replace the used token with the new one
+    const tokenIndex = user.refreshTokens.indexOf(refreshToken);
+    if (tokenIndex > -1) {
+      user.refreshTokens[tokenIndex] = newRefreshToken;
+    } else {
+      // Fallback: if token not found, add new one (shouldn't happen in normal flow)
+      user.refreshTokens.push(newRefreshToken);
+    }
     await user.save();
 
     // Set new refresh token cookie

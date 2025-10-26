@@ -16,6 +16,7 @@ exports.devSuperAdminLogin = exports.refresh = exports.getCurrentUser = exports.
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = require("../models/User");
 const AuditLog_1 = require("../models/AuditLog");
+const tokenBlacklist_1 = require("../middleware/tokenBlacklist");
 // Token generation helpers
 const generateAccessToken = (user) => {
     return jsonwebtoken_1.default.sign({
@@ -127,9 +128,16 @@ exports.login = login;
 // @route   POST /api/auth/logout
 // @access  Private
 const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const refreshToken = req.cookies.refreshToken;
+        const accessToken = (_a = req.headers.authorization) === null || _a === void 0 ? void 0 : _a.split(" ")[1];
         if (refreshToken) {
+            // Blacklist both access and refresh tokens
+            if (accessToken) {
+                yield (0, tokenBlacklist_1.blacklistToken)(accessToken, req.user._id.toString(), "logout", req.user._id.toString());
+            }
+            yield (0, tokenBlacklist_1.blacklistToken)(refreshToken, req.user._id.toString(), "logout", req.user._id.toString());
             // Remove refresh token from user
             yield User_1.User.updateOne({ _id: req.user._id }, { $pull: { refreshTokens: refreshToken } });
             // Clear cookie
@@ -183,8 +191,15 @@ const refresh = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         // Generate new tokens (rotation)
         const newAccessToken = generateAccessToken(user);
         const newRefreshToken = generateRefreshToken(user);
-        // Update refresh tokens (rotation) - replace all tokens with just the new one to prevent accumulation
-        user.refreshTokens = [newRefreshToken];
+        // Update refresh tokens (rotation) - replace the used token with the new one
+        const tokenIndex = user.refreshTokens.indexOf(refreshToken);
+        if (tokenIndex > -1) {
+            user.refreshTokens[tokenIndex] = newRefreshToken;
+        }
+        else {
+            // Fallback: if token not found, add new one (shouldn't happen in normal flow)
+            user.refreshTokens.push(newRefreshToken);
+        }
         yield user.save();
         // Set new refresh token cookie
         res.cookie("refreshToken", newRefreshToken, {

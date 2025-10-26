@@ -111,6 +111,18 @@ const userSchema = new mongoose_1.Schema({
         enum: ["active", "inactive"],
         default: "active",
     },
+    failedLoginAttempts: {
+        type: Number,
+        default: 0,
+    },
+    lockoutUntil: {
+        type: Date,
+        required: false,
+    },
+    lastFailedLogin: {
+        type: Date,
+        required: false,
+    },
     passportPhoto: {
         type: String,
         required: false,

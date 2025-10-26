@@ -94,9 +94,33 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         useAuthStore.getState().logout();
 
-        // Redirect to login page (you might want to handle this differently)
+        // Provide better error messages based on failure reason
+        let errorMessage = "Session expired. Please log in again.";
+
+        if (refreshError.response?.data?.message) {
+          const serverMessage = refreshError.response.data.message;
+          if (serverMessage.includes("Refresh token not found")) {
+            errorMessage = "Your session has expired. Please log in again.";
+          } else if (serverMessage.includes("Invalid refresh token")) {
+            errorMessage = "Session invalid. Please log in again.";
+          }
+        }
+
+        // Show user-friendly error (you can integrate with toast notifications)
+        console.warn("Authentication error:", errorMessage);
+
+        // Redirect to appropriate login page
         if (typeof window !== "undefined") {
-          window.location.href = "/admin/login";
+          const currentPath = window.location.pathname;
+          if (currentPath.startsWith("/admin")) {
+            window.location.href = "/admin/login";
+          } else if (currentPath.startsWith("/teacher")) {
+            window.location.href = "/teacher/login";
+          } else if (currentPath.startsWith("/parent")) {
+            window.location.href = "/parent/login";
+          } else {
+            window.location.href = "/admin/login"; // Default fallback
+          }
         }
 
         return Promise.reject(refreshError);

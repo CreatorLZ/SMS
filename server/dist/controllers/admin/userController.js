@@ -190,7 +190,7 @@ const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const users = yield User_1.User.find(query)
             .select("-password -refreshTokens")
             .populate("linkedStudentIds", "fullName studentId")
-            .populate("assignedClassId", "name")
+            .populate("assignedClasses", "name")
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limitNum);
@@ -220,28 +220,46 @@ exports.getUsers = getUsers;
 // @access  Private/Admin
 const getStudents = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { search, classId, page = 1, limit = 10 } = req.query;
+        const { search, classId, page = 1, limit = 10, forClassroomAssignment, classroomId, } = req.query;
         let query = {};
-        // Add search filter
-        if (search) {
+        // Special handling for classroom assignment - fetch assigned + unassigned students
+        if (forClassroomAssignment === "true" && classroomId) {
+            // Fetch students who are either:
+            // 1. Already assigned to this classroom, OR
+            // 2. Active and not assigned to any classroom
             query.$or = [
-                { fullName: { $regex: search, $options: "i" } },
-                { studentId: { $regex: search, $options: "i" } },
+                { classroomId: classroomId }, // Students already in this classroom
+                {
+                    status: "active",
+                    $or: [{ classroomId: { $exists: false } }, { classroomId: null }],
+                }, // Active students not in any classroom
             ];
         }
-        // Add class filter
-        if (classId) {
-            query.currentClass = classId;
+        else {
+            // Add search filter
+            if (search) {
+                query.$or = [
+                    { fullName: { $regex: search, $options: "i" } },
+                    { studentId: { $regex: search, $options: "i" } },
+                ];
+            }
+            // Add class filter
+            if (classId) {
+                query.currentClass = classId;
+            }
         }
         const pageNum = parseInt(page, 10);
         const limitNum = parseInt(limit, 10);
         const skip = (pageNum - 1) * limitNum;
         const students = yield Student_1.Student.find(query)
-            .select("fullName studentId currentClass status createdAt")
+            .select("fullName studentId currentClass status classroomId createdAt")
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limitNum);
         const total = yield Student_1.Student.countDocuments(query);
+        // Get total active and inactive counts (affected by search/class filters)
+        const activeCount = yield Student_1.Student.countDocuments(Object.assign(Object.assign({}, query), { status: "active" }));
+        const inactiveCount = yield Student_1.Student.countDocuments(Object.assign(Object.assign({}, query), { status: "inactive" }));
         res.json({
             students,
             pagination: {
@@ -249,6 +267,10 @@ const getStudents = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 limit: limitNum,
                 total,
                 pages: Math.ceil(total / limitNum),
+            },
+            stats: {
+                active: activeCount,
+                inactive: inactiveCount,
             },
         });
     }
@@ -1140,28 +1162,41 @@ const updateTeacher = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 });
             }
         }
-        // Handle classroom reassignments
-        // 1. Remove teacher from classrooms they're no longer assigned to
-        const currentAssignedClasses = teacher.assignedClasses || [];
-        const currentAssignedClassIds = currentAssignedClasses.map((c) => c.toString());
-        // If teacher had single classroom assignment, remove it
-        if (teacher.assignedClassId &&
-            !currentAssignedClassIds.includes(teacher.assignedClassId.toString())) {
-            yield Classroom_1.Classroom.findByIdAndUpdate(teacher.assignedClassId, {
-                teacherId: null,
-            });
-        }
-        // Remove teacher from classrooms not in the new list
-        for (const currentClassId of currentAssignedClassIds) {
-            if (!newAssignedClasses.includes(currentClassId)) {
-                yield Classroom_1.Classroom.findByIdAndUpdate(currentClassId, {
-                    teacherId: null,
-                });
+        // Handle classroom reassignments using transaction for atomicity
+        const session = yield mongoose_1.default.startSession();
+        session.startTransaction();
+        try {
+            // 1. Remove teacher from classrooms they're no longer assigned to
+            const currentAssignedClasses = teacher.assignedClasses || [];
+            const currentAssignedClassIds = currentAssignedClasses.map((c) => c.toString());
+            // If teacher had single classroom assignment, remove it
+            if (teacher.assignedClassId &&
+                !currentAssignedClassIds.includes(teacher.assignedClassId.toString())) {
+                yield Classroom_1.Classroom.findByIdAndUpdate(teacher.assignedClassId, { teacherId: null }, { session });
             }
+            // Remove teacher from classrooms not in the new list
+            for (const currentClassId of currentAssignedClassIds) {
+                if (!newAssignedClasses.includes(currentClassId)) {
+                    yield Classroom_1.Classroom.findByIdAndUpdate(currentClassId, { teacherId: null }, { session });
+                }
+            }
+            // 2. Add teacher to new classrooms
+            for (const newClassId of newAssignedClasses) {
+                yield Classroom_1.Classroom.findByIdAndUpdate(newClassId, { teacherId: id }, { session });
+            }
+            // Commit the transaction
+            yield session.commitTransaction();
+            console.log(`Successfully updated classroom assignments for teacher ${name} (${email})`);
         }
-        // 2. Add teacher to new classrooms
-        for (const newClassId of newAssignedClasses) {
-            yield Classroom_1.Classroom.findByIdAndUpdate(newClassId, { teacherId: id });
+        catch (error) {
+            // Abort transaction on any error
+            yield session.abortTransaction();
+            console.error(`Failed to update classroom assignments for teacher ${name} (${email}):`, error);
+            throw error; // Re-throw to be caught by outer error handler
+        }
+        finally {
+            // Always end the session
+            session.endSession();
         }
         // Prepare update data - handle subject specializations and classrooms
         const updateData = {

@@ -1,18 +1,19 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IAuditLog extends Document {
-  userId: Schema.Types.ObjectId;
+  userId?: Schema.Types.ObjectId; // Optional for system actions
   actionType: string;
   description: string;
   targetId?: Schema.Types.ObjectId;
   timestamp: Date;
+  metadata?: any; // Add metadata field
 }
 
 const auditLogSchema = new Schema({
   userId: {
     type: Schema.Types.ObjectId,
     ref: "User",
-    required: [true, "User ID is required"],
+    required: false, // Optional for system actions
   },
   actionType: {
     type: String,
@@ -64,6 +65,11 @@ const auditLogSchema = new Schema({
       "RESULT_SUBMIT",
       "FEE_RECONCILIATION",
       "FEE_AUTO_REPAIR",
+      "SYSTEM_CLEANUP", // Add system cleanup action
+      "ACCOUNT_LOCKOUT_CHECK",
+      "ACCOUNT_LOCKOUT_EXPIRED",
+      "ACCOUNT_LOCKOUT",
+      "ACCOUNT_UNLOCK",
     ],
   },
   description: {
@@ -72,6 +78,10 @@ const auditLogSchema = new Schema({
   },
   targetId: {
     type: Schema.Types.ObjectId,
+    required: false,
+  },
+  metadata: {
+    type: Schema.Types.Mixed,
     required: false,
   },
   timestamp: {
