@@ -6,6 +6,8 @@ import { blacklistToken } from "../../middleware/tokenBlacklist";
 
 const router = express.Router();
 
+const MAX_LIMIT = 100;
+
 // All routes require authentication and admin/superadmin role
 router.use(protect);
 router.use(authorize("admin", "superadmin"));
@@ -15,8 +17,10 @@ router.use(authorize("admin", "superadmin"));
 // @access  Private/Admin
 router.get("/blacklist", async (req, res) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const rawPage = req.query.page as string;
+    const rawLimit = req.query.limit as string;
+    const page = Math.max(1, parseInt(rawPage) || 1);
+    const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(rawLimit) || 10));
     const skip = (page - 1) * limit;
 
     const tokens = await TokenBlacklist.find()
@@ -72,7 +76,6 @@ router.post("/blacklist", async (req, res) => {
       targetId: userId,
       metadata: {
         reason,
-        token: token.substring(0, 20) + "...", // Log partial token for audit
       },
     });
 

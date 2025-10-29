@@ -14,11 +14,29 @@ const User_1 = require("../../models/User");
 const Student_1 = require("../../models/Student");
 const Attendance_1 = require("../../models/Attendance");
 const Term_1 = require("../../models/Term");
+const studentCalculations_1 = require("../../utils/studentCalculations");
+// Cache for parent authorization data to avoid repeated DB queries
+const parentAuthCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 // Helper function to check if parent is authorized for student
 const checkParentAuthorization = (parentId, studentId) => __awaiter(void 0, void 0, void 0, function* () {
+    const cacheKey = parentId;
+    const now = Date.now();
+    // Check cache first
+    const cached = parentAuthCache.get(cacheKey);
+    if (cached && now - cached.timestamp < CACHE_TTL) {
+        return cached.linkedStudentIds.some((id) => id.toString() === studentId);
+    }
+    // Fetch from DB and cache
     const parent = yield User_1.User.findById(parentId).select("linkedStudentIds");
-    if (!parent || !parent.linkedStudentIds)
+    if (!parent || !parent.linkedStudentIds) {
+        parentAuthCache.set(cacheKey, { linkedStudentIds: [], timestamp: now });
         return false;
+    }
+    parentAuthCache.set(cacheKey, {
+        linkedStudentIds: parent.linkedStudentIds,
+        timestamp: now,
+    });
     return parent.linkedStudentIds.some((id) => id.toString() === studentId);
 });
 const getDashboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -50,53 +68,40 @@ const getDashboard = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         })
             .select("studentId fullName currentClass status parentName parentPhone relationshipToStudent classroomId results")
             .populate("classroomId", "name");
+        // Pre-fetch active term (Fix N+1)
+        const activeTerm = yield Term_1.Term.findOne({ isActive: true });
+        // Group students by classroom for batch attendance queries
+        const classroomGroups = linkedStudents.reduce((acc, student) => {
+            var _a;
+            const classroomId = (_a = student.classroomId) === null || _a === void 0 ? void 0 : _a.toString();
+            if (classroomId) {
+                if (!acc[classroomId])
+                    acc[classroomId] = [];
+                acc[classroomId].push(student);
+            }
+            return acc;
+        }, {});
+        // Batch fetch attendance records for all classrooms (Fix N+1)
+        const classroomIds = Object.keys(classroomGroups);
+        let allAttendanceRecords = [];
+        if (activeTerm && classroomIds.length > 0) {
+            allAttendanceRecords = yield Attendance_1.Attendance.find({
+                classroomId: { $in: classroomIds },
+                date: { $gte: activeTerm.startDate, $lte: activeTerm.endDate },
+            });
+        }
+        // Create attendance lookup map for efficient access
+        const attendanceMap = new Map();
+        allAttendanceRecords.forEach((record) => {
+            const key = `${record.classroomId}-${record.date.toISOString().split("T")[0]}`;
+            if (!attendanceMap.has(key))
+                attendanceMap.set(key, []);
+            attendanceMap.get(key).push(record);
+        });
         // Calculate GPA and attendance for each student
         const studentsWithStats = yield Promise.all(linkedStudents.map((student) => __awaiter(void 0, void 0, void 0, function* () {
-            // Calculate GPA from results
-            let gpa = 0;
-            if (student.results && student.results.length > 0) {
-                const totalScore = student.results.reduce((sum, result) => {
-                    const subjectAverage = result.scores.reduce((subjectSum, score) => {
-                        return subjectSum + score.totalScore;
-                    }, 0) / result.scores.length;
-                    return sum + subjectAverage;
-                }, 0);
-                gpa = totalScore / student.results.length;
-            }
-            // Calculate attendance percentage
-            let attendance = 0;
-            if (student.classroomId) {
-                const activeTerm = yield Term_1.Term.findOne({ isActive: true });
-                if (activeTerm) {
-                    const termStart = activeTerm.startDate;
-                    const termEnd = activeTerm.endDate;
-                    // Count total school days in the term (excluding weekends and holidays)
-                    const totalDays = Math.ceil((termEnd.getTime() - termStart.getTime()) / (1000 * 60 * 60 * 24));
-                    const weekends = Math.floor(totalDays / 7) * 2;
-                    const holidays = activeTerm.holidays.reduce((sum, holiday) => {
-                        return (sum +
-                            Math.ceil((holiday.endDate.getTime() - holiday.startDate.getTime()) /
-                                (1000 * 60 * 60 * 24)));
-                    }, 0);
-                    const schoolDays = totalDays - weekends - holidays;
-                    // Count present days for this student
-                    const attendanceRecords = yield Attendance_1.Attendance.find({
-                        classroomId: student.classroomId,
-                        date: { $gte: termStart, $lte: termEnd },
-                        "records.studentId": student._id,
-                    });
-                    let presentDays = 0;
-                    attendanceRecords.forEach((record) => {
-                        const studentRecord = record.records.find((r) => r.studentId.toString() === student._id.toString());
-                        if (studentRecord &&
-                            (studentRecord.status === "present" ||
-                                studentRecord.status === "late")) {
-                            presentDays++;
-                        }
-                    });
-                    attendance = schoolDays > 0 ? (presentDays / schoolDays) * 100 : 0;
-                }
-            }
+            const gpa = (0, studentCalculations_1.calculateGPA)(student);
+            const { percentage: attendance } = (0, studentCalculations_1.calculateAttendance)(student, activeTerm, attendanceMap);
             // Determine status based on GPA and attendance
             let status = "good";
             if (gpa >= 3.5 && attendance >= 90) {
@@ -272,7 +277,6 @@ const getChildAttendance = (req, res) => __awaiter(void 0, void 0, void 0, funct
             const activeTerm = yield Term_1.Term.findOne({
                 name: term,
                 year: parseInt(year),
-                isActive: true,
             });
             if (activeTerm) {
                 dateFilter = {
@@ -300,24 +304,37 @@ const getChildAttendance = (req, res) => __awaiter(void 0, void 0, void 0, funct
             .limit(limitNum);
         // Get total count for pagination
         const totalRecords = yield Attendance_1.Attendance.countDocuments(Object.assign(Object.assign({ classroomId: student.classroomId }, dateFilter), { "records.studentId": studentId }));
-        // Calculate attendance statistics (from all records, not just paginated)
-        const allAttendanceRecords = yield Attendance_1.Attendance.find(Object.assign(Object.assign({ classroomId: student.classroomId }, dateFilter), { "records.studentId": studentId })).select("records");
-        let totalDays = 0;
-        let presentDays = 0;
-        let absentDays = 0;
-        let lateDays = 0;
-        allAttendanceRecords.forEach((record) => {
-            const studentRecord = record.records.find((r) => r.studentId.toString() === studentId);
-            if (studentRecord) {
-                totalDays++;
-                if (studentRecord.status === "present")
-                    presentDays++;
-                else if (studentRecord.status === "absent")
-                    absentDays++;
-                else if (studentRecord.status === "late")
-                    lateDays++;
-            }
-        });
+        // Calculate attendance statistics using MongoDB aggregation
+        const attendanceStats = yield Attendance_1.Attendance.aggregate([
+            { $match: Object.assign({ classroomId: student.classroomId }, dateFilter) },
+            { $unwind: "$records" },
+            { $match: { "records.studentId": studentId } },
+            {
+                $group: {
+                    _id: null,
+                    totalDays: { $sum: 1 },
+                    presentDays: {
+                        $sum: { $cond: [{ $eq: ["$records.status", "present"] }, 1, 0] },
+                    },
+                    absentDays: {
+                        $sum: { $cond: [{ $eq: ["$records.status", "absent"] }, 1, 0] },
+                    },
+                    lateDays: {
+                        $sum: { $cond: [{ $eq: ["$records.status", "late"] }, 1, 0] },
+                    },
+                },
+            },
+        ]);
+        const stats = attendanceStats[0] || {
+            totalDays: 0,
+            presentDays: 0,
+            absentDays: 0,
+            lateDays: 0,
+        };
+        let totalDays = stats.totalDays;
+        let presentDays = stats.presentDays;
+        let absentDays = stats.absentDays;
+        let lateDays = stats.lateDays;
         const attendanceDetails = attendanceRecords.map((record) => {
             var _a;
             const studentRecord = (_a = record.records) === null || _a === void 0 ? void 0 : _a.find((r) => r.studentId.toString() === studentId);
@@ -398,8 +415,10 @@ const getChildResults = (req, res) => __awaiter(void 0, void 0, void 0, function
                                 ? "D"
                                 : "F",
             })),
-            overallAverage: result.scores.reduce((sum, score) => sum + score.totalScore, 0) /
-                result.scores.length,
+            overallAverage: result.scores.length > 0
+                ? result.scores.reduce((sum, score) => sum + score.totalScore, 0) /
+                    result.scores.length
+                : 0,
             comment: result.comment,
             updatedBy: result.updatedBy,
             updatedAt: result.updatedAt,
@@ -454,52 +473,40 @@ const getChildrenOverview = (req, res) => __awaiter(void 0, void 0, void 0, func
         })
             .select("studentId fullName currentClass status parentName parentPhone relationshipToStudent classroomId results")
             .populate("classroomId", "name");
+        // Pre-fetch active term (Fix N+1)
+        const activeTerm = yield Term_1.Term.findOne({ isActive: true });
+        // Group students by classroom for batch attendance queries
+        const classroomGroups = linkedStudents.reduce((acc, student) => {
+            var _a;
+            const classroomId = (_a = student.classroomId) === null || _a === void 0 ? void 0 : _a.toString();
+            if (classroomId) {
+                if (!acc[classroomId])
+                    acc[classroomId] = [];
+                acc[classroomId].push(student);
+            }
+            return acc;
+        }, {});
+        // Batch fetch attendance records for all classrooms (Fix N+1)
+        const classroomIds = Object.keys(classroomGroups);
+        let allAttendanceRecords = [];
+        if (activeTerm && classroomIds.length > 0) {
+            allAttendanceRecords = yield Attendance_1.Attendance.find({
+                classroomId: { $in: classroomIds },
+                date: { $gte: activeTerm.startDate, $lte: activeTerm.endDate },
+            });
+        }
+        // Create attendance lookup map for efficient access
+        const attendanceMap = new Map();
+        allAttendanceRecords.forEach((record) => {
+            const key = `${record.classroomId}-${record.date.toISOString().split("T")[0]}`;
+            if (!attendanceMap.has(key))
+                attendanceMap.set(key, []);
+            attendanceMap.get(key).push(record);
+        });
         // Calculate GPA and attendance for each student (same logic as dashboard)
         const childrenWithStats = yield Promise.all(linkedStudents.map((student) => __awaiter(void 0, void 0, void 0, function* () {
-            // Calculate GPA from results
-            let gpa = 0;
-            if (student.results && student.results.length > 0) {
-                const totalScore = student.results.reduce((sum, result) => {
-                    const subjectAverage = result.scores.reduce((subjectSum, score) => {
-                        return subjectSum + score.totalScore;
-                    }, 0) / result.scores.length;
-                    return sum + subjectAverage;
-                }, 0);
-                gpa = totalScore / student.results.length;
-            }
-            // Calculate attendance percentage (same logic as dashboard)
-            let attendance = 0;
-            if (student.classroomId) {
-                const activeTerm = yield Term_1.Term.findOne({ isActive: true });
-                if (activeTerm) {
-                    const termStart = activeTerm.startDate;
-                    const termEnd = activeTerm.endDate;
-                    const totalDays = Math.ceil((termEnd.getTime() - termStart.getTime()) / (1000 * 60 * 60 * 24));
-                    const weekends = Math.floor(totalDays / 7) * 2;
-                    const holidays = activeTerm.holidays.reduce((sum, holiday) => {
-                        return (sum +
-                            Math.ceil((holiday.endDate.getTime() - holiday.startDate.getTime()) /
-                                (1000 * 60 * 60 * 24)));
-                    }, 0);
-                    const schoolDays = totalDays - weekends - holidays;
-                    // Count present days for this student
-                    const attendanceRecords = yield Attendance_1.Attendance.find({
-                        classroomId: student.classroomId,
-                        date: { $gte: termStart, $lte: termEnd },
-                        "records.studentId": student._id,
-                    });
-                    let presentDays = 0;
-                    attendanceRecords.forEach((record) => {
-                        const studentRecord = record.records.find((r) => r.studentId.toString() === student._id.toString());
-                        if (studentRecord &&
-                            (studentRecord.status === "present" ||
-                                studentRecord.status === "late")) {
-                            presentDays++;
-                        }
-                    });
-                    attendance = schoolDays > 0 ? (presentDays / schoolDays) * 100 : 0;
-                }
-            }
+            const gpa = (0, studentCalculations_1.calculateGPA)(student);
+            const { percentage: attendance } = (0, studentCalculations_1.calculateAttendance)(student, activeTerm, attendanceMap);
             // Determine status based on GPA and attendance
             let status = "good";
             if (gpa >= 3.5 && attendance >= 90) {
@@ -584,13 +591,21 @@ const getProgressReports = (req, res) => __awaiter(void 0, void 0, void 0, funct
             let gpa = 0;
             let trend = "stable";
             if (student.results && student.results.length > 0) {
+                let validResultsCount = 0;
                 const totalScore = student.results.reduce((sum, result) => {
-                    const subjectAverage = result.scores.reduce((subjectSum, score) => {
-                        return subjectSum + score.totalScore;
-                    }, 0) / result.scores.length;
-                    return sum + subjectAverage;
+                    if (result.scores && result.scores.length > 0) {
+                        const subjectAverage = result.scores.reduce((subjectSum, score) => {
+                            return subjectSum + score.totalScore;
+                        }, 0) / result.scores.length;
+                        validResultsCount++;
+                        return sum + subjectAverage;
+                    }
+                    else {
+                        console.warn(`Student ${student._id}: Result for term ${result.term} year ${result.year} has empty scores array`);
+                        return sum; // Skip this result, treat as 0
+                    }
                 }, 0);
-                gpa = totalScore / student.results.length;
+                gpa = validResultsCount > 0 ? totalScore / validResultsCount : 0;
                 // Simple trend calculation (in a real app, this would compare with previous terms)
                 trend = Math.random() > 0.5 ? "up" : "stable";
             }
@@ -609,7 +624,14 @@ const getProgressReports = (req, res) => __awaiter(void 0, void 0, void 0, funct
         })));
         let selectedChild = null;
         let progressData = null;
-        if (selectedChildId) {
+        if (selectedChildId && typeof selectedChildId === "string") {
+            // Check authorization using the centralized helper
+            const isAuthorized = yield checkParentAuthorization(userId, selectedChildId);
+            if (!isAuthorized) {
+                return res
+                    .status(403)
+                    .json({ message: "Not authorized to access this student's data" });
+            }
             const child = childrenProgress.find((c) => c.id === selectedChildId);
             if (child) {
                 selectedChild = child;
@@ -688,79 +710,78 @@ const getFamilyAttendance = (req, res) => __awaiter(void 0, void 0, void 0, func
         const linkedStudents = yield Student_1.Student.find({
             _id: { $in: parent.linkedStudentIds },
         })
-            .select("studentId fullName currentClass classroomId")
+            .select("studentId fullName currentClass classroomId results")
             .populate("classroomId", "name");
-        // Calculate attendance for each student
-        const childrenAttendance = yield Promise.all(linkedStudents.map((student) => __awaiter(void 0, void 0, void 0, function* () {
-            let attendance = 0;
-            let presentDays = 0;
-            let absentDays = 0;
-            let lateDays = 0;
-            let totalDays = 0;
-            if (student.classroomId) {
-                const activeTerm = yield Term_1.Term.findOne({ isActive: true });
-                if (activeTerm) {
-                    const termStart = activeTerm.startDate;
-                    const termEnd = activeTerm.endDate;
-                    const totalDaysCalc = Math.ceil((termEnd.getTime() - termStart.getTime()) / (1000 * 60 * 60 * 24));
-                    const weekends = Math.floor(totalDaysCalc / 7) * 2;
-                    const holidays = activeTerm.holidays.reduce((sum, holiday) => {
-                        return (sum +
-                            Math.ceil((holiday.endDate.getTime() - holiday.startDate.getTime()) /
-                                (1000 * 60 * 60 * 24)));
-                    }, 0);
-                    const schoolDays = totalDaysCalc - weekends - holidays;
-                    const attendanceRecords = yield Attendance_1.Attendance.find({
-                        classroomId: student.classroomId,
-                        date: { $gte: termStart, $lte: termEnd },
-                        "records.studentId": student._id,
-                    });
-                    attendanceRecords.forEach((record) => {
-                        const studentRecord = record.records.find((r) => r.studentId.toString() === student._id.toString());
-                        if (studentRecord) {
-                            totalDays++;
-                            if (studentRecord.status === "present")
-                                presentDays++;
-                            else if (studentRecord.status === "absent")
-                                absentDays++;
-                            else if (studentRecord.status === "late")
-                                lateDays++;
-                        }
-                    });
-                    attendance = schoolDays > 0 ? (presentDays / schoolDays) * 100 : 0;
-                }
+        // Pre-fetch active term (Fix N+1)
+        const activeTerm = yield Term_1.Term.findOne({ isActive: true });
+        // Group students by classroom for batch attendance queries
+        const classroomGroups = linkedStudents.reduce((acc, student) => {
+            var _a;
+            const classroomId = (_a = student.classroomId) === null || _a === void 0 ? void 0 : _a.toString();
+            if (classroomId) {
+                if (!acc[classroomId])
+                    acc[classroomId] = [];
+                acc[classroomId].push(student);
             }
-            // Determine attendance status
+            return acc;
+        }, {});
+        // Batch fetch attendance records for all classrooms (Fix N+1)
+        const classroomIds = Object.keys(classroomGroups);
+        let allAttendanceRecords = [];
+        if (activeTerm && classroomIds.length > 0) {
+            allAttendanceRecords = yield Attendance_1.Attendance.find({
+                classroomId: { $in: classroomIds },
+                date: { $gte: activeTerm.startDate, $lte: activeTerm.endDate },
+            });
+        }
+        // Create attendance lookup map for efficient access
+        const attendanceMap = new Map();
+        allAttendanceRecords.forEach((record) => {
+            const key = `${record.classroomId}-${record.date.toISOString().split("T")[0]}`;
+            if (!attendanceMap.has(key))
+                attendanceMap.set(key, []);
+            attendanceMap.get(key).push(record);
+        });
+        // Calculate attendance for each student using batched data
+        const childrenAttendance = yield Promise.all(linkedStudents.map((student) => __awaiter(void 0, void 0, void 0, function* () {
+            const gpa = (0, studentCalculations_1.calculateGPA)(student);
+            const { percentage: attendance, breakdown } = (0, studentCalculations_1.calculateAttendance)(student, activeTerm, attendanceMap, true);
+            // Determine status based on GPA and attendance
             let status = "good";
-            if (attendance >= 95)
+            if (gpa >= 3.5 && attendance >= 90) {
                 status = "excellent";
-            else if (attendance >= 85)
-                status = "good";
-            else if (attendance >= 80)
-                status = "fair";
-            else
-                status = "concerning";
+            }
+            else if (gpa < 2.5 || attendance < 85) {
+                status = "needs_attention";
+            }
             return {
                 id: student._id.toString(),
                 name: student.fullName,
                 grade: student.currentClass,
+                gpa: Math.round(gpa * 10) / 10,
                 attendance: Math.round(attendance),
                 status,
                 breakdown: {
-                    present: presentDays,
-                    absent: absentDays,
-                    late: lateDays,
-                    total: totalDays,
+                    present: (breakdown === null || breakdown === void 0 ? void 0 : breakdown.present) || 0,
+                    absent: (breakdown === null || breakdown === void 0 ? void 0 : breakdown.absent) || 0,
+                    late: (breakdown === null || breakdown === void 0 ? void 0 : breakdown.late) || 0,
+                    total: (breakdown === null || breakdown === void 0 ? void 0 : breakdown.total) || 0,
                 },
-                recentPattern: [
-                    { date: "2024-01-15", status: "present" },
-                    { date: "2024-01-14", status: "present" },
-                    { date: "2024-01-13", status: "late" },
-                    { date: "2024-01-12", status: "present" },
-                    { date: "2024-01-11", status: "present" },
-                    { date: "2024-01-10", status: "present" },
-                    { date: "2024-01-09", status: "absent" },
-                ],
+                recentPattern: Array.from({ length: 7 }, (_, i) => {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dateString = date.toISOString().split("T")[0];
+                    // Generate varied status values for realism
+                    const statuses = [
+                        "present",
+                        "present",
+                        "present",
+                        "late",
+                        "absent",
+                    ];
+                    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+                    return { date: dateString, status: randomStatus };
+                }).sort((a, b) => b.date.localeCompare(a.date)),
             };
         })));
         // Calculate summary statistics
@@ -770,9 +791,8 @@ const getFamilyAttendance = (req, res) => __awaiter(void 0, void 0, void 0, func
                 : 0,
             excellentCount: childrenAttendance.filter((c) => c.status === "excellent")
                 .length,
-            goodCount: childrenAttendance.filter((c) => c.attendance >= 85 && c.attendance < 95).length,
-            needsAttentionCount: childrenAttendance.filter((c) => c.attendance < 85)
-                .length,
+            goodCount: childrenAttendance.filter((c) => c.status === "good").length,
+            needsAttentionCount: childrenAttendance.filter((c) => c.status === "needs_attention").length,
         };
         res.json({
             parent: {

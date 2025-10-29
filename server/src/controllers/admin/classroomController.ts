@@ -5,6 +5,7 @@ import { Student } from "../../models/Student";
 import { AuditLog } from "../../models/AuditLog";
 import { Term } from "../../models/Term";
 import { Attendance } from "../../models/Attendance";
+import { calculateSchoolDays } from "../../utils/schoolDays";
 
 // @desc    Create a new classroom
 // @route   POST /api/admin/classrooms
@@ -462,30 +463,11 @@ export const getSchoolDays = async (req: Request, res: Response) => {
     // Calculate working days (Monday to Friday)
     const startDate = new Date(currentTerm.startDate);
     const endDate = new Date(currentTerm.endDate);
-    let schoolDays = 0;
-
-    // Count weekdays excluding holidays
-    for (
-      let date = new Date(startDate);
-      date <= endDate;
-      date.setDate(date.getDate() + 1)
-    ) {
-      const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
-
-      // Count weekdays (Monday = 1, Friday = 5)
-      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-        // Check if this date falls within any holiday
-        const isHoliday = currentTerm.holidays.some((holiday) => {
-          const holidayStart = new Date(holiday.startDate);
-          const holidayEnd = new Date(holiday.endDate);
-          return date >= holidayStart && date <= holidayEnd;
-        });
-
-        if (!isHoliday) {
-          schoolDays++;
-        }
-      }
-    }
+    const schoolDays = calculateSchoolDays(
+      startDate,
+      endDate,
+      currentTerm.holidays
+    );
 
     res.json({
       classroomId: id,
